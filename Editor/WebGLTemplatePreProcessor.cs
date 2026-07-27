@@ -17,7 +17,7 @@ namespace FlappyTemplate.Editor
 
 		private const string TemplateSetting = "PROJECT:" + TemplateName;
 
-		private const string SourceFolder = "Assets/Packages/com.biznetx.flappytemplate/WebGLTemplates/" + TemplateName;
+		private const string SourceFolder = "Packages/com.biznetx.flappytemplate/WebGLTemplates/" + TemplateName;
 
 		private const string DestinationFolder = "Assets/WebGLTemplates/" + TemplateName;
 
