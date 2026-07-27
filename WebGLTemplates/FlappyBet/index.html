@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>{{{ PRODUCT_NAME }}}</title>
+	<style>
+		html,
+		body {
+			background: {{{ BACKGROUND || '#000' }}};
+			width: 100%;
+			height: 100%;
+			overflow: visible;
+			padding: 0;
+			margin: 0;
+		}
+
+		div#gameContainer {
+			background: transparent !important;
+			position: fixed;
+			inset: 0;
+			width: 100vw;
+			height: 100vh;
+		}
+
+		div#gameContainer canvas {
+			position: absolute;
+			inset: 0;
+			width: 100vw !important;
+			height: 100vh !important;
+			display: block;
+			-webkit-user-select: none;
+			user-select: none;
+		}
+
+		div#gameContainer canvas[data-pixel-art="true"] {
+			position: absolute;
+			image-rendering: optimizeSpeed;
+			image-rendering: -webkit-crisp-edges;
+			image-rendering: -moz-crisp-edges;
+			image-rendering: -o-crisp-edges;
+			image-rendering: crisp-edges;
+			image-rendering: -webkit-optimize-contrast;
+			image-rendering: optimize-contrast;
+			image-rendering: pixelated;
+			-ms-interpolation-mode: nearest-neighbor;
+		}
+
+		#loading-overlay {
+			position: fixed;
+			inset: 0;
+			z-index: 10;
+			background: #1a1a2e;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			transition: opacity 0.4s ease;
+		}
+
+		#loading-overlay.hidden {
+			opacity: 0;
+			pointer-events: none;
+		}
+
+		#loading-bar-container {
+			width: 280px;
+			height: 6px;
+			background: rgba(255, 255, 255, 0.1);
+			border-radius: 3px;
+			overflow: hidden;
+		}
+
+		#loading-bar-fill {
+			height: 100%;
+			width: 0%;
+			background: linear-gradient(90deg, #e94560, #0f3460);
+			border-radius: 3px;
+			transition: width 0.3s ease;
+		}
+
+		#loading-text {
+			margin-top: 12px;
+			color: rgba(255, 255, 255, 0.6);
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			font-size: 13px;
+			letter-spacing: 1px;
+		}
+	</style>
+	<script src="https://unpkg.com/@microsoft/signalr@10.0.0/dist/browser/signalr.min.js" integrity="sha384-WlPNGnp2GG/eMuGnbuG2p5ov9pzHsqoPQbzjOz61V608d7JfDa+3abt0YOoyUwU5" crossorigin="anonymous"></script>
+</head>
+
+<body>
+	<div id="gameContainer">
+		<canvas id="unity-canvas" width="{{{ WIDTH }}}" height="{{{ HEIGHT }}}" data-pixel-art="{{{ OPTIMIZE_FOR_PIXEL_ART }}}"></canvas>
+		<div id="loading-overlay">
+			<div id="loading-bar-container">
+				<div id="loading-bar-fill"></div>
+			</div>
+			<div id="loading-text">0%</div>
+		</div>
+		<script src="Build/{{{ LOADER_FILENAME }}}"></script>
+		<script>
+			var canvas = document.querySelector("#unity-canvas");
+			var config = {
+				dataUrl: "Build/{{{ DATA_FILENAME }}}",
+				frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+				codeUrl: "Build/{{{ CODE_FILENAME }}}",
+#if MEMORY_FILENAME
+				memoryUrl: "Build/{{{ MEMORY_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+				symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}",
+#endif
+				streamingAssetsUrl: "StreamingAssets",
+				companyName: "{{{ COMPANY_NAME }}}",
+				productName: "{{{ PRODUCT_NAME }}}",
+				productVersion: "{{{ PRODUCT_VERSION }}}",
+				autoSyncPersistentDataPath: true,
+			};
+			var scaleToFit;
+			try {
+				scaleToFit = !!JSON.parse("{{{ SCALE_TO_FIT }}}");
+			} catch (e) {
+				scaleToFit = true;
+			}
+			var wasmFillTimer = null;
+			var displayedPct = 0;
+
+			function setBar(pct) {
+				displayedPct = pct;
+				var fill = document.getElementById('loading-bar-fill');
+				var text = document.getElementById('loading-text');
+				if (fill) fill.style.width = pct + '%';
+				if (text) text.textContent = pct + '%';
+			}
+
+			function progressHandler(progress) {
+				var pct = Math.round(progress * 100);
+				if (pct >= 90 && !wasmFillTimer) {
+					setBar(90);
+					wasmFillTimer = setInterval(function () {
+						if (displayedPct < 99) {
+							setBar(displayedPct + 1);
+						} else {
+							clearInterval(wasmFillTimer);
+						}
+					}, 800);
+				} else if (!wasmFillTimer) {
+					setBar(pct);
+				}
+			}
+
+			function clearLoader() {
+				if (wasmFillTimer) { clearInterval(wasmFillTimer); wasmFillTimer = null; }
+				setBar(100);
+				setTimeout(function () {
+					var overlay = document.getElementById('loading-overlay');
+					if (overlay) {
+						overlay.classList.add('hidden');
+						setTimeout(function () { overlay.remove(); }, 500);
+					}
+				}, 300);
+			}
+
+			function focusCanvas() {
+				if (typeof canvas.focus === 'function') {
+					canvas.focus();
+				}
+			}
+			function applyViewportLayout() {
+			}
+			function onResizeOld() {
+				var container = canvas.parentElement;
+				var w;
+				var h;
+
+				if (scaleToFit) {
+					w = window.innerWidth;
+					h = window.innerHeight;
+
+					var r = {{{ HEIGHT }}} / {{{ WIDTH }}};
+
+					if (w * r > window.innerHeight) {
+						w = Math.min(w, Math.ceil(h / r));
+					}
+					h = Math.floor(w * r);
+				} else {
+					w = {{{ WIDTH }}};
+					h = {{{ HEIGHT }}};
+				}
+
+				container.style.width = canvas.style.width = w + "px";
+				container.style.height = canvas.style.height = h + "px";
+				container.style.top = Math.floor((window.innerHeight - h) / 2) + "px";
+				container.style.left = Math.floor((window.innerWidth - w) / 2) + "px";
+				window.focus();
+			}
+			createUnityInstance(canvas, config, progressHandler).then(function (instance) {
+				window.MyGameInstance = instance;
+				canvas = instance.Module.canvas;
+				clearLoader();
+				canvas.tabIndex = 1;
+				canvas.style.outline = 'none';
+				applyViewportLayout();
+				requestAnimationFrame(function () {
+					focusCanvas();
+				});
+			});
+			window.addEventListener('resize', applyViewportLayout);
+			window.addEventListener('pointerdown', focusCanvas, { passive: true });
+			window.addEventListener('touchstart', focusCanvas, { passive: true });
+			document.addEventListener('visibilitychange', function () {
+				if (!document.hidden) {
+					requestAnimationFrame(function () {
+						applyViewportLayout();
+						focusCanvas();
+					});
+				}
+			});
+			applyViewportLayout();
+
+			if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+				// Mobile device style: fill the whole browser client area with the game canvas:
+				const meta = document.createElement('meta');
+				meta.name = 'viewport';
+				meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+				document.getElementsByTagName('head')[0].appendChild(meta);
+			}
+		</script>
+	</div>
+</body>
+
+</html>
