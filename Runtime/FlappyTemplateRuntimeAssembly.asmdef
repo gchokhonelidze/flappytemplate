@@ -1,0 +1,21 @@
+{
+    "name": "FlappyTemplateRuntimeAssembly",
+    "rootNamespace": "FlappyTemplate",
+    "references": [
+        "UnityWebGLSignalR",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [
+        "Editor",
+        "WebGL"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

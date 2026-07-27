@@ -1,8 +1,12 @@
 {
-    "name": "UnityWebGLSignalR",
-    "rootNamespace": "UnityWebGLSignalR",
-    "references": [],
-    "includePlatforms": [],
+    "name": "FlappyTemplateEditorAssembly",
+    "rootNamespace": "FlappyTemplate.Editor",
+    "references": [
+        "FlappyTemplateRuntimeAssembly"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
+using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 namespace FlappyTemplate.Editor
 {
@@ -17,11 +18,57 @@ namespace FlappyTemplate.Editor
 
 		private const string TemplateSetting = "PROJECT:" + TemplateName;
 
-		private const string SourceFolder = "Packages/com.biznetx.flappytemplate/WebGLTemplates/" + TemplateName;
+		private const string PackageName = "com.biznetx.flappytemplate";
 
 		private const string DestinationFolder = "Assets/WebGLTemplates/" + TemplateName;
 
 		public int callbackOrder => 0;
+
+		/// <summary>
+		/// Absolute path to the package root, wherever the package happens to live: embedded under Packages/, installed
+		/// from a git url or registry into Library/PackageCache, or linked with a file: dependency. Never hard-code the
+		/// folder - the only stable anchor is the assembly this code was compiled into.
+		/// </summary>
+		private static string PackageRoot
+		{
+			get
+			{
+				var assembly = typeof(WebGLTemplatePreProcessor).Assembly;
+
+				var package = PackageInfo.FindForAssembly(assembly);
+
+				if (package != null)
+				{
+					return package.resolvedPath;
+				}
+
+				// Not registered with the Package Manager - the folder is dropped straight into Assets/. Walk up from
+				// the assembly definition that produced this code until the folder holding package.json turns up.
+				var assemblyName = assembly.GetName().Name;
+
+				foreach (var guid in AssetDatabase.FindAssets($"{assemblyName} t:AssemblyDefinitionAsset"))
+				{
+					var assetPath = AssetDatabase.GUIDToAssetPath(guid);
+
+					if (Path.GetFileNameWithoutExtension(assetPath) != assemblyName)
+					{
+						continue;
+					}
+
+					for (var folder = Directory.GetParent(Path.GetFullPath(assetPath)); folder != null; folder = folder.Parent)
+					{
+						if (File.Exists(Path.Combine(folder.FullName, "package.json")))
+						{
+							return folder.FullName;
+						}
+					}
+				}
+
+				return Path.GetFullPath("Packages/" + PackageName);
+			}
+		}
+
+		private static string SourceFolder => Path.Combine(PackageRoot, "WebGLTemplates", TemplateName);
 
 		[InitializeOnLoadMethod]
 		private static void SyncOnEditorLoad()
@@ -32,7 +79,7 @@ namespace FlappyTemplate.Editor
 		[MenuItem("Tools/FlappyBet/Sync WebGL Template")]
 		public static void SyncTemplate()
 		{
-			var sourceFolder = Path.GetFullPath(SourceFolder);
+			var sourceFolder = SourceFolder;
 
 			if (!Directory.Exists(sourceFolder))
 			{
