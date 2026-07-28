@@ -1,0 +1,262 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7640514857705907520
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1059890480227641173}
+  - component: {fileID: 1734387831101186924}
+  - component: {fileID: 3097910397549921490}
+  - component: {fileID: 4697284334685520126}
+  m_Layer: 0
+  m_Name: FlappyManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1059890480227641173
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7640514857705907520}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1734387831101186924
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7640514857705907520}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f697284beb5a3bf439631495d9868123, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Incoming
+--- !u!114 &3097910397549921490
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7640514857705907520}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2606d9c2c52e5442bb727a714a666d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Socket
+  Token: 019fa314ed0c749a948613eb3629bbba
+  Domain: https://api-staging.flappy.live
+  Config:
+    HandshakeTimeout: 15
+    KeepAliveInterval: 15
+    ServerTimeout: 30
+    MaximumSendMessageSize: 32768
+    SkipNegotiation: 1
+    RetryDelays: f4010000d00700008813000010270000
+  BalancePollInterval: 60
+--- !u!114 &4697284334685520126
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7640514857705907520}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 418ec6df5851c8d478f034a9cd819545, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FlappyTemplate.Assets._System.States.StateManager
+  MainState:
+    SystemState:
+      <HouseEdge>k__BackingField: 
+      <Running>k__BackingField: 0
+      <IsDemo>k__BackingField: 0
+      <MinBet>k__BackingField: 
+      <MaxBet>k__BackingField: 
+      <MaxWin>k__BackingField: 
+      meIdValue: 0
+      <Me>k__BackingField: 
+      LeftValue: 0
+      MsValue: 0
+    BalanceState:
+      <TransactionId>k__BackingField: 
+      <Currency>k__BackingField: 
+      <Balance>k__BackingField: 
+      <RateUsd>k__BackingField: 
+      <BetAmount>k__BackingField: 
+      <WinAmount>k__BackingField: 
+    _GameState:
+      list: []
+      keyCollision: 0
+    ServerTime: 0
+    Locale: 0
+    Error:
+      <Error>k__BackingField: 1
+      <Message>k__BackingField: 
+    History:
+    - <Id>k__BackingField: 
+      <Sha512Pre>k__BackingField: 
+      <BetAmount>k__BackingField: 0
+      <WinAmount>k__BackingField: 0
+      <Currency>k__BackingField: 
+      <RateUsd>k__BackingField: 0
+      <_Outcome>k__BackingField:
+        list: []
+        keyCollision: 0
+    GameHistory: []
+    GameHistoryById:
+      <Id>k__BackingField: 
+      <TotalBetAmountUsd>k__BackingField: 0
+      <TotalWinAmountUsd>k__BackingField: 0
+      <TotalBetCount>k__BackingField: 0
+      <_Outcome>k__BackingField:
+        list: []
+        keyCollision: 0
+    Statistics:
+      <Current>k__BackingField:
+        <BetCount>k__BackingField: 0
+        <WinCount>k__BackingField: 0
+        <LoseCount>k__BackingField: 0
+        <Wager>k__BackingField: 0
+        <WagerWon>k__BackingField: 0
+        <WagerLost>k__BackingField: 0
+        <NetProfit>k__BackingField: 0
+        <GrossWin>k__BackingField: 0
+        <Payouts>k__BackingField: 0
+        <Luck>k__BackingField: 0
+      <Overall>k__BackingField:
+        <BetCount>k__BackingField: 0
+        <WinCount>k__BackingField: 0
+        <LoseCount>k__BackingField: 0
+        <Wager>k__BackingField: 0
+        <WagerWon>k__BackingField: 0
+        <WagerLost>k__BackingField: 0
+        <NetProfit>k__BackingField: 0
+        <GrossWin>k__BackingField: 0
+        <Payouts>k__BackingField: 0
+        <Luck>k__BackingField: 0
+  MultiState:
+    MultiLocation: 
+    MultiChipBalance:
+      <Total>k__BackingField: 
+      <Idle>k__BackingField: 
+      <InGame>k__BackingField: 
+    MultiRooms: []
+    MultiMyRoom:
+      <Id>k__BackingField: 0
+      <TypeName>k__BackingField: 
+      <Demo>k__BackingField: 0
+      <CoinInfo>k__BackingField:
+        <Id>k__BackingField: 0
+        <Symbol>k__BackingField: 
+        <DecimalPoints>k__BackingField: 0
+        <RateUsd>k__BackingField: 0
+        <Image>k__BackingField: 
+      <MaxThinkDurationMs>k__BackingField: 0
+      <MinPlayers>k__BackingField: 0
+      <MaxPlayers>k__BackingField: 0
+    MultiTurnId: 
+    MultiLeftInTurn:
+      <Total>k__BackingField: 0
+      <Left>k__BackingField: 0
+      <LeftMs>k__BackingField: 0
+    MultiTurnIndex: 0
+    MultiTurnPlayers: []
+    MultiRunning: 0
+    MultiRoundId: 
+    MultiSeatsTaken:
+      list: []
+      keyCollision: 0
+    MultiSeatsInRound:
+      list: []
+      keyCollision: 0
+  Events:
+    OnSystem:
+      m_PersistentCalls:
+        m_Calls: []
+    OnSystemLeft:
+      m_PersistentCalls:
+        m_Calls: []
+    OnSystemRunning:
+      m_PersistentCalls:
+        m_Calls: []
+    OnBalance:
+      m_PersistentCalls:
+        m_Calls: []
+    OnError:
+      m_PersistentCalls:
+        m_Calls: []
+    OnState:
+      m_PersistentCalls:
+        m_Calls: []
+    OnIndState:
+      m_PersistentCalls:
+        m_Calls: []
+    OnFreespin:
+      m_PersistentCalls:
+        m_Calls: []
+    OnBetInfo:
+      m_PersistentCalls:
+        m_Calls: []
+    OnBetInfoPayout:
+      m_PersistentCalls:
+        m_Calls: []
+    OnBetInfoIncrease:
+      m_PersistentCalls:
+        m_Calls: []
+    OnBetInfoById:
+      m_PersistentCalls:
+        m_Calls: []
+    OnHistory:
+      m_PersistentCalls:
+        m_Calls: []
+    OnGameHistory:
+      m_PersistentCalls:
+        m_Calls: []
+    OnGameHistoryById:
+      m_PersistentCalls:
+        m_Calls: []
+    OnSeed:
+      m_PersistentCalls:
+        m_Calls: []
+    OnStatistics:
+      m_PersistentCalls:
+        m_Calls: []
+    OnSettings:
+      m_PersistentCalls:
+        m_Calls: []
+    OnSharedData:
+      m_PersistentCalls:
+        m_Calls: []
+    OnMultiRoom:
+      m_PersistentCalls:
+        m_Calls: []
+    OnMultiLocation:
+      m_PersistentCalls:
+        m_Calls: []
+    OnMultiSeatsChanged:
+      m_PersistentCalls:
+        m_Calls: []
+    OnMultiTurn:
+      m_PersistentCalls:
+        m_Calls: []
+    OnMultiLeft:
+      m_PersistentCalls:
+        m_Calls: []
+    OnMultiChipBalance:
+      m_PersistentCalls:
+        m_Calls: []

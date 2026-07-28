@@ -1,17 +1,12 @@
 #nullable enable
-
 using System;
-using UnityEngine;
 
 namespace FlappyTemplate
 {
-	[Serializable]
-	public class MultiTurnPlayerDto
-	{
-		[field: SerializeField]
-		public int SeatIndex { get; set; }
-
-		[field: SerializeField]
-		public PlayerDto Player { get; set; } = new();
-	}
+    [Serializable]
+    public class MultiTurnPlayerDto
+    {
+        public int SeatIndex;
+        public PlayerDto Player = new();
+    }
 }

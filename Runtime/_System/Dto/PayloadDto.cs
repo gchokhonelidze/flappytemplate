@@ -1,22 +1,26 @@
 #nullable enable
+using System;
 using Newtonsoft.Json.Linq;
 
 namespace FlappyTemplate
 {
-	public class PayloadDto
-	{
-		public string EventName { get; set; } = null!;
-		public JToken Data { get; set; } = null!;
-	}
+    [Serializable]
+    public class PayloadDto
+    {
+        public string EventName = null!;
+        public JToken Data = null!;
+    }
 
-	public class PayloadGroupElementDto
-	{
-		public string E { get; set; } = null!;
-		public JToken O { get; set; } = null!;
-	}
+    [Serializable]
+    public class PayloadGroupElementDto
+    {
+        public string E = null!;
+        public JToken O = null!;
+    }
 
-	public class PayloadGroupDto
-	{
-		public PayloadGroupElementDto[] Values { get; set; } = null!;
-	}
+    [Serializable]
+    public class PayloadGroupDto
+    {
+        public PayloadGroupElementDto[] Values = null!;
+    }
 }

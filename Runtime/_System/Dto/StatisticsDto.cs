@@ -1,50 +1,37 @@
 #nullable enable
 using System;
-using UnityEngine;
 
 namespace FlappyTemplate
 {
-	[Serializable]
-	public class StatisticsDto
-	{
-		[field: SerializeField]
-		public int BetCount { get; set; }
+    [Serializable]
+    public class StatisticsDto
+    {
+        public int BetCount = 0;
 
-		[field: SerializeField]
-		public int WinCount { get; set; }
+        public int WinCount = 0;
 
-		[field: SerializeField]
-		public int LoseCount { get; set; }
+        public int LoseCount = 0;
 
-		[field: SerializeField]
-		public string Wager { get; set; } = "0";
+        public string Wager = "0";
 
-		[field: SerializeField]
-		public string WagerWon { get; set; } = "0";
+        public string WagerWon = "0";
 
-		[field: SerializeField]
-		public string WagerLost { get; set; } = "0";
+        public string WagerLost = "0";
 
-		[field: SerializeField]
-		public string NetProfit { get; set; } = "0";
+        public string NetProfit = "0";
 
-		[field: SerializeField]
-		public string GrossWin { get; set; } = "0";
+        public string GrossWin = "0";
 
-		[field: SerializeField]
-		public string Payouts { get; set; } = "0";
+        public string Payouts = "0";
 
-		[field: SerializeField]
-		public string Luck { get; set; } = "0";
-	}
+        public string Luck = "0";
+    }
 
-	[Serializable]
-	public class StatsDto
-	{
-		[field: SerializeField]
-		public StatisticsDto Current { get; set; } = null!;
+    [Serializable]
+    public class StatsDto
+    {
+        public StatisticsDto Current = null!;
 
-		[field: SerializeField]
-		public StatisticsDto Overall { get; set; } = null!;
-	}
+        public StatisticsDto Overall = null!;
+    }
 }
