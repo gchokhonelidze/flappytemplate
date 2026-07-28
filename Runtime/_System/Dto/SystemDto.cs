@@ -14,10 +14,46 @@ namespace FlappyTemplate
         public bool Running;
         public bool IsDemo;
         public EGameType? GameType;
-        public long? GameId;
-        public long? ProviderId;
+
+        [SerializeField]
+        private string _GameId = string.Empty;
+        private bool GameIdHasValue;
+        public long? GameId
+        {
+            get => GameIdHasValue ? long.Parse(_GameId) : null;
+            set
+            {
+                GameIdHasValue = value.HasValue;
+                _GameId = value.HasValue ? value.Value.ToString() : string.Empty;
+            }
+        }
+
+        [SerializeField]
+        private string _ProviderId = string.Empty;
+        private bool ProviderIdHasValue;
+        public long? ProviderId
+        {
+            get => ProviderIdHasValue ? long.Parse(_ProviderId) : null;
+            set
+            {
+                ProviderIdHasValue = value.HasValue;
+                _ProviderId = value.HasValue ? value.Value.ToString() : string.Empty;
+            }
+        }
         public string? ProviderName;
-        public int? DecimalPoints;
+
+        [SerializeField]
+        private string _DecimalPoints = string.Empty;
+        private bool DecimalPointsHasValue;
+        public int? DecimalPoints
+        {
+            get => DecimalPointsHasValue ? int.Parse(_DecimalPoints) : null;
+            set
+            {
+                DecimalPointsHasValue = value.HasValue;
+                _DecimalPoints = value.HasValue ? value.Value.ToString() : string.Empty;
+            }
+        }
         public string? MinBet;
         public string? MaxBet;
         public string? MaxWin;
