@@ -10,28 +10,40 @@ namespace FlappyTemplate.Editor
     public class RectTransformSizeClampEditor : UnityEditor.Editor
     {
         private const float ToggleWidth = 16f;
+        private const float PercentWidth = 26f;
+        private const float Gap = 2f;
+
+        private static readonly GUIContent PercentContent = new GUIContent("%", "Read this limit as a percentage of the parent's size on the same axis - 100 is the full parent - rather than in the units above.");
 
         private SerializedProperty units;
         private SerializedProperty useMinWidth;
         private SerializedProperty minWidth;
+        private SerializedProperty minWidthIsPercent;
         private SerializedProperty useMinHeight;
         private SerializedProperty minHeight;
+        private SerializedProperty minHeightIsPercent;
         private SerializedProperty useMaxWidth;
         private SerializedProperty maxWidth;
+        private SerializedProperty maxWidthIsPercent;
         private SerializedProperty useMaxHeight;
         private SerializedProperty maxHeight;
+        private SerializedProperty maxHeightIsPercent;
 
         void OnEnable()
         {
             units = serializedObject.FindProperty("units");
             useMinWidth = serializedObject.FindProperty("useMinWidth");
             minWidth = serializedObject.FindProperty("minWidth");
+            minWidthIsPercent = serializedObject.FindProperty("minWidthIsPercent");
             useMinHeight = serializedObject.FindProperty("useMinHeight");
             minHeight = serializedObject.FindProperty("minHeight");
+            minHeightIsPercent = serializedObject.FindProperty("minHeightIsPercent");
             useMaxWidth = serializedObject.FindProperty("useMaxWidth");
             maxWidth = serializedObject.FindProperty("maxWidth");
+            maxWidthIsPercent = serializedObject.FindProperty("maxWidthIsPercent");
             useMaxHeight = serializedObject.FindProperty("useMaxHeight");
             maxHeight = serializedObject.FindProperty("maxHeight");
+            maxHeightIsPercent = serializedObject.FindProperty("maxHeightIsPercent");
         }
 
         public override void OnInspectorGUI()
@@ -41,12 +53,13 @@ namespace FlappyTemplate.Editor
             EditorGUILayout.PropertyField(units);
             EditorGUILayout.Space();
 
-            LimitField(useMinWidth, minWidth, "Min Width", "Smallest width the rect may take.");
-            LimitField(useMinHeight, minHeight, "Min Height", "Smallest height the rect may take.");
-            LimitField(useMaxWidth, maxWidth, "Max Width", "Largest width the rect may take.");
-            LimitField(useMaxHeight, maxHeight, "Max Height", "Largest height the rect may take.");
+            LimitField(useMinWidth, minWidth, minWidthIsPercent, "Min Width", "Smallest width the rect may take.");
+            LimitField(useMinHeight, minHeight, minHeightIsPercent, "Min Height", "Smallest height the rect may take.");
+            LimitField(useMaxWidth, maxWidth, maxWidthIsPercent, "Max Width", "Largest width the rect may take.");
+            LimitField(useMaxHeight, maxHeight, maxHeightIsPercent, "Max Height", "Largest height the rect may take.");
 
-            if (Conflicts(useMinWidth, minWidth, useMaxWidth, maxWidth) || Conflicts(useMinHeight, minHeight, useMaxHeight, maxHeight))
+            if (Conflicts(useMinWidth, minWidth, minWidthIsPercent, useMaxWidth, maxWidth, maxWidthIsPercent) ||
+                Conflicts(useMinHeight, minHeight, minHeightIsPercent, useMaxHeight, maxHeight, maxHeightIsPercent))
             {
                 EditorGUILayout.HelpBox("A minimum above the maximum wins - the rect will sit at the minimum.", MessageType.Warning);
             }
@@ -54,10 +67,15 @@ namespace FlappyTemplate.Editor
             serializedObject.ApplyModifiedProperties();
         }
 
-        private static bool Conflicts(SerializedProperty useMin, SerializedProperty min, SerializedProperty useMax, SerializedProperty max) =>
-            useMin.boolValue && useMax.boolValue && min.floatValue > max.floatValue;
+        // Two limits in different units cannot be compared without knowing the parent's size, so only the
+        // like-for-like case is worth warning about.
+        private static bool Conflicts(SerializedProperty useMin, SerializedProperty min, SerializedProperty minIsPercent,
+            SerializedProperty useMax, SerializedProperty max, SerializedProperty maxIsPercent) =>
+            useMin.boolValue && useMax.boolValue &&
+            minIsPercent.boolValue == maxIsPercent.boolValue &&
+            min.floatValue > max.floatValue;
 
-        private static void LimitField(SerializedProperty use, SerializedProperty value, string label, string tooltip)
+        private static void LimitField(SerializedProperty use, SerializedProperty value, SerializedProperty isPercent, string label, string tooltip)
         {
             var position = EditorGUILayout.GetControlRect();
             var content = new GUIContent(label, tooltip);
@@ -76,14 +94,35 @@ namespace FlappyTemplate.Editor
             togglePosition.width = ToggleWidth;
             EditorGUI.PropertyField(togglePosition, use, GUIContent.none);
 
+            var percentPosition = fieldPosition;
+            percentPosition.xMin = percentPosition.xMax - PercentWidth;
+
             var valuePosition = fieldPosition;
             valuePosition.xMin += ToggleWidth;
+            valuePosition.xMax = percentPosition.xMin - Gap;
+
             using (new EditorGUI.DisabledScope(!use.boolValue))
             {
                 EditorGUI.PropertyField(valuePosition, value, GUIContent.none);
+                PercentToggle(percentPosition, isPercent);
             }
 
             EditorGUI.indentLevel = indent;
+            EditorGUI.EndProperty();
+        }
+
+        // A pressed-in "%" reads as a unit on the number beside it, which a second bare checkbox next to
+        // the enable one would not.
+        private static void PercentToggle(Rect position, SerializedProperty isPercent)
+        {
+            EditorGUI.BeginProperty(position, PercentContent, isPercent);
+            EditorGUI.BeginChangeCheck();
+
+            bool pressed = GUI.Toggle(position, isPercent.boolValue, PercentContent, EditorStyles.miniButton);
+
+            if (EditorGUI.EndChangeCheck())
+                isPercent.boolValue = pressed;
+
             EditorGUI.EndProperty();
         }
     }

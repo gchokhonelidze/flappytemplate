@@ -8,7 +8,7 @@ namespace FlappyTemplate
     [RequireComponent(typeof(RectTransform))]
     public class RectTransformSizeClamp : MonoBehaviour
     {
-        [Tooltip("Canvas Units are what the inspector's Width/Height show. Screen Pixels divides by the canvas scale factor first, so the limits hold in real pixels however the CanvasScaler scales the UI.")]
+        [Tooltip("Canvas Units are what the inspector's Width/Height show. Screen Pixels divides by the canvas scale factor first, so the limits hold in real pixels however the CanvasScaler scales the UI. Limits switched to % ignore this and read as a share of the parent instead.")]
         [SerializeField]
         private ESizeUnits units = ESizeUnits.CanvasUnits;
 
@@ -18,11 +18,19 @@ namespace FlappyTemplate
         [SerializeField]
         private float minWidth = 400f;
 
+        // Set per limit rather than alongside `units`, so a rect can hold a floor in pixels and a
+        // ceiling in parent percent at the same time - the usual reason to reach for either.
+        [SerializeField]
+        private bool minWidthIsPercent;
+
         [SerializeField]
         private bool useMinHeight = true;
 
         [SerializeField]
         private float minHeight = 600f;
+
+        [SerializeField]
+        private bool minHeightIsPercent;
 
         [SerializeField]
         private bool useMaxWidth;
@@ -31,10 +39,16 @@ namespace FlappyTemplate
         private float maxWidth;
 
         [SerializeField]
+        private bool maxWidthIsPercent;
+
+        [SerializeField]
         private bool useMaxHeight;
 
         [SerializeField]
         private float maxHeight;
+
+        [SerializeField]
+        private bool maxHeightIsPercent;
 
         private RectTransform rect;
         private Canvas canvas;
@@ -83,8 +97,10 @@ namespace FlappyTemplate
             if (rect == null)
                 return;
 
-            var parentSize = rect.parent is RectTransform parent ? parent.rect.size : Vector2.zero;
+            var parent = rect.parent as RectTransform;
+            var parentSize = parent != null ? parent.rect.size : Vector2.zero;
             float scale = LimitScale;
+            bool hasParent = parent != null;
 
             // How much of the parent the anchors already contribute; the rest is the authored delta.
             var stretch = rect.anchorMax - rect.anchorMin;
@@ -92,8 +108,12 @@ namespace FlappyTemplate
             var natural = stretched + baseSizeDelta;
 
             var size = new Vector2(
-                Clamp(natural.x, useMinWidth, minWidth * scale, useMaxWidth, maxWidth * scale),
-                Clamp(natural.y, useMinHeight, minHeight * scale, useMaxHeight, maxHeight * scale)
+                Clamp(natural.x,
+                    useMinWidth && Usable(minWidthIsPercent, hasParent), Resolve(minWidth, minWidthIsPercent, parentSize.x, scale),
+                    useMaxWidth && Usable(maxWidthIsPercent, hasParent), Resolve(maxWidth, maxWidthIsPercent, parentSize.x, scale)),
+                Clamp(natural.y,
+                    useMinHeight && Usable(minHeightIsPercent, hasParent), Resolve(minHeight, minHeightIsPercent, parentSize.y, scale),
+                    useMaxHeight && Usable(maxHeightIsPercent, hasParent), Resolve(maxHeight, maxHeightIsPercent, parentSize.y, scale))
             );
 
             bool drivenX = !Mathf.Approximately(size.x, natural.x);
@@ -122,6 +142,15 @@ namespace FlappyTemplate
             if (!drivenY)
                 baseSizeDelta.y = rect.sizeDelta.y;
         }
+
+        // A percentage has nothing to measure against without a RectTransform parent, so the limit stands
+        // down instead of resolving to zero - which for a maximum would collapse the rect outright.
+        private static bool Usable(bool isPercent, bool hasParent) => hasParent || !isPercent;
+
+        // Percentages are written the way the rest of the UI writes them - 100 is the parent's full size -
+        // and measure the parent's own axis, so they need no unit conversion of their own.
+        private static float Resolve(float value, bool isPercent, float parentSize, float scale) =>
+            isPercent ? parentSize * value * 0.01f : value * scale;
 
         // The minimum is applied last on purpose: limits set the wrong way round would otherwise leave
         // the rect below its stated minimum, and being too big is the more forgiving failure.
