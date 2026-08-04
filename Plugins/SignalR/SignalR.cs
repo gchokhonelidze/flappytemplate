@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AOT;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
 using UnityEngine;
 
 namespace UnityWebGLSignalR
@@ -234,6 +235,16 @@ namespace UnityWebGLSignalR
 
 				if (options?.KeepAliveInterval.HasValue == true)
 					builder.WithKeepAliveInterval(TimeSpan.FromMilliseconds(options.KeepAliveInterval.Value));
+
+				// The WebGL path serializes payloads with Newtonsoft, which writes public fields and keeps
+				// PascalCase. System.Text.Json — the default payload serializer here — does neither, so
+				// DTOs declared with public fields (BetDto, MultiBetDto, SettingDto) went out as {}.
+				// Match the two paths so the hub receives the same JSON from the editor and the browser.
+				builder.AddJsonProtocol(o =>
+				{
+					o.PayloadSerializerOptions.PropertyNamingPolicy = null;
+					o.PayloadSerializerOptions.IncludeFields = true;
+				});
 
 				connection = builder.Build();
 
