@@ -71,6 +71,7 @@ namespace FlappyTemplate
                         stateManager.MainState.Error ??= new ErrorDto();
                         stateManager.MainState.Error.ApplyPatch(dataJson);
                         stateManager.Events.OnError?.Invoke(stateManager.MainState.Error);
+                        Debug.LogError($"Received error: {stateManager.MainState.Error?.Message}");
                         break;
                     }
                     case nameof(EGameEvent.ON_BALANCE):
@@ -98,7 +99,9 @@ namespace FlappyTemplate
                     case nameof(EGameEvent.ON_STATE):
                     {
                         // Debug.Log($"Received state data: {dataJson}");
-                        var partialState = Utils.TryDeserialize<Dictionary<string, JToken>>(dataJson);
+                        var partialState = Utils.TryDeserialize<Dictionary<string, JToken>>(
+                            dataJson
+                        );
                         stateManager.MainState.GameState =
                             stateManager.MainState.GameState.MergeFull(partialState);
                         stateManager.MainState._GameState =
@@ -108,7 +111,9 @@ namespace FlappyTemplate
                     }
                     case nameof(EGameEvent.ON_IND_STATE):
                     {
-                        var partialState = Utils.TryDeserialize<Dictionary<string, JToken>>(dataJson);
+                        var partialState = Utils.TryDeserialize<Dictionary<string, JToken>>(
+                            dataJson
+                        );
                         stateManager.MainState.IndState = stateManager.MainState.IndState.MergeFull(
                             partialState
                         );
@@ -156,8 +161,12 @@ namespace FlappyTemplate
                     case nameof(EGameEvent.ON_BET_INFO_ID):
                     {
                         var betInfoById = Utils.TryDeserialize<TransactionPublic>(dataJson);
-						betInfoById._Custom = betInfoById.Custom?.ToGeneric() ?? new GenericDictionary<string, string>();
-						betInfoById._Outcome = betInfoById.Outcome?.ToGeneric() ?? new GenericDictionary<string, string>();
+                        betInfoById._Custom =
+                            betInfoById.Custom?.ToGeneric()
+                            ?? new GenericDictionary<string, string>();
+                        betInfoById._Outcome =
+                            betInfoById.Outcome?.ToGeneric()
+                            ?? new GenericDictionary<string, string>();
                         stateManager.MainState.BetInfoById = betInfoById;
                         stateManager.Events.OnBetInfoById?.Invoke(betInfoById);
                         break;

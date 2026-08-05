@@ -23,47 +23,11 @@ namespace FlappyTemplate
         /// <summary>World bounds of everything drawn under <paramref name="root"/> - meshes, skinned meshes and sprites.</summary>
         // layerMask keeps transient children out of the measurement. Anything that comes and goes
         // under the fitted object - balls in flight, effects, spawned pickups - would otherwise grow
-        // the bounds while it is alive and shrink the object to compensate. Renderers on inactive
-        // GameObjects are already skipped, so pooled-away objects never count.
-        public static Bounds GetRenderBounds(Transform root, int layerMask = ~0)
-        {
-            Bounds bounds = default;
-            bool initialized = false;
-
-            // An empty mask measures nothing, which is never a useful setting - it is far more likely
-            // to be a LayerMask field left at its serialized default than an intentional choice.
-            if (layerMask == 0)
-                layerMask = ~0;
-
-            foreach (var renderer in root.GetComponentsInChildren<Renderer>())
-            {
-                if (!renderer.enabled)
-                    continue;
-                if (!IsMeasurable(renderer))
-                    continue;
-                if ((layerMask & (1 << renderer.gameObject.layer)) == 0)
-                    continue;
-
-                if (!initialized)
-                {
-                    bounds = renderer.bounds;
-                    initialized = true;
-                }
-                else
-                {
-                    bounds.Encapsulate(renderer.bounds);
-                }
-            }
-
-            return initialized ? bounds : new Bounds(root.position, Vector3.zero);
-        }
-
-        // An allowlist rather than skipping the known-bad ones: particle, trail and line renderers
-        // report bounds that lag the transform by a frame - the reason CameraService.CalculateBounds
-        // measures the way it does - so they would make the fitted scale wobble. An unfamiliar
-        // renderer type is more likely to behave like those than like a mesh, so it stays out.
-        private static bool IsMeasurable(Renderer renderer) =>
-            renderer is MeshRenderer or SkinnedMeshRenderer or SpriteRenderer;
+        // the bounds while it is alive and shrink the object to compensate. The measurement itself
+        // lives in TransformBounds, which fitting against a scene object shares - same behaviour,
+        // one copy of the renderer allowlist and the inactive/layer rules.
+        public static Bounds GetRenderBounds(Transform root, int layerMask = ~0) =>
+            TransformBounds.GetRenderBounds(root, layerMask);
 
         /// <summary>The point on a bounds box matching <paramref name="anchor"/> - TopLeft gives the box's top-left, Center its middle.</summary>
         // Uses the same normalized mapping as the rect side, so aligning one to the other lines up the
