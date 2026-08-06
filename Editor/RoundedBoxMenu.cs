@@ -100,6 +100,91 @@ namespace FlappyTemplate.Editor
             return image;
         }
 
+        /// <summary>Adds a particle system that spawns from this box's border, and returns it.</summary>
+        // Set up as a fire because that is the effect worth the trouble of a preset - everything about it
+        // has to be sized against the box, and canvas units are hundreds where a particle system's defaults
+        // assume metres. A speed of 1 and a size of 1 on a 200 unit card is an invisible effect, and the
+        // usual conclusion is that the shape is not working.
+        public static GameObject AddBorderParticles(RoundedBox box)
+        {
+            if (box == null)
+                return null;
+
+            var effect = ObjectFactory.CreateGameObject("Border Particles", typeof(RectTransform), typeof(ParticleSystem), typeof(RoundedBoxBorderShape));
+            Undo.SetTransformParent(effect.transform, box.transform, string.Empty);
+            Stretch((RectTransform)effect.transform);
+            effect.layer = box.gameObject.layer;
+            GameObjectUtility.EnsureUniqueNameForSibling(effect);
+
+            ConfigureFire(effect.GetComponent<ParticleSystem>(), box);
+            effect.GetComponent<RoundedBoxBorderShape>().Rebuild();
+
+            Undo.SetCurrentGroupName("Add Border Particles");
+            return effect;
+        }
+
+        private static void ConfigureFire(ParticleSystem particles, RoundedBox box)
+        {
+            var rect = ((RectTransform)box.transform).rect;
+            float scale = Mathf.Max(8f, Mathf.Min(Mathf.Abs(rect.width), Mathf.Abs(rect.height)));
+
+            var main = particles.main;
+            main.startLifetime = 0.7f;
+
+            // No speed of its own: a mesh shape sends particles along the triangle's normal, and this mesh
+            // lies flat, so anything here would fire them at the camera. The drift comes from below.
+            main.startSpeed = 0f;
+            main.startSize = scale * 0.12f;
+            main.startColor = new Color(1f, 0.78f, 0.35f, 1f);
+            main.simulationSpace = ParticleSystemSimulationSpace.Local;
+
+            // So a canvas scaler resizing the UI takes the fire with it rather than leaving it at the size
+            // it was authored for.
+            main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+            main.maxParticles = 600;
+
+            var emission = particles.emission;
+            emission.rateOverTime = 160f;
+
+            var velocity = particles.velocityOverLifetime;
+            velocity.enabled = true;
+            velocity.space = ParticleSystemSimulationSpace.Local;
+
+            // All three axes have to be the same kind of curve - a range on one and a single constant on
+            // the others is rejected outright - so x and z are given ranges too rather than left at their
+            // defaults. The sideways one is not padding either: a little wander is what stops the flames
+            // rising in parallel lines.
+            velocity.x = new ParticleSystem.MinMaxCurve(scale * -0.08f, scale * 0.08f);
+            velocity.y = new ParticleSystem.MinMaxCurve(scale * 0.25f, scale * 0.6f);
+            velocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+
+            var colorOverLifetime = particles.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(new Color(1f, 0.92f, 0.6f), 0f),
+                    new GradientColorKey(new Color(1f, 0.42f, 0.08f), 0.45f),
+                    new GradientColorKey(new Color(0.35f, 0.06f, 0.01f), 1f),
+                },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(1f, 0.15f),
+                    new GradientAlphaKey(0f, 1f),
+                });
+            colorOverLifetime.color = new ParticleSystem.MinMaxGradient(gradient);
+
+            var sizeOverLifetime = particles.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 1f, 1f, 0f));
+
+            // Above the box it belongs to, for the canvases where this sorts at all - see the note the
+            // inspector puts up for the ones where it does not.
+            particles.GetComponent<ParticleSystemRenderer>().sortingOrder = 1;
+        }
+
         /// <summary>Adds the child that draws this box's border above its content, or returns the existing one.</summary>
         // One overlay per box is enough - it draws the whole border - so a second call finds the first
         // rather than stacking another frame on top of it.

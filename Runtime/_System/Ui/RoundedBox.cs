@@ -250,6 +250,32 @@ namespace FlappyTemplate
             SetVerticesDirty();
         }
 
+        /// <summary>
+        /// Fills the two lists with the border's outline in this object's local space - the outer edge and
+        /// the inner edge, one point each, paired index for index. The gap between a pair is the border's
+        /// thickness at that point, and it is zero wherever the side it belongs to has none.
+        /// </summary>
+        // Measured on the spot rather than handed out from the last mesh pass, so it answers for the box as
+        // it stands now: a caller asking before the first rebuild, or after a resize in the same frame,
+        // gets what is true rather than what was last drawn.
+        public void GetBorderPath(List<Vector2> outer, List<Vector2> inner)
+        {
+            outer.Clear();
+            inner.Clear();
+
+            var rect = GetPixelAdjustedRect();
+            if (rect.width <= 0f || rect.height <= 0f)
+                return;
+
+            // Writes the same working lists the mesh pass uses, which is safe only because that pass
+            // rebuilds them from nothing every time it runs.
+            var metrics = Measure(rect);
+            BuildContours(rect, metrics);
+
+            outer.AddRange(outerPoints);
+            inner.AddRange(innerPoints);
+        }
+
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();

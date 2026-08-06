@@ -47,6 +47,7 @@ namespace FlappyTemplate.Editor
         private static readonly GUIContent GradientContent = new GUIContent("Colors", "Each key past the two ends cuts the fill into another band, since vertex colours can only blend in a straight line between stops. A handful is cheap.");
         private static readonly GUIContent GradientAngleContent = new GUIContent("Angle", "0 left to right, 90 bottom to top, 180 right to left. The ramp spans the shape at any angle.");
         private static readonly GUIContent BorderGradientContent = new GUIContent("Border Gradient", "Linear runs one ramp across the whole box; Around runs it along the outline from the top left, clockwise. Either replaces the four side colours above.");
+        private static readonly GUIContent AddParticlesContent = new GUIContent("Add Border Particles", "Adds a particle system that spawns from this border - a fire to start with, sized to the box. Sides with no thickness emit nothing.");
         private static readonly GUIContent AddImageContent = new GUIContent("Add Masked Image", "Adds a picture clipped to these corners: a Mask on this box, an Image inside it, and an overlay that keeps the border above the picture.");
         private static readonly GUIContent TintContent = new GUIContent("Tint", "Multiplies the fill and every border colour. Left white unless something drives it - a fade, an Animator, a CanvasGroup - since those all reach for this field.");
 
@@ -262,16 +263,30 @@ namespace FlappyTemplate.Editor
             var box = (RoundedBox)target;
 
             EditorGUILayout.Space();
-            if (GUILayout.Button(AddImageContent, GUILayout.Height(22f)))
+            using (new EditorGUILayout.HorizontalScope())
             {
-                var image = RoundedBoxMenu.AddMaskedImage(box);
-                if (image != null)
-                    Selection.activeGameObject = image;
+                if (GUILayout.Button(AddImageContent, GUILayout.Height(22f)))
+                {
+                    var image = RoundedBoxMenu.AddMaskedImage(box);
+                    if (image != null)
+                        Selection.activeGameObject = image;
 
-                // The rig adds a Mask to the object being inspected, which leaves this editor holding a
-                // serialised object that no longer matches. Bailing out now lets it be rebuilt.
-                GUIUtility.ExitGUI();
+                    // The rig adds a Mask to the object being inspected, which leaves this editor holding a
+                    // serialised object that no longer matches. Bailing out now lets it be rebuilt.
+                    GUIUtility.ExitGUI();
+                }
+
+                if (GUILayout.Button(AddParticlesContent, GUILayout.Height(22f)))
+                {
+                    var effect = RoundedBoxMenu.AddBorderParticles(box);
+                    if (effect != null)
+                        Selection.activeGameObject = effect;
+
+                    GUIUtility.ExitGUI();
+                }
             }
+
+            DrawParticleSortingNote(box);
 
             var mask = box.GetComponent<Mask>();
             if (mask == null || !mask.MaskEnabled())
@@ -296,6 +311,23 @@ namespace FlappyTemplate.Editor
                     GUIUtility.ExitGUI();
                 }
             }
+        }
+
+        // Particles are renderers, not graphics, so an overlay canvas has nowhere to put them in its draw
+        // order - they land in front of the whole UI or behind all of it, never between this box and the
+        // one next to it. Said only once there is actually an effect to be surprised by.
+        private static void DrawParticleSortingNote(RoundedBox box)
+        {
+            if (box.GetComponentInChildren<RoundedBoxBorderShape>(true) == null)
+                return;
+
+            var canvas = box.canvas;
+            if (canvas == null || canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                return;
+
+            EditorGUILayout.HelpBox(
+                "This canvas is Screen Space - Overlay, which draws particles either in front of the whole UI or behind all of it. Switch it to Screen Space - Camera or World Space and set the particle renderer's sorting layer and order to place the effect within the UI.",
+                MessageType.Info);
         }
 
         private static bool HasBorder(RoundedBox box)

@@ -1,6 +1,6 @@
 {
 	"name": "com.biznetx.flappytemplate",
-	"version": "1.0.22",
+	"version": "1.0.24",
 	"displayName": "FlappyBet Template",
 	"description": "FlappyBet integration template for Unity",
 	"unity": "6000.0",
