@@ -219,7 +219,8 @@ namespace FlappyTemplate.Editor
             return overlay;
         }
 
-        private static void Stretch(RectTransform rect)
+        /// <summary>Pins a rect to all four sides of its parent, with no offset and no scale of its own.</summary>
+        public static void Stretch(RectTransform rect)
         {
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
@@ -229,10 +230,11 @@ namespace FlappyTemplate.Editor
             rect.localRotation = Quaternion.identity;
         }
 
+        /// <summary>Where a new UI object created from this menu command belongs, making a canvas if needed.</summary>
         // Right-clicking anything already under a canvas nests the new box inside it, which is how the
         // rest of the UI menu behaves. Anything else - no selection, or a selection out in the 3D scene -
         // sends it to the canvas instead, since a Graphic outside one draws nothing at all.
-        private static GameObject ResolveParent(GameObject context)
+        public static GameObject ResolveParent(GameObject context)
         {
             if (context != null && context.GetComponentInParent<Canvas>(true) != null)
                 return context;
@@ -280,10 +282,11 @@ namespace FlappyTemplate.Editor
             StageUtility.PlaceGameObjectInCurrentStage(eventSystem);
         }
 
+        /// <summary>Reparents inside the current undo group and puts the child back at its parent's origin.</summary>
         // Undo.SetTransformParent rather than a plain parent assignment, so reparenting joins the undo
         // group with everything else; the rect is then zeroed because a RectTransform dropped into a new
         // parent keeps its old anchored position and can land off screen.
-        private static void Parent(GameObject child, GameObject parent)
+        public static void Parent(GameObject child, GameObject parent)
         {
             if (parent == null)
                 return;
