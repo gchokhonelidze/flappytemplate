@@ -2,7 +2,9 @@
     "name": "FlappyTemplateEditorAssembly",
     "rootNamespace": "FlappyTemplate.Editor",
     "references": [
-        "FlappyTemplateRuntimeAssembly"
+        "FlappyTemplateRuntimeAssembly",
+        "UnityEngine.UI",
+        "UnityEditor.UI"
     ],
     "includePlatforms": [
         "Editor"
