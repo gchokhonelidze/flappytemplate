@@ -18,6 +18,7 @@ namespace FlappyTemplate.Editor
         private const float FallbackWidth = 480f;
         private const float FallbackHeight = 320f;
 
+        private static readonly GUIContent AreaContent = new GUIContent("Area", "The name this panel answers to in the grid's Layout. Blank means the object's own name, which is usually all you need.");
         private static readonly GUIContent AutoContent = new GUIContent("Auto Place", "Let the grid's flow find a cell. Off, this item holds the cell below and the others are carried around it.");
         private static readonly GUIContent ColumnContent = new GUIContent("Column", "Counted from the left, starting at 0.");
         private static readonly GUIContent RowContent = new GUIContent("Row", "Counted from the top, starting at 0.");
@@ -26,6 +27,7 @@ namespace FlappyTemplate.Editor
 
         private static GUIStyle label;
 
+        private SerializedProperty area;
         private SerializedProperty autoPlace;
         private SerializedProperty column;
         private SerializedProperty row;
@@ -41,6 +43,7 @@ namespace FlappyTemplate.Editor
 
         private void OnEnable()
         {
+            area = serializedObject.FindProperty("area");
             autoPlace = serializedObject.FindProperty("autoPlace");
             column = serializedObject.FindProperty("column");
             row = serializedObject.FindProperty("row");
@@ -58,6 +61,10 @@ namespace FlappyTemplate.Editor
             var item = (UiGridItem)target;
             var grid = item.Grid;
 
+            // The name comes first because it is what the panel is, as far as a layout is concerned;
+            // everything below it is where it goes when no layout is saying.
+            DrawArea(item, grid);
+
             if (grid == null)
             {
                 EditorGUILayout.HelpBox(
@@ -69,15 +76,23 @@ namespace FlappyTemplate.Editor
                 DrawMap(grid, item);
             }
 
-            EditorGUILayout.PropertyField(autoPlace, AutoContent);
+            // The layout gives this panel a cell and a span outright, so the four numbers below are not
+            // what is being followed. They are left readable rather than hidden: they are what the panel
+            // goes back to the moment the layout stops naming it.
+            bool byLayout = grid != null && !serializedObject.isEditingMultipleObjects && grid.Template != null && grid.Template.Contains(item.Area);
 
-            using (new EditorGUI.DisabledScope(autoPlace.boolValue && !autoPlace.hasMultipleDifferentValues))
+            using (new EditorGUI.DisabledScope(byLayout))
             {
-                EditorGUILayout.PropertyField(column, ColumnContent);
-                EditorGUILayout.PropertyField(row, RowContent);
-            }
+                EditorGUILayout.PropertyField(autoPlace, AutoContent);
 
-            Pair(SpanContent, columnSpan, rowSpan);
+                using (new EditorGUI.DisabledScope(autoPlace.boolValue && !autoPlace.hasMultipleDifferentValues))
+                {
+                    EditorGUILayout.PropertyField(column, ColumnContent);
+                    EditorGUILayout.PropertyField(row, RowContent);
+                }
+
+                Pair(SpanContent, columnSpan, rowSpan);
+            }
 
             EditorGUILayout.Space();
             EditorGUILayout.PropertyField(overrideAlign, OverrideContent);
@@ -102,6 +117,36 @@ namespace FlappyTemplate.Editor
             serializedObject.ApplyModifiedProperties();
         }
 
+        // The name is the whole interface between a panel and a layout, so it is the first thing here and it
+        // says outright what it resolves to - a blank field is not nothing, it is the object's own name, and
+        // that is impossible to guess from an empty box.
+        private void DrawArea(UiGridItem item, UiGrid grid)
+        {
+            EditorGUILayout.PropertyField(area, AreaContent);
+
+            if (serializedObject.isEditingMultipleObjects)
+                return;
+
+            if (string.IsNullOrEmpty(area.stringValue))
+                EditorGUILayout.LabelField(" ", $"Known as \"{item.name}\"", EditorStyles.miniLabel);
+
+            var template = grid != null ? grid.Template : null;
+            if (template == null)
+                return;
+
+            if (template.Contains(item.Area))
+            {
+                template.TryGetArea(item.Area, out var block);
+                EditorGUILayout.LabelField(" ", $"The layout puts this at column {block.x}, row {block.y}, spanning {block.width} × {block.height}.", EditorStyles.miniLabel);
+            }
+            else
+            {
+                EditorGUILayout.HelpBox(
+                    $"The grid's layout does not name \"{item.Area}\", so this panel is hidden while that layout is set. Rename it, add it to the layout, or clear the layout to bring it back.",
+                    MessageType.Info);
+            }
+        }
+
         private void DrawMap(UiGrid grid, UiGridItem item)
         {
             var size = SourceSize(grid);
@@ -118,12 +163,28 @@ namespace FlappyTemplate.Editor
 
             int id = GUIUtility.GetControlID(FocusType.Passive);
 
+            // While the layout names this panel, the layout is where its cell comes from - so the map shows
+            // where that put it and takes no drags. Dragging here would write numbers nothing reads.
+            bool byLayout = grid.Template != null && grid.Template.Contains(item.Area);
+
             if (Event.current.type == EventType.Repaint)
                 Paint(snapshot, box, scale, item);
-            else
+            else if (!byLayout)
                 Input(snapshot, box, scale, id);
 
-            EditorGUILayout.LabelField("Drag across the map to set the cell and the span at once.", EditorStyles.centeredGreyMiniLabel);
+            // A panel sharing a cell is drawn either on top of or underneath the other one, and neither
+            // looks like anything but a single panel - so it is said here, where the placement that caused
+            // it is being read.
+            if (Shares(snapshot, item, out string other))
+            {
+                EditorGUILayout.HelpBox(
+                    $"This shares its cell with {other}, so one of the two is hidden behind the other. Move one of them, or turn Auto Place on to have the grid find it a cell of its own.",
+                    MessageType.Warning);
+            }
+
+            EditorGUILayout.LabelField(
+                byLayout ? "Placed by the grid's Layout. Edit the layout to move it." : "Drag across the map to set the cell and the span at once.",
+                EditorStyles.centeredGreyMiniLabel);
         }
 
         private void Paint(UiGridSnapshot snapshot, Rect box, float scale, UiGridItem item)
@@ -218,6 +279,28 @@ namespace FlappyTemplate.Editor
             var grid = item.Grid;
             if (grid != null)
                 grid.Rebuild();
+        }
+
+        private static bool Shares(UiGridSnapshot snapshot, UiGridItem item, out string other)
+        {
+            other = null;
+
+            var rect = (RectTransform)item.transform;
+            var mine = Mine(snapshot, item);
+            if (mine.Target == null)
+                return false;
+
+            for (int i = 0; i < snapshot.Cells.Length; i++)
+            {
+                var each = snapshot.Cells[i];
+                if (each.Target == null || each.Target == rect || !each.Overlaps(mine))
+                    continue;
+
+                other = each.Target.name;
+                return true;
+            }
+
+            return false;
         }
 
         private static UiGridCell Mine(UiGridSnapshot snapshot, UiGridItem item)

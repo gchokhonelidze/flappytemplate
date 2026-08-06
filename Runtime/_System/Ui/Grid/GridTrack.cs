@@ -83,5 +83,133 @@ namespace FlappyTemplate
         }
 
         public GridTrack Copy() => new GridTrack(mode, size) { min = min, max = max };
+
+        /// <summary>Reads a track written the way a layout writes one.</summary>
+        // The forms are the ones CSS uses, so they are already familiar: 120 is canvas units, 1fr a share,
+        // 25% a percentage and auto its contents. A range in brackets adds the limits - 1fr[160..400] is a
+        // share that will not go below 160 or past 400, and either end may be left out.
+        public static bool TryParse(string token, out GridTrack track)
+        {
+            track = null;
+            if (string.IsNullOrEmpty(token))
+                return false;
+
+            token = token.Trim();
+
+            float min = 0f;
+            float max = 0f;
+
+            int open = token.IndexOf('[');
+            if (open >= 0)
+            {
+                int close = token.IndexOf(']', open);
+                if (close < 0)
+                    return false;
+
+                var range = token.Substring(open + 1, close - open - 1);
+                token = token.Substring(0, open).Trim();
+
+                int dots = range.IndexOf("..", System.StringComparison.Ordinal);
+                if (dots >= 0)
+                {
+                    Number(range.Substring(0, dots), out min);
+                    Number(range.Substring(dots + 2), out max);
+                }
+                else
+                {
+                    Number(range, out min);
+                }
+            }
+
+            if (token.Length == 0)
+                return false;
+
+            EGridTrack mode;
+            float size;
+
+            if (token == "*")
+            {
+                mode = EGridTrack.Flexible;
+                size = 1f;
+            }
+            else if (token.Equals("auto", System.StringComparison.OrdinalIgnoreCase))
+            {
+                mode = EGridTrack.Auto;
+                size = 0f;
+            }
+            else if (token.EndsWith("fr", System.StringComparison.OrdinalIgnoreCase))
+            {
+                mode = EGridTrack.Flexible;
+
+                // "fr" on its own is one share, the way CSS reads a bare fr in a shorthand.
+                if (!Number(token.Substring(0, token.Length - 2), out size))
+                    size = 1f;
+            }
+            else if (token.EndsWith("%", System.StringComparison.Ordinal))
+            {
+                mode = EGridTrack.Percent;
+                if (!Number(token.Substring(0, token.Length - 1), out size))
+                    return false;
+            }
+            else
+            {
+                mode = EGridTrack.Fixed;
+
+                // px and u are both allowed to be written and both mean canvas units; there is only one
+                // unit here, and refusing the word for it would only be pedantry.
+                var number = token;
+                if (number.EndsWith("px", System.StringComparison.OrdinalIgnoreCase))
+                    number = number.Substring(0, number.Length - 2);
+                else if (number.EndsWith("u", System.StringComparison.OrdinalIgnoreCase))
+                    number = number.Substring(0, number.Length - 1);
+
+                if (!Number(number, out size))
+                    return false;
+            }
+
+            track = new GridTrack(mode, size) { min = min, max = max };
+            return true;
+        }
+
+        /// <summary>Writes this track the way a layout writes one, so a layout survives a round trip.</summary>
+        public string ToToken()
+        {
+            string core;
+            switch (mode)
+            {
+                case EGridTrack.Fixed:
+                    core = Text(size);
+                    break;
+
+                case EGridTrack.Percent:
+                    core = Text(size) + "%";
+                    break;
+
+                case EGridTrack.Auto:
+                    core = "auto";
+                    break;
+
+                default:
+                    core = Text(size) + "fr";
+                    break;
+            }
+
+            if (min <= 0f && max <= 0f)
+                return core;
+
+            if (max <= 0f)
+                return core + "[" + Text(min) + "]";
+
+            return core + "[" + (min > 0f ? Text(min) : string.Empty) + ".." + Text(max) + "]";
+        }
+
+        private static bool Number(string text, out float value)
+        {
+            return float.TryParse(text.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value);
+        }
+
+        // Invariant, because a layout string is written in code and read in an inspector, and a machine set
+        // to a comma decimal separator would otherwise write one that no longer parses.
+        private static string Text(float value) => value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
     }
 }

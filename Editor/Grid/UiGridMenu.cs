@@ -99,6 +99,13 @@ namespace FlappyTemplate.Editor
             cell.layer = grid.gameObject.layer;
 
             var rect = (RectTransform)cell.transform;
+
+            // Reparenting keeps the object where it is in the world, and the object was made at the world
+            // origin - so under a canvas that is not sitting there, it arrives at whatever local position
+            // that works out to. The layout writes x and y, which leaves z: a Screen Space - Camera canvas
+            // is a plane distance away and scaled by the CanvasScaler, so z lands in the thousands negative
+            // and the panel is behind the camera. anchoredPosition3D zeroes all three.
+            rect.anchoredPosition3D = Vector3.zero;
             rect.localScale = Vector3.one;
             rect.localRotation = Quaternion.identity;
 
@@ -109,7 +116,22 @@ namespace FlappyTemplate.Editor
             cell.GetComponent<UiGridItem>().PlaceAt(column, row);
 
             GameObjectUtility.EnsureUniqueNameForSibling(cell);
-            grid.Rebuild();
+
+            // A grid running a layout hides whatever the layout does not name, so a panel added to it and
+            // left out of it would be built and vanish in the same click. It is written into the picture at
+            // the cell it was asked for instead - after the rename above, since that is the name it answers
+            // to. Done last, because setting the layout is what brings it back into view.
+            var template = grid.Template;
+            if (template != null)
+            {
+                Undo.RecordObject(grid, "Add Grid Cell");
+                grid.SetLayout(template.With(UiGrid.AreaOf(cell.transform), column, row));
+                EditorUtility.SetDirty(grid);
+            }
+            else
+            {
+                grid.Rebuild();
+            }
 
             Undo.SetCurrentGroupName("Add Grid Cell");
             return cell;

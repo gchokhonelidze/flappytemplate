@@ -228,6 +228,12 @@ namespace FlappyTemplate.Editor
             rect.offsetMax = Vector2.zero;
             rect.localScale = Vector3.one;
             rect.localRotation = Quaternion.identity;
+
+            // The offsets above settle x and y and say nothing about z, which reparenting will have left
+            // at whatever kept the object still in the world - far behind the canvas, on a canvas that is
+            // not at the world origin. Set last, since it is read back from what the offsets just decided.
+            var position = rect.localPosition;
+            rect.localPosition = new Vector3(position.x, position.y, 0f);
         }
 
         /// <summary>Where a new UI object created from this menu command belongs, making a canvas if needed.</summary>
@@ -296,7 +302,11 @@ namespace FlappyTemplate.Editor
             var rectTransform = child.transform as RectTransform;
             if (rectTransform != null)
             {
-                rectTransform.anchoredPosition = Vector2.zero;
+                // anchoredPosition3D rather than anchoredPosition, which is a Vector2 and leaves z behind.
+                // Reparenting holds the object still in the world, and it was made at the world origin, so
+                // under a Screen Space - Camera or World Space canvas z arrives as minus the plane distance
+                // divided by the canvas scale - thousands of units, and the object is behind the camera.
+                rectTransform.anchoredPosition3D = Vector3.zero;
                 rectTransform.localRotation = Quaternion.identity;
                 rectTransform.localScale = Vector3.one;
             }

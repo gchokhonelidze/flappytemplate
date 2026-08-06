@@ -31,6 +31,11 @@ namespace FlappyTemplate
         // otherwise never find a free cell and would walk down the rows for as long as it is allowed to.
         private const int MaxLines = 512;
 
+        [Tooltip("A picture of the arrangement, one name per cell, rows separated by a newline or a slash. A name repeated over neighbouring cells is one panel spanning them; a dot is an empty cell. Panels it names are shown and placed, panels it does not name are hidden. Empty, every panel is shown and placed by its own Column and Row.")]
+        [TextArea(2, 10)]
+        [SerializeField]
+        private string layout;
+
         [SerializeField]
         private List<GridTrack> columns = new List<GridTrack> { GridTrack.Flexible(), GridTrack.Flexible() };
 
@@ -83,6 +88,22 @@ namespace FlappyTemplate
         private int columnCount = 1;
         private int rowCount = 1;
 
+        // Parsed once per change of the string rather than once per layout pass, which is every frame for a
+        // grid something is animating. Not serialized: the string is the value, this is only its shape.
+        [System.NonSerialized]
+        private UiGridLayout parsed;
+
+        [System.NonSerialized]
+        private string parsedFrom;
+
+        [System.NonSerialized]
+        private bool parseValid;
+
+        // Showing and hiding children walks the same children this would be called again for, so it is done
+        // once and not re-entered while it runs.
+        [System.NonSerialized]
+        private bool applying;
+
         /// <summary>The defined columns, left to right. Call <see cref="Rebuild"/> after changing one.</summary>
         public List<GridTrack> Columns => columns;
 
@@ -132,6 +153,139 @@ namespace FlappyTemplate
 
         /// <summary>Ask for the layout to be worked out again. Needed after changing a track by code.</summary>
         public void Rebuild() => SetDirty();
+
+        /// <summary>The arrangement, as a picture of names. Setting it shows, hides and places the panels.</summary>
+        /// <example>grid.Layout = "header header / nav body / footer footer";</example>
+        public string Layout
+        {
+            get => layout;
+            set => SetLayout(value);
+        }
+
+        /// <summary>The layout as parsed, or null if there is none. Null means every panel places itself.</summary>
+        public UiGridLayout Template
+        {
+            get
+            {
+                // Asked once per track per sizing pass, so the usual answer - the string is the same object
+                // it was last time - costs a reference check rather than a walk down two strings.
+                if (parseValid && ReferenceEquals(parsedFrom, layout))
+                    return parsed;
+
+                // Compared rather than flagged, so a layout typed into the inspector, pasted in by an undo
+                // or written straight to the field by a script all take effect the same way. An equal string
+                // from somewhere else adopts the new reference and skips the parse.
+                if (parseValid && string.Equals(parsedFrom, layout))
+                {
+                    parsedFrom = layout;
+                    return parsed;
+                }
+
+                parsed = UiGridLayout.Parse(layout);
+                parsedFrom = layout;
+                parseValid = true;
+
+                return parsed;
+            }
+        }
+
+        /// <summary>Switches to another arrangement: named panels are shown and placed, the rest are hidden.</summary>
+        // The whole point of the feature, so it is one call and it is complete - there is no second step to
+        // forget. Panels are matched by name, so a layout naming something this grid has not got is not an
+        // error: it is a layout for a grid that will have it, and the rest of it still applies.
+        public void SetLayout(string text)
+        {
+            layout = text;
+            parsed = UiGridLayout.Parse(text);
+            parsedFrom = text;
+            parseValid = true;
+
+            ApplyVisibility();
+            SetDirty();
+        }
+
+        /// <summary>Drops the layout: every panel is shown again and placed by its own Column and Row.</summary>
+        public void ClearLayout() => SetLayout(null);
+
+        /// <summary>Whether this panel would be shown by the current layout. True when there is no layout.</summary>
+        public bool Shows(string area)
+        {
+            var template = Template;
+            return template == null || template.Contains(area);
+        }
+
+        /// <summary>Writes the arrangement the grid is in right now out as a layout string.</summary>
+        // For getting the first one: arrange the panels by hand, read it out, and paste it into the code
+        // that will switch between it and the next one. It reads the placements the grid actually resolved,
+        // so what comes out is what is on screen rather than what was typed anywhere.
+        public string ReadLayout()
+        {
+            var snapshot = Snapshot();
+            var names = new string[snapshot.ColumnCount * snapshot.RowCount];
+
+            for (int i = 0; i < snapshot.Cells.Length; i++)
+            {
+                var cell = snapshot.Cells[i];
+                for (int row = cell.Row; row < cell.Row + cell.RowSpan && row < snapshot.RowCount; row++)
+                {
+                    for (int column = cell.Column; column < cell.Column + cell.ColumnSpan && column < snapshot.ColumnCount; column++)
+                        names[row * snapshot.ColumnCount + column] = cell.Area;
+                }
+            }
+
+            return UiGridLayout.Format(names, snapshot.ColumnCount, snapshot.RowCount);
+        }
+
+        /// <summary>The name a child answers to: its own if it has one, otherwise the object's.</summary>
+        public static string AreaOf(Transform child)
+        {
+            if (child == null)
+                return null;
+
+            var item = child.GetComponent<UiGridItem>();
+            return item != null ? item.Area : child.name;
+        }
+
+        // Shows what the layout names and hides what it does not. Every child is walked, including the ones
+        // already hidden - a layout that names one of those has to be able to bring it back.
+        //
+        // Anything wearing an ILayoutIgnorer is left alone throughout: a background or an overlay that is
+        // not part of the arrangement says so the same way it says the grid should not place it.
+        private void ApplyVisibility()
+        {
+            if (applying)
+                return;
+
+            applying = true;
+            try
+            {
+                var template = Template;
+
+                for (int i = 0; i < rectTransform.childCount; i++)
+                {
+                    var child = rectTransform.GetChild(i) as RectTransform;
+                    if (child == null || IsIgnored(child))
+                        continue;
+
+                    bool wanted = template == null || template.Contains(AreaOf(child));
+                    if (child.gameObject.activeSelf == wanted)
+                        continue;
+
+                    child.gameObject.SetActive(wanted);
+
+#if UNITY_EDITOR
+                    // Nothing else marks the scene as changed when this runs from the inspector, and a
+                    // panel that hides itself again on reload is worse than one that never hid.
+                    if (!Application.isPlaying)
+                        UnityEditor.EditorUtility.SetDirty(child.gameObject);
+#endif
+                }
+            }
+            finally
+            {
+                applying = false;
+            }
+        }
 
         public override void CalculateLayoutInputHorizontal()
         {
@@ -202,8 +356,19 @@ namespace FlappyTemplate
         }
 
         /// <summary>The track at this index, real or implicit. Never null.</summary>
+        // The layout is asked first, because a layout that can rearrange the panels but not resize the
+        // tracks they sit in is only half an arrangement: the one column a narrow layout leaves standing is
+        // no use if it is still the fixed-width one the wide layout needed.
         public GridTrack TrackAt(int axis, int index)
         {
+            var template = Template;
+            if (template != null)
+            {
+                var given = template.Track(axis, index);
+                if (given != null)
+                    return given;
+            }
+
             var list = axis == 0 ? columns : rows;
             if (index >= 0 && index < list.Count && list[index] != null)
                 return list[index];
@@ -249,8 +414,15 @@ namespace FlappyTemplate
             cells.Clear();
             occupancy.Clear();
 
+            var template = Template;
             bool rowFlow = flow == EGridFlow.Row;
-            int fixedCount = Mathf.Max(1, rowFlow ? columns.Count : rows.Count);
+
+            // A layout is a picture of the whole grid, so it says how many columns and rows there are; the
+            // track lists only say how big they are, and any it does not reach are implicit ones.
+            int fixedCount = template != null
+                ? Mathf.Max(1, rowFlow ? template.Columns : template.Rows)
+                : Mathf.Max(1, rowFlow ? columns.Count : rows.Count);
+
             int lines = 0;
             int cursorMinor = 0;
             int cursorMajor = 0;
@@ -266,12 +438,28 @@ namespace FlappyTemplate
                         continue;
 
                     var item = rect.GetComponent<UiGridItem>();
-                    bool auto = item == null || item.AutoPlace;
+                    var area = item != null ? item.Area : rect.name;
+
+                    // The layout wins where it has something to say. A panel it does not name falls back to
+                    // its own numbers, which is what lets one arrangement be given by name while the rest of
+                    // the grid carries on being placed the way it was.
+                    // Declared out here because the short circuit above leaves it untouched when there is no
+                    // layout at all, which is most grids.
+                    RectInt block = default;
+                    bool fromLayout = template != null && template.TryGetArea(area, out block);
+                    bool auto = !fromLayout && (item == null || item.AutoPlace);
                     if (auto != (pass == 1))
                         continue;
 
                     int minorSpan = Mathf.Max(1, item == null ? 1 : (rowFlow ? item.ColumnSpan : item.RowSpan));
                     int majorSpan = Mathf.Max(1, item == null ? 1 : (rowFlow ? item.RowSpan : item.ColumnSpan));
+
+                    if (fromLayout)
+                    {
+                        minorSpan = rowFlow ? block.width : block.height;
+                        majorSpan = rowFlow ? block.height : block.width;
+                    }
+
                     minorSpan = Mathf.Min(minorSpan, fixedCount);
 
                     int minor;
@@ -282,9 +470,12 @@ namespace FlappyTemplate
                     }
                     else
                     {
-                        minor = Mathf.Clamp(rowFlow ? item.Column : item.Row, 0, fixedCount - 1);
+                        int wantMinor = fromLayout ? (rowFlow ? block.x : block.y) : (rowFlow ? item.Column : item.Row);
+                        int wantMajor = fromLayout ? (rowFlow ? block.y : block.x) : (rowFlow ? item.Row : item.Column);
+
+                        minor = Mathf.Clamp(wantMinor, 0, fixedCount - 1);
                         minorSpan = Mathf.Min(minorSpan, fixedCount - minor);
-                        major = Mathf.Clamp(rowFlow ? item.Row : item.Column, 0, MaxLines - 1);
+                        major = Mathf.Clamp(wantMajor, 0, MaxLines - 1);
                     }
 
                     Occupy(minor, minorSpan, major, majorSpan, fixedCount, ref lines);
@@ -299,6 +490,8 @@ namespace FlappyTemplate
                         Horizontal = item != null && item.OverrideAlign ? item.HorizontalAlign : horizontalAlign,
                         Vertical = item != null && item.OverrideAlign ? item.VerticalAlign : verticalAlign,
                         Explicit = !auto,
+                        FromLayout = fromLayout,
+                        Area = area,
                     });
                 }
             }
@@ -312,6 +505,14 @@ namespace FlappyTemplate
             {
                 rowCount = fixedCount;
                 columnCount = Mathf.Max(Mathf.Max(1, columns.Count), lines);
+            }
+
+            // A layout with a row of nothing but dots has no item to reach that far, and the row would go
+            // missing - along with the gap it was there to make.
+            if (template != null)
+            {
+                columnCount = Mathf.Max(columnCount, template.Columns);
+                rowCount = Mathf.Max(rowCount, template.Rows);
             }
         }
 
@@ -684,6 +885,23 @@ namespace FlappyTemplate
             return array;
         }
 
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+
+            // The string is what was saved; what it means for which panels are showing is worked out again
+            // here rather than trusted from the scene, so a layout edited in a prefab reaches its instances.
+            ApplyVisibility();
+        }
+
+        // A panel dropped into the grid has to be looked at: the layout may not name it, in which case it
+        // should arrive hidden rather than land on top of whatever is in the cell the flow gives it.
+        protected override void OnTransformChildrenChanged()
+        {
+            base.OnTransformChildrenChanged();
+            ApplyVisibility();
+        }
+
 #if UNITY_EDITOR
         protected override void OnValidate()
         {
@@ -691,6 +909,15 @@ namespace FlappyTemplate
 
             columnGap = Mathf.Max(0f, columnGap);
             rowGap = Mathf.Max(0f, rowGap);
+
+            // Showing and hiding sends OnEnable and OnDisable around the children, which Unity will not have
+            // done from inside OnValidate. One turn of the editor loop later it is an ordinary change.
+            parseValid = false;
+            UnityEditor.EditorApplication.delayCall += () =>
+            {
+                if (this != null)
+                    ApplyVisibility();
+            };
 
             Clean(columns);
             Clean(rows);

@@ -16,6 +16,10 @@ namespace FlappyTemplate
     [RequireComponent(typeof(RectTransform))]
     public class UiGridItem : MonoBehaviour
     {
+        [Tooltip("The name this panel answers to in the grid's Layout. Leave it blank to be known by the object's own name, which is usually what you want - name the object 'header' and it is the header.")]
+        [SerializeField]
+        private string area;
+
         [Tooltip("Let the grid's flow find a cell for this. Off, the column and row below are used exactly, and the flow carries the other items around it.")]
         [SerializeField]
         private bool autoPlace = true;
@@ -44,6 +48,19 @@ namespace FlappyTemplate
 
         [SerializeField]
         private EGridAlign verticalAlign = EGridAlign.Stretch;
+
+        /// <summary>The name this panel answers to in a layout. The object's own name when none is set.</summary>
+        // Falling back to the object name rather than demanding a second one: the hierarchy is already a
+        // list of names, and keeping two in step is work that buys nothing. The field is here for when the
+        // object name cannot be the name - a space in it, or two panels that share a name on purpose.
+        public string Area
+        {
+            get => string.IsNullOrEmpty(area) ? name : area;
+            set => Set(ref area, value);
+        }
+
+        /// <summary>What is written in the field, without the fallback. Empty means "use the object name".</summary>
+        public string AreaOverride => area;
 
         public bool AutoPlace
         {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -49,9 +50,15 @@ namespace FlappyTemplate.Editor
         private static readonly GUIContent HorizontalContent = new GUIContent("Align Across", "Where items sit in their cell horizontally, unless the item overrides it. Stretch writes their width.");
         private static readonly GUIContent VerticalContent = new GUIContent("Align Down", "Where items sit in their cell vertically, unless the item overrides it.");
 
+        private static readonly GUIContent LayoutContent = new GUIContent("Layout", "The arrangement as a picture of names, which is the thing to hand a new one to from code. Panels it names are shown and put where it says; panels it does not name are hidden. Empty, every panel is shown and places itself.");
+        private static readonly GUIContent ReadLayoutContent = new GUIContent("Read Grid", "Writes out what the grid is arranged as right now, to be edited here or pasted into code.");
+        private static readonly GUIContent ClearLayoutContent = new GUIContent("Clear", "Drops the layout. Every panel is shown again and placed by its own Column and Row.");
+
         private static GUIStyle cellLabel;
         private static GUIStyle headerLabel;
+        private static GUIStyle layoutArea;
 
+        private SerializedProperty layout;
         private SerializedProperty columns;
         private SerializedProperty rows;
         private SerializedProperty columnGap;
@@ -85,8 +92,13 @@ namespace FlappyTemplate.Editor
         private int dropColumn = -1;
         private int dropRow = -1;
 
+        // The empty cell a press landed on, waiting to see whether the release lands there too.
+        private int makeColumn = -1;
+        private int makeRow = -1;
+
         private void OnEnable()
         {
+            layout = serializedObject.FindProperty("layout");
             columns = serializedObject.FindProperty("columns");
             rows = serializedObject.FindProperty("rows");
             columnGap = serializedObject.FindProperty("columnGap");
@@ -117,6 +129,12 @@ namespace FlappyTemplate.Editor
             }
             else
             {
+                // The layout box is drawn before anything that comes and goes, and it has to stay that way.
+                // IMGUI gives a control its id by counting the controls drawn before it, and a help box that
+                // appears while you are typing - an Auto track that collapsed halfway through a word, a name
+                // that matches nothing yet - renumbers everything after it. The text field's id moves out
+                // from under the keyboard, focus is dropped mid-keystroke, and the next Return goes nowhere.
+                DrawLayout(grid);
                 DrawMap(grid);
                 DrawActions(grid);
             }
@@ -178,14 +196,27 @@ namespace FlappyTemplate.Editor
             else
                 Input(map, grid, id);
 
+            if (snapshot.HasOverlap)
+            {
+                EditorGUILayout.HelpBox(
+                    "Two panels are pinned to the same cell, so one is drawn on top of the other and only the top one can be seen. Cells marked × hold more than one.",
+                    MessageType.Warning);
+
+                if (GUILayout.Button("Separate Stacked Panels"))
+                {
+                    Unstack(snapshot);
+                    GUIUtility.ExitGUI();
+                }
+            }
+
             // Outside the repaint branch: a control that appears on some events and not on others is a
             // layout that changes shape between the pass that measures it and the pass that draws it, and
             // the inspector says so loudly.
-            if (AnyCollapsedAuto(map, grid))
+            if (CollapsedAuto(map, grid, out string collapsed))
             {
                 EditorGUILayout.HelpBox(
-                    "An Auto track came out empty. Auto asks the items in it how big they need to be, and a plain panel has no answer - give the track a Min, make it Fixed or Flexible, or put a Layout Element on what is inside it.",
-                    MessageType.Info);
+                    $"{collapsed} measured nothing and is not on screen. Auto asks the items in a track how big they need to be, and a plain panel has no answer - give it a floor (Min in the list, or auto[64] in a layout), make it Fixed or Flexible, or put a Layout Element on what is inside it.",
+                    MessageType.Warning);
             }
         }
 
@@ -218,11 +249,31 @@ namespace FlappyTemplate.Editor
                     continue;
 
                 var rect = CellRect(map, cell.Column, cell.Row, cell.ColumnSpan, cell.RowSpan);
-                EditorGUI.DrawRect(rect, cell.Explicit ? PinnedColor : FlowedColor);
+                EditorGUI.DrawRect(rect, cell.FromLayout ? LayoutColor : cell.Explicit ? PinnedColor : FlowedColor);
                 Frame(rect, LineColor);
 
+                // The name the layout speaks, which is the object's own unless it was overridden.
                 if (rect.height > 14f)
-                    GUI.Label(rect, cell.Target.name, CellStyle);
+                    GUI.Label(rect, cell.Area, CellStyle);
+            }
+
+            // Two items on one cell draw as one, so the map says so where it happens rather than leaving it
+            // to be noticed when a panel cannot be found.
+            for (int row = 0; row < snapshot.RowCount; row++)
+            {
+                for (int column = 0; column < snapshot.ColumnCount; column++)
+                {
+                    int count = snapshot.CountAt(column, row);
+                    if (count < 2)
+                        continue;
+
+                    var stacked = CellRect(map, column, row, 1, 1);
+                    EditorGUI.DrawRect(stacked, StackColor);
+                    Frame(stacked, Color.white);
+
+                    if (stacked.height > 13f)
+                        GUI.Label(stacked, "×" + count, CellStyle);
+                }
             }
 
             if (dropColumn >= 0 && dropRow >= 0)
@@ -230,6 +281,13 @@ namespace FlappyTemplate.Editor
                 var drop = CellRect(map, dropColumn, dropRow, 1, 1);
                 EditorGUI.DrawRect(drop, DropColor);
                 Frame(drop, Color.white);
+            }
+
+            if (makeColumn >= 0 && makeRow >= 0)
+            {
+                var pending = CellRect(map, makeColumn, makeRow, 1, 1);
+                EditorGUI.DrawRect(pending, DropColor);
+                Frame(pending, Color.white);
             }
 
             Frame(map.Box, LineColor);
@@ -282,10 +340,11 @@ namespace FlappyTemplate.Editor
         {
             var grid = (UiGrid)target;
             var track = grid.TrackAt(axis, index);
+            bool fromLayout = grid.Template != null && grid.Template.HasTrack(axis, index);
             bool defined = index < (axis == 0 ? columns : rows).arraySize;
 
-            EditorGUI.DrawRect(rect, defined ? HeaderColor : ImplicitColor);
-            GUI.Label(rect, new GUIContent(Label(track), Tooltip(track, measured, defined)), HeaderStyle);
+            EditorGUI.DrawRect(rect, fromLayout ? LayoutColor : defined ? HeaderColor : ImplicitColor);
+            GUI.Label(rect, new GUIContent(Label(track), Tooltip(track, measured, defined, fromLayout)), HeaderStyle);
             EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
         }
 
@@ -351,12 +410,14 @@ namespace FlappyTemplate.Editor
 
                         if (cell < 0)
                         {
-                            UiGridMenu.CreateCell(grid, column, row, cellKind);
+                            // Armed on the press and built on the release, the way a button behaves. Built
+                            // on the press instead, anything that delivers the press twice - a double click
+                            // landing before the map has been drawn again, an inspector redrawn mid-event -
+                            // builds two panels pinned to the one cell, which draw as one.
+                            makeColumn = column;
+                            makeRow = row;
+                            GUIUtility.hotControl = id;
                             e.Use();
-
-                            // The hierarchy just changed underneath a half-drawn inspector. Bailing out
-                            // here lets it be drawn again from the grid as it now is.
-                            GUIUtility.ExitGUI();
                             break;
                         }
 
@@ -400,6 +461,40 @@ namespace FlappyTemplate.Editor
                     if (GUIUtility.hotControl != id)
                         break;
 
+                    if (makeColumn >= 0)
+                    {
+                        int over = -1;
+                        if (map.Box.Contains(e.mousePosition))
+                        {
+                            Cell(map, e.mousePosition, out int upColumn, out int upRow);
+                            over = upColumn == makeColumn && upRow == makeRow ? map.Snapshot.CellAt(makeColumn, makeRow) : -2;
+                        }
+
+                        // Released somewhere else, or on a cell that has since been filled: either way this
+                        // is no longer the click that was started, and nothing is built.
+                        bool build = over == -1;
+                        int column = makeColumn;
+                        int row = makeRow;
+
+                        GUIUtility.hotControl = 0;
+                        makeColumn = -1;
+                        makeRow = -1;
+                        e.Use();
+
+                        if (build)
+                        {
+                            // Building a cell writes the layout too, when there is one for it to be named in.
+                            DropTextFocus();
+                            UiGridMenu.CreateCell(grid, column, row, cellKind);
+
+                            // The hierarchy just changed underneath a half-drawn inspector. Bailing out
+                            // here lets it be drawn again from the grid as it now is.
+                            GUIUtility.ExitGUI();
+                        }
+
+                        break;
+                    }
+
                     // The snapshot is remade for every event, so the index the drag started on is only
                     // good if the grid still holds as many items as it did then.
                     if (dragCell >= 0 && dragCell < map.Snapshot.Cells.Length)
@@ -409,9 +504,40 @@ namespace FlappyTemplate.Editor
                         // A press that never moved is a click, and a click on a panel is a request to look
                         // at it - which is what the hierarchy would have been used for otherwise.
                         if (!dragging || dropColumn < 0)
+                        {
                             Selection.activeGameObject = moved.Target != null ? moved.Target.gameObject : null;
+                        }
                         else if (dropColumn != moved.Column || dropRow != moved.Row)
-                            Move(moved.Target, dropColumn, dropRow);
+                        {
+                            int under = map.Snapshot.CellAt(dropColumn, dropRow);
+                            var beneath = under >= 0 && under != dragCell ? map.Snapshot.Cells[under] : default;
+
+                            // A panel the layout placed does not read its own numbers, so writing to them
+                            // would look like the drag did nothing at all. The picture is what moves.
+                            if (moved.FromLayout)
+                            {
+                                var template = grid.Template;
+                                string next = beneath.Target != null && template.Contains(beneath.Area)
+                                    ? template.Swapped(moved.Area, beneath.Area)
+                                    : template.Moved(moved.Area, dropColumn, dropRow);
+
+                                Undo.RecordObject(grid, "Move Grid Cell");
+                                grid.SetLayout(next);
+                                EditorUtility.SetDirty(grid);
+                                DropTextFocus();
+                            }
+                            else
+                            {
+                                // Whatever was there goes back to where this one came from. Dropping one
+                                // panel onto another used to pin them both to the same cell, which draws as
+                                // a single panel - the one underneath is not gone, but nothing on screen
+                                // says so, and it reads as the panel having been duplicated.
+                                if (beneath.Target != null)
+                                    Move(beneath.Target, moved.Column, moved.Row);
+
+                                Move(moved.Target, dropColumn, dropRow);
+                            }
+                        }
                     }
 
                     GUIUtility.hotControl = 0;
@@ -421,6 +547,8 @@ namespace FlappyTemplate.Editor
                     dragging = false;
                     dropColumn = -1;
                     dropRow = -1;
+                    makeColumn = -1;
+                    makeRow = -1;
                     e.Use();
                     break;
             }
@@ -528,28 +656,37 @@ namespace FlappyTemplate.Editor
 
         private void BeginResize(Map map, int axis, int index)
         {
-            Materialise(axis, index);
+            var grid = (UiGrid)target;
+            bool fromLayout = grid.Template != null && grid.Template.HasTrack(axis, index);
 
-            var track = TrackProperty(axis, index);
-            var mode = track.FindPropertyRelative("mode");
-            var size = track.FindPropertyRelative("size");
+            if (fromLayout)
+            {
+                // Once, before the drag rather than on every frame of it: the state recorded here is what
+                // one undo goes back to, and recording each step would fill the stack with a pixel each.
+                Undo.RecordObject(grid, "Resize Track");
+            }
+            else
+            {
+                Materialise(axis, index);
+            }
 
+            var track = grid.TrackAt(axis, index).Copy();
             resizeStartPixels = axis == 0 ? map.Snapshot.ColumnSizes[index] : map.Snapshot.RowSizes[index];
 
             // Dragging an Auto track is a statement that its size should be decided here rather than by
             // its contents, so it becomes a Fixed track at the size it already had - the drag then starts
             // from where the pointer is instead of from wherever the contents happened to leave it.
-            if ((EGridTrack)mode.enumValueIndex == EGridTrack.Auto)
+            if (track.Mode == EGridTrack.Auto)
             {
-                mode.enumValueIndex = (int)EGridTrack.Fixed;
-                size.floatValue = Mathf.Round(resizeStartPixels);
-                serializedObject.ApplyModifiedProperties();
+                track.Mode = EGridTrack.Fixed;
+                track.Size = Mathf.Round(resizeStartPixels);
+                WriteTrack(axis, index, track);
             }
 
             resizeAxis = axis;
             resizeIndex = index;
             resizeOrigin = axis == 0 ? Event.current.mousePosition.x : Event.current.mousePosition.y;
-            resizeStartValue = size.floatValue;
+            resizeStartValue = track.Size;
             resizeFree = Free(map.Snapshot, axis);
         }
 
@@ -558,14 +695,12 @@ namespace FlappyTemplate.Editor
             float now = resizeAxis == 0 ? e.mousePosition.x : e.mousePosition.y;
             float wanted = Mathf.Max(0f, resizeStartPixels + (now - resizeOrigin) / Mathf.Max(0.0001f, map.Scale));
 
-            var track = TrackProperty(resizeAxis, resizeIndex);
-            var mode = track.FindPropertyRelative("mode");
-            var size = track.FindPropertyRelative("size");
+            var track = ((UiGrid)target).TrackAt(resizeAxis, resizeIndex).Copy();
 
-            switch ((EGridTrack)mode.enumValueIndex)
+            switch (track.Mode)
             {
                 case EGridTrack.Percent:
-                    size.floatValue = resizeFree > 1f ? Mathf.Round(wanted / resizeFree * 1000f) * 0.1f : 0f;
+                    track.Size = resizeFree > 1f ? Mathf.Round(wanted / resizeFree * 1000f) * 0.1f : 0f;
                     break;
 
                 case EGridTrack.Flexible:
@@ -574,23 +709,45 @@ namespace FlappyTemplate.Editor
                     // to scale, and there is nothing to do but give it a real size.
                     if (resizeStartPixels > 1f)
                     {
-                        size.floatValue = Mathf.Max(0.01f, resizeStartValue * wanted / resizeStartPixels);
+                        track.Size = Mathf.Max(0.01f, resizeStartValue * wanted / resizeStartPixels);
                     }
                     else
                     {
-                        mode.enumValueIndex = (int)EGridTrack.Fixed;
-                        size.floatValue = Mathf.Round(wanted);
+                        track.Mode = EGridTrack.Fixed;
+                        track.Size = Mathf.Round(wanted);
                     }
 
                     break;
 
                 default:
-                    size.floatValue = Mathf.Round(wanted);
+                    track.Size = Mathf.Round(wanted);
                     break;
             }
 
+            WriteTrack(resizeAxis, resizeIndex, track);
+        }
+
+        // The one way a track is written, because there are two places a track can live. A layout that
+        // gives sizes owns them while it is set, and writing to the list underneath would be writing to
+        // something nothing is reading - the drag would move the divider and the grid would not budge.
+        private void WriteTrack(int axis, int index, GridTrack track)
+        {
+            var grid = (UiGrid)target;
+            var template = grid.Template;
+
+            if (template != null && template.HasTrack(axis, index))
+            {
+                grid.SetLayout(template.WithTrack(axis, index, track));
+                EditorUtility.SetDirty(grid);
+                DropTextFocus();
+                return;
+            }
+
+            Materialise(axis, index);
+            Set(TrackProperty(axis, index), track.Mode, track.Size, track.Min, track.Max);
+
             serializedObject.ApplyModifiedProperties();
-            ((UiGrid)target).Rebuild();
+            grid.Rebuild();
         }
 
         private void Move(RectTransform item, int column, int row)
@@ -677,6 +834,23 @@ namespace FlappyTemplate.Editor
             menu.ShowAsContext();
         }
 
+        // Hands the later of each overlapping pair back to the flow, which is the one repair that always
+        // works: an auto-placed item only ever takes a cell it found empty, so whatever it lands on is
+        // somewhere nothing else is. Nothing is moved by guesswork and nothing is deleted.
+        private void Unstack(UiGridSnapshot snapshot)
+        {
+            for (int i = 0; i < snapshot.Cells.Length; i++)
+            {
+                for (int j = i + 1; j < snapshot.Cells.Length; j++)
+                {
+                    if (snapshot.Cells[i].Overlaps(snapshot.Cells[j]))
+                        Release(snapshot.Cells[j].Target);
+                }
+            }
+
+            ((UiGrid)target).Rebuild();
+        }
+
         private void Release(RectTransform item)
         {
             if (item == null)
@@ -737,33 +911,32 @@ namespace FlappyTemplate.Editor
         private void SetMode(int axis, int index, EGridTrack mode, float measured)
         {
             serializedObject.Update();
-            Materialise(axis, index);
 
-            var track = TrackProperty(axis, index);
-            track.FindPropertyRelative("mode").enumValueIndex = (int)mode;
+            var grid = (UiGrid)target;
+            var track = grid.TrackAt(axis, index).Copy();
+            track.Mode = mode;
 
             // The size means something different in every mode, so carrying the old number over would be
             // carrying a percentage into canvas units. Each mode is given the value that keeps the track
             // the size it is on screen right now, so switching mode never moves anything.
-            var size = track.FindPropertyRelative("size");
             switch (mode)
             {
                 case EGridTrack.Fixed:
-                    size.floatValue = Mathf.Round(measured);
+                    track.Size = Mathf.Round(measured);
                     break;
 
                 case EGridTrack.Percent:
-                    float free = Free(((UiGrid)target).Snapshot(SourceSize((UiGrid)target)), axis);
-                    size.floatValue = free > 1f ? Mathf.Round(measured / free * 1000f) * 0.1f : 50f;
+                    float free = Free(grid.Snapshot(SourceSize(grid)), axis);
+                    track.Size = free > 1f ? Mathf.Round(measured / free * 1000f) * 0.1f : 50f;
                     break;
 
                 case EGridTrack.Flexible:
-                    size.floatValue = 1f;
+                    track.Size = 1f;
                     break;
             }
 
-            serializedObject.ApplyModifiedProperties();
-            ((UiGrid)target).Rebuild();
+            Undo.RecordObject(grid, "Set Track Mode");
+            WriteTrack(axis, index, track);
         }
 
         private void Insert(int axis, int index, bool after)
@@ -781,6 +954,8 @@ namespace FlappyTemplate.Editor
             Set(list.GetArrayElementAtIndex(at), EGridTrack.Flexible, 1f, 0f, 0f);
 
             serializedObject.ApplyModifiedProperties();
+            Renumber(axis, at, 1);
+            Reshape(axis, at, 1);
             ((UiGrid)target).Rebuild();
         }
 
@@ -796,6 +971,8 @@ namespace FlappyTemplate.Editor
             Copy(source, list.GetArrayElementAtIndex(index + 1));
 
             serializedObject.ApplyModifiedProperties();
+            Renumber(axis, index + 1, 1);
+            Reshape(axis, index + 1, 1);
             ((UiGrid)target).Rebuild();
         }
 
@@ -804,11 +981,127 @@ namespace FlappyTemplate.Editor
             serializedObject.Update();
 
             var list = axis == 0 ? columns : rows;
-            if (index < list.arraySize && list.arraySize > 1)
-                list.DeleteArrayElementAtIndex(index);
+            if (index >= list.arraySize || list.arraySize <= 1)
+                return;
+
+            list.DeleteArrayElementAtIndex(index);
 
             serializedObject.ApplyModifiedProperties();
+            Renumber(axis, index, -1);
+            Reshape(axis, index, -1);
             ((UiGrid)target).Rebuild();
+        }
+
+        // A layout is a picture of the whole grid, so it is the picture that says how many tracks there
+        // are while one is set. Adding a column to the list underneath and not to the picture would leave
+        // the button looking broken - the list would be a track longer and nothing on screen would move.
+        private void Reshape(int axis, int at, int delta)
+        {
+            var grid = (UiGrid)target;
+            var template = grid.Template;
+            if (template == null)
+                return;
+
+            Undo.RecordObject(grid, delta > 0 ? "Insert Track" : "Delete Track");
+            grid.SetLayout(delta > 0 ? template.Inserted(axis, at) : template.Removed(axis, at));
+            EditorUtility.SetDirty(grid);
+            DropTextFocus();
+        }
+
+        // Column and row are line numbers, not a handle on a track, so a track put in above an item leaves
+        // the item's number pointing at whatever is at that line now - the panel that was below the new row
+        // ends up in it. Moving the numbers with the tracks is what makes Insert and Delete behave the way
+        // inserting a row in a spreadsheet does: everything below comes along, and a panel spanning across
+        // the cut grows or shrinks by the track that appeared or went.
+        //
+        // Only hand-placed items are touched. An auto-placed one has no number to be wrong - the flow will
+        // find it a cell again from wherever it now has to start.
+        private void Renumber(int axis, int at, int delta)
+        {
+            var grid = (UiGrid)target;
+
+            foreach (Transform child in grid.transform)
+            {
+                var item = child.GetComponent<UiGridItem>();
+                if (item == null || item.AutoPlace)
+                    continue;
+
+                int index = axis == 0 ? item.Column : item.Row;
+                int span = axis == 0 ? item.ColumnSpan : item.RowSpan;
+                int movedIndex = index;
+                int movedSpan = span;
+
+                if (delta > 0)
+                {
+                    if (index >= at)
+                        movedIndex = index + delta;
+                    else if (index + span > at)
+                        movedSpan = span + delta;
+                }
+                else
+                {
+                    if (index > at)
+                        movedIndex = index + delta;
+                    else if (index + span > at)
+                        movedSpan = Mathf.Max(1, span + delta);
+                }
+
+                Apply(item, axis, movedIndex, movedSpan);
+            }
+        }
+
+        // Dragging a track up or down the list moves it past the ones it steps over, and each of those
+        // shifts one place the other way. Spans are left alone: an item covering three tracks that have
+        // just been shuffled has no answer that is right, and guessing one would move panels the drag said
+        // nothing about.
+        private void Reorder(int axis, int from, int to)
+        {
+            if (from == to)
+                return;
+
+            var grid = (UiGrid)target;
+
+            foreach (Transform child in grid.transform)
+            {
+                var item = child.GetComponent<UiGridItem>();
+                if (item == null || item.AutoPlace)
+                    continue;
+
+                int index = axis == 0 ? item.Column : item.Row;
+                int moved;
+
+                if (index == from)
+                    moved = to;
+                else if (from < to && index > from && index <= to)
+                    moved = index - 1;
+                else if (from > to && index >= to && index < from)
+                    moved = index + 1;
+                else
+                    continue;
+
+                Apply(item, axis, moved, axis == 0 ? item.ColumnSpan : item.RowSpan);
+            }
+        }
+
+        private static void Apply(UiGridItem item, int axis, int index, int span)
+        {
+            if (index == (axis == 0 ? item.Column : item.Row) && span == (axis == 0 ? item.ColumnSpan : item.RowSpan))
+                return;
+
+            Undo.RecordObject(item, "Move Grid Placement");
+
+            if (axis == 0)
+            {
+                item.Column = index;
+                item.ColumnSpan = span;
+            }
+            else
+            {
+                item.Row = index;
+                item.RowSpan = span;
+            }
+
+            EditorUtility.SetDirty(item);
         }
 
         private static void Copy(SerializedProperty from, SerializedProperty to)
@@ -856,6 +1149,133 @@ namespace FlappyTemplate.Editor
             EditorGUILayout.LabelField(
                 "Click an empty cell to add a panel. Drag a panel to move it, a divider to resize a track, and click a header for what kind of track it is.",
                 EditorStyles.wordWrappedMiniLabel);
+        }
+
+        // The layout string is the feature you reach for when the arrangement has to change while the game
+        // is running, so the inspector treats it as the main event rather than as another field: it is
+        // typed and applied live, it can be read back out of whatever has been arranged by hand, and every
+        // name in it that has nothing to match is named here rather than silently doing nothing.
+        private void DrawLayout(UiGrid grid)
+        {
+            EditorGUILayout.Space();
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField(LayoutContent, EditorStyles.boldLabel);
+                GUILayout.FlexibleSpace();
+
+                if (GUILayout.Button(ReadLayoutContent, EditorStyles.miniButtonLeft, GUILayout.Width(84f)))
+                {
+                    Undo.RecordObject(grid, "Read Grid Layout");
+                    grid.SetLayout(grid.ReadLayout());
+                    EditorUtility.SetDirty(grid);
+                    DropTextFocus();
+                    GUIUtility.ExitGUI();
+                }
+
+                using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(layout.stringValue)))
+                {
+                    if (GUILayout.Button(ClearLayoutContent, EditorStyles.miniButtonRight, GUILayout.Width(50f)))
+                    {
+                        Undo.RecordObject(grid, "Clear Grid Layout");
+                        grid.ClearLayout();
+                        EditorUtility.SetDirty(grid);
+                        DropTextFocus();
+                        GUIUtility.ExitGUI();
+                    }
+                }
+            }
+
+            EditorGUI.BeginChangeCheck();
+            var text = EditorGUILayout.TextArea(layout.stringValue, LayoutStyle, GUILayout.MinHeight(46f));
+            if (EditorGUI.EndChangeCheck())
+            {
+                // Straight through the component rather than through the property, because the string is
+                // only half of what changes - the other half is which panels are showing, and that is the
+                // component's to work out.
+                Undo.RecordObject(grid, "Edit Grid Layout");
+                grid.SetLayout(text);
+                EditorUtility.SetDirty(grid);
+                serializedObject.Update();
+            }
+
+            EditorGUILayout.LabelField(
+                "Return starts a new row, or write a slash for one: \"header header / nav body\". A dot is an empty cell. "
+                + "Names are the panels' object names unless a Ui Grid Item overrides them. A cols: or rows: line sets the track sizes.",
+                EditorStyles.wordWrappedMiniLabel);
+
+            DrawLayoutNotes(grid);
+
+            EditorGUILayout.Space();
+        }
+
+        // Anything that writes the layout from outside the text box has to take the keyboard out of it
+        // first. IMGUI edits a copy of the string rather than the string, so a field left focused goes on
+        // showing what was in it - Clear empties the layout, the box still reads as it did, and the next
+        // keystroke writes that stale copy straight back over the cleared value.
+        private static void DropTextFocus()
+        {
+            GUIUtility.keyboardControl = 0;
+            EditorGUIUtility.editingTextField = false;
+        }
+
+        private void DrawLayoutNotes(UiGrid grid)
+        {
+            var template = grid.Template;
+            if (template == null)
+                return;
+
+            var missing = new List<string>();
+            var ragged = new List<string>();
+
+            foreach (var name in template.Names)
+            {
+                if (!template.IsSolid(name))
+                    ragged.Add(name);
+
+                if (!Has(grid, name))
+                    missing.Add(name);
+            }
+
+            var hidden = new List<string>();
+            for (int i = 0; i < grid.transform.childCount; i++)
+            {
+                var child = grid.transform.GetChild(i);
+                if (!child.gameObject.activeSelf)
+                    hidden.Add(child.name);
+            }
+
+            if (ragged.Count > 0)
+            {
+                EditorGUILayout.HelpBox(
+                    $"{string.Join(", ", ragged)} appears in more than one block, so the panel is stretched over everything between them. A name has to make one solid rectangle.",
+                    MessageType.Warning);
+            }
+
+            if (missing.Count > 0)
+            {
+                EditorGUILayout.HelpBox(
+                    $"Nothing in this grid answers to {string.Join(", ", missing)}. The cells are held open for it, so a layout written for a panel added later is fine - a misspelling looks exactly the same.",
+                    MessageType.Info);
+            }
+
+            if (hidden.Count > 0)
+            {
+                EditorGUILayout.LabelField(
+                    $"Hidden by this layout: {string.Join(", ", hidden)}",
+                    EditorStyles.wordWrappedMiniLabel);
+            }
+        }
+
+        private static bool Has(UiGrid grid, string area)
+        {
+            for (int i = 0; i < grid.transform.childCount; i++)
+            {
+                if (UiGrid.AreaOf(grid.transform.GetChild(i)) == area)
+                    return true;
+            }
+
+            return false;
         }
 
         private void DrawTrackLists()
@@ -977,13 +1397,13 @@ namespace FlappyTemplate.Editor
                 Row(new Rect(rect.x + 18f, rect.y, rect.width - 18f, rect.height), property.GetArrayElementAtIndex(index), true);
             };
 
-            list.onAddCallback = _ =>
-            {
-                int at = property.arraySize;
-                property.InsertArrayElementAtIndex(at);
-                Set(property.GetArrayElementAtIndex(at), EGridTrack.Flexible, 1f, 0f, 0f);
-                serializedObject.ApplyModifiedProperties();
-            };
+            list.onAddCallback = _ => Insert(axis, property.arraySize, false);
+
+            list.onRemoveCallback = l => Delete(axis, l.index >= 0 && l.index < property.arraySize ? l.index : property.arraySize - 1);
+
+            // The list moves the track itself; what it cannot know is that the items are holding line
+            // numbers which now point somewhere else.
+            list.onReorderCallbackWithDetails = (l, from, to) => Reorder(axis, from, to);
 
             // The last one cannot go: a grid with no columns has nowhere to put anything, and the flow
             // would be measuring against a track list it has to invent anyway.
@@ -1041,19 +1461,24 @@ namespace FlappyTemplate.Editor
             return index >= 0 && index < sizes.Length ? sizes[index] : 0f;
         }
 
-        private bool AnyCollapsedAuto(Map map, UiGrid grid)
+        // Named rather than counted. "An Auto track came out empty" leaves you looking for it; "row 0, row 2"
+        // is the answer to the question the missing row already made you ask.
+        private bool CollapsedAuto(Map map, UiGrid grid, out string which)
         {
+            var found = new List<string>();
+
             for (int axis = 0; axis < 2; axis++)
             {
                 var sizes = axis == 0 ? map.Snapshot.ColumnSizes : map.Snapshot.RowSizes;
                 for (int i = 0; i < sizes.Length; i++)
                 {
                     if (sizes[i] < 0.5f && grid.TrackAt(axis, i).Mode == EGridTrack.Auto)
-                        return true;
+                        found.Add((axis == 0 ? "column " : "row ") + i);
                 }
             }
 
-            return false;
+            which = string.Join(", ", found);
+            return found.Count > 0;
         }
 
         private static string Label(GridTrack track)
@@ -1092,14 +1517,19 @@ namespace FlappyTemplate.Editor
             }
         }
 
-        private static string Tooltip(GridTrack track, float measured, bool defined)
+        private static string Tooltip(GridTrack track, float measured, bool defined, bool fromLayout)
         {
             string limits = track.Min > 0f || track.Max > 0f
                 ? $"  (min {track.Min:0}, max {(track.Max > 0f ? track.Max.ToString("0") : "none")})"
                 : string.Empty;
 
-            return $"{track.Mode}{limits}\nMeasures {measured:0.#} units here.\n"
-                + (defined ? "Click for track options." : "Added by the flow. Click to make it a real track.");
+            string source = fromLayout
+                ? $"Given by the layout as {track.ToToken()}. Changing it here rewrites that line."
+                : defined
+                    ? "Click for track options."
+                    : "Added by the flow. Click to make it a real track.";
+
+            return $"{track.Mode}{limits}\nMeasures {measured:0.#} units here.\n{source}";
         }
 
         private static void Frame(Rect rect, Color color)
@@ -1129,6 +1559,26 @@ namespace FlappyTemplate.Editor
             }
         }
 
+        // The picture only reads as a picture if the columns line up, which they do not in a proportional
+        // font. Courier by name because the editor's own styles have no fixed-width one to borrow.
+        private static GUIStyle LayoutStyle
+        {
+            get
+            {
+                if (layoutArea == null)
+                {
+                    layoutArea = new GUIStyle(EditorStyles.textArea)
+                    {
+                        font = Font.CreateDynamicFontFromOSFont(new[] { "Consolas", "Courier New", "Menlo", "Monaco" }, 12),
+                        wordWrap = false,
+                        richText = false,
+                    };
+                }
+
+                return layoutArea;
+            }
+        }
+
         private static GUIStyle HeaderStyle
         {
             get
@@ -1151,7 +1601,9 @@ namespace FlappyTemplate.Editor
         private static Color EmptyColor => EditorGUIUtility.isProSkin ? new Color(0.21f, 0.21f, 0.23f) : new Color(0.82f, 0.82f, 0.84f);
         private static Color FlowedColor => EditorGUIUtility.isProSkin ? new Color(0.30f, 0.38f, 0.48f) : new Color(0.62f, 0.72f, 0.86f);
         private static Color PinnedColor => EditorGUIUtility.isProSkin ? new Color(0.34f, 0.46f, 0.36f) : new Color(0.66f, 0.82f, 0.66f);
+        private static Color LayoutColor => EditorGUIUtility.isProSkin ? new Color(0.40f, 0.36f, 0.52f) : new Color(0.74f, 0.70f, 0.88f);
         private static Color DropColor => new Color(1f, 0.78f, 0.35f, 0.45f);
+        private static Color StackColor => new Color(0.85f, 0.28f, 0.24f, 0.55f);
         private static Color HeaderColor => EditorGUIUtility.isProSkin ? new Color(0.26f, 0.26f, 0.28f) : new Color(0.78f, 0.78f, 0.80f);
         private static Color ImplicitColor => EditorGUIUtility.isProSkin ? new Color(0.22f, 0.22f, 0.24f, 0.7f) : new Color(0.86f, 0.86f, 0.88f, 0.7f);
         private static Color LineColor => EditorGUIUtility.isProSkin ? new Color(0f, 0f, 0f, 0.35f) : new Color(0f, 0f, 0f, 0.22f);
