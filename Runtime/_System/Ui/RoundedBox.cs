@@ -83,7 +83,7 @@ namespace FlappyTemplate
         [SerializeField]
         private float borderGradientAngle = 90f;
 
-        [Tooltip("Corner radius, in the rect's own units. Radii that would overlap on an edge are scaled down together, so a radius larger than the box gives a pill or a circle rather than a folded-over shape.")]
+        [Tooltip("Corner radius, in the rect's own units. Negative turns the corner the other way and scoops it out - a bite taken from the corner rather than a round taken off it, meeting the two edges square. Radii that would overlap on an edge are scaled down together, so a radius larger than the box gives a pill or a circle rather than a folded-over shape.")]
         [SerializeField]
         private float radiusTopLeft;
 
@@ -191,13 +191,14 @@ namespace FlappyTemplate
 
         public Color BorderColorBottom { get => borderColorBottom; set => SetGeometryValue(ref borderColorBottom, value); }
 
-        public float RadiusTopLeft { get => radiusTopLeft; set => SetGeometryValue(ref radiusTopLeft, Mathf.Max(0f, value)); }
+        // Negative rounds the corner the other way - see the radius tooltip. Left unclamped on purpose.
+        public float RadiusTopLeft { get => radiusTopLeft; set => SetGeometryValue(ref radiusTopLeft, value); }
 
-        public float RadiusTopRight { get => radiusTopRight; set => SetGeometryValue(ref radiusTopRight, Mathf.Max(0f, value)); }
+        public float RadiusTopRight { get => radiusTopRight; set => SetGeometryValue(ref radiusTopRight, value); }
 
-        public float RadiusBottomRight { get => radiusBottomRight; set => SetGeometryValue(ref radiusBottomRight, Mathf.Max(0f, value)); }
+        public float RadiusBottomRight { get => radiusBottomRight; set => SetGeometryValue(ref radiusBottomRight, value); }
 
-        public float RadiusBottomLeft { get => radiusBottomLeft; set => SetGeometryValue(ref radiusBottomLeft, Mathf.Max(0f, value)); }
+        public float RadiusBottomLeft { get => radiusBottomLeft; set => SetGeometryValue(ref radiusBottomLeft, value); }
 
         public EBorderGradient BorderGradientMode { get => borderGradientMode; set => SetGeometryValue(ref borderGradientMode, value); }
 
@@ -239,10 +240,9 @@ namespace FlappyTemplate
             SetVerticesDirty();
         }
 
-        /// <summary>Sets the same radius on all four corners.</summary>
+        /// <summary>Sets the same radius on all four corners. Negative scoops them out.</summary>
         public void SetCornerRadius(float radius)
         {
-            radius = Mathf.Max(0f, radius);
             if (radiusTopLeft == radius && radiusTopRight == radius && radiusBottomRight == radius && radiusBottomLeft == radius)
                 return;
 
@@ -380,10 +380,10 @@ namespace FlappyTemplate
                 BorderTop = Mathf.Max(0f, borderTop),
                 BorderRight = Mathf.Max(0f, borderRight),
                 BorderBottom = Mathf.Max(0f, borderBottom),
-                RadiusTopLeft = Mathf.Max(0f, radiusTopLeft),
-                RadiusTopRight = Mathf.Max(0f, radiusTopRight),
-                RadiusBottomRight = Mathf.Max(0f, radiusBottomRight),
-                RadiusBottomLeft = Mathf.Max(0f, radiusBottomLeft),
+                RadiusTopLeft = radiusTopLeft,
+                RadiusTopRight = radiusTopRight,
+                RadiusBottomRight = radiusBottomRight,
+                RadiusBottomLeft = radiusBottomLeft,
             };
 
             // Opposite borders are scaled in proportion rather than clipped, so a box squeezed below its
@@ -405,12 +405,14 @@ namespace FlappyTemplate
             }
 
             // One factor for all four radii, taken from the worst edge - the rule CSS uses. Scaling only
-            // the offending pair would change the shape of corners the author never touched.
+            // the offending pair would change the shape of corners the author never touched. Measured on
+            // the size of each radius and not its sign: a scoop eats into an edge exactly as far as a round
+            // takes off it, so two of them meeting in the middle is the same collision.
             float scale = 1f;
-            scale = Mathf.Min(scale, EdgeRatio(rect.width, m.RadiusTopLeft + m.RadiusTopRight));
-            scale = Mathf.Min(scale, EdgeRatio(rect.width, m.RadiusBottomLeft + m.RadiusBottomRight));
-            scale = Mathf.Min(scale, EdgeRatio(rect.height, m.RadiusTopLeft + m.RadiusBottomLeft));
-            scale = Mathf.Min(scale, EdgeRatio(rect.height, m.RadiusTopRight + m.RadiusBottomRight));
+            scale = Mathf.Min(scale, EdgeRatio(rect.width, Mathf.Abs(m.RadiusTopLeft) + Mathf.Abs(m.RadiusTopRight)));
+            scale = Mathf.Min(scale, EdgeRatio(rect.width, Mathf.Abs(m.RadiusBottomLeft) + Mathf.Abs(m.RadiusBottomRight)));
+            scale = Mathf.Min(scale, EdgeRatio(rect.height, Mathf.Abs(m.RadiusTopLeft) + Mathf.Abs(m.RadiusBottomLeft)));
+            scale = Mathf.Min(scale, EdgeRatio(rect.height, Mathf.Abs(m.RadiusTopRight) + Mathf.Abs(m.RadiusBottomRight)));
 
             if (scale < 1f)
             {
@@ -457,28 +459,89 @@ namespace FlappyTemplate
         // that changes between the four; everything else below is the same construction mirrored.
         private void AddCorner(float radius, Vector2 corner, Vector2 inward, float borderX, float borderY, float startAngle, float endAngle, Color32 startColor, Color32 endColor)
         {
-            var outerCenter = corner + new Vector2(inward.x * radius, inward.y * radius);
+            float size = Mathf.Abs(radius);
 
-            // The inner arc keeps the outer centre while the border is thinner than the radius, so the two
-            // stay concentric and the border holds an even width around the bend. Past that the corner has
-            // squared off from the inside and the centre slides in with the border instead.
-            var innerCenter = corner + new Vector2(inward.x * Mathf.Max(radius, borderX), inward.y * Mathf.Max(radius, borderY));
-            float innerRadiusX = Mathf.Max(0f, radius - borderX);
-            float innerRadiusY = Mathf.Max(0f, radius - borderY);
+            Vector2 outerCenter;
+            Vector2 innerCenter;
+            float innerRadiusX;
+            float innerRadiusY;
+            float outerFrom = startAngle;
+            float outerTo = endAngle;
+            float innerFrom = startAngle;
+            float innerTo = endAngle;
+
+            if (radius < 0f)
+            {
+                // Scooped. The arc is centred on the corner itself and swept from the far side of it, so it
+                // bows into the box rather than cutting across it - the corner is bitten out instead of
+                // rounded off. It leaves the two edges square where it meets them, which is what a scoop
+                // is: a rounded corner is tangent to its edges, and a bite out of the same corner cannot be.
+                //
+                // Same endpoints as the round of the same size, walked in the same direction, so everything
+                // downstream - the border strip, the fade, the gradients - carries on unchanged.
+                outerCenter = corner;
+                outerFrom = endAngle - 180f;
+                outerTo = startAngle - 180f;
+
+                // Here is where a scoop stops being a round in reverse. The material of a round lies toward
+                // the centre of its arc; the material of a scoop lies away from it, because the arc is the
+                // bite and the box is what is left. So the border's inner edge is the WIDER circle about
+                // the same centre, not a narrower one - and being concentric with the outer arc is exactly
+                // what holds the border to an even width the whole way round the bend.
+                //
+                // The radii cross over: the one reached along x lands on a horizontal side, whose thickness
+                // is the horizontal border.
+                innerCenter = corner;
+                innerRadiusX = size + borderY;
+                innerRadiusY = size + borderX;
+
+                // A wider arc meets the straight sides sooner than the outer one does, so it sweeps through
+                // less of the corner. Each end is pulled back to the angle where it crosses the inner edge
+                // it has to meet; left at the outer angles it would sail past them and the border would
+                // bulge out into the bite.
+                bool startsOnVerticalSide = Mathf.Abs(Mathf.Sin(outerFrom * Mathf.Deg2Rad)) > 0.5f;
+                float atVerticalSide = Mathf.Asin(Mathf.Clamp01(borderX / innerRadiusX)) * Mathf.Rad2Deg;
+                float atHorizontalSide = Mathf.Asin(Mathf.Clamp01(borderY / innerRadiusY)) * Mathf.Rad2Deg;
+
+                // Every scoop is walked in the same rotational direction, so pulling back is always in from
+                // the start and back from the end.
+                innerFrom = outerFrom + (startsOnVerticalSide ? atVerticalSide : atHorizontalSide);
+                innerTo = outerTo - (startsOnVerticalSide ? atHorizontalSide : atVerticalSide);
+
+                // A border thick enough to swallow the bite closes the arc to a point rather than turning
+                // it inside out.
+                if (innerFrom > innerTo)
+                    innerFrom = innerTo = (innerFrom + innerTo) * 0.5f;
+            }
+            else
+            {
+                outerCenter = corner + new Vector2(inward.x * size, inward.y * size);
+
+                // The inner arc keeps the outer centre while the border is thinner than the radius, so the
+                // two stay concentric and the border holds an even width around the bend. Past that the
+                // corner has squared off from the inside and the centre slides in with the border instead.
+                innerCenter = corner + new Vector2(inward.x * Mathf.Max(size, borderX), inward.y * Mathf.Max(size, borderY));
+                innerRadiusX = Mathf.Max(0f, size - borderX);
+                innerRadiusY = Mathf.Max(0f, size - borderY);
+            }
 
             // A square corner is still emitted as two points at the same spot, one per colour. That is what
             // turns the colour change into a hard break at the corner; a single point would hand its colour
             // to the whole of the next side and gradient it across.
-            int steps = radius > 0f ? Mathf.Clamp(cornerSegments, 1, MaxCornerSegments) : 1;
+            int steps = size > 0f ? Mathf.Clamp(cornerSegments, 1, MaxCornerSegments) : 1;
             for (int i = 0; i <= steps; i++)
             {
                 float t = (float)i / steps;
-                float angle = Mathf.Lerp(startAngle, endAngle, t) * Mathf.Deg2Rad;
-                float cos = Mathf.Cos(angle);
-                float sin = Mathf.Sin(angle);
 
-                outerPoints.Add(outerCenter + new Vector2(cos * radius, sin * radius));
-                innerPoints.Add(innerCenter + new Vector2(cos * innerRadiusX, sin * innerRadiusY));
+                // Two sweeps rather than one: a scoop's inner arc covers a different span of the corner to
+                // its outer, so the pair at each step is no longer on the same ray out of the centre. They
+                // still run in step from one end of the corner to the other, which is all the strip between
+                // them needs.
+                float outerAngle = Mathf.Lerp(outerFrom, outerTo, t) * Mathf.Deg2Rad;
+                float innerAngle = Mathf.Lerp(innerFrom, innerTo, t) * Mathf.Deg2Rad;
+
+                outerPoints.Add(outerCenter + new Vector2(Mathf.Cos(outerAngle) * size, Mathf.Sin(outerAngle) * size));
+                innerPoints.Add(innerCenter + new Vector2(Mathf.Cos(innerAngle) * innerRadiusX, Mathf.Sin(innerAngle) * innerRadiusY));
                 edgeColors.Add(Color32.Lerp(startColor, endColor, t));
             }
         }
@@ -518,8 +581,9 @@ namespace FlappyTemplate
                 AddLinearFill(vh, rect, contour, tint);
         }
 
-        // A fan from the centre is enough for a flat fill: both contours are convex, so no triangle can
-        // escape the shape however the radii and borders come out.
+        // A fan from the centre is enough for a flat fill. Neither contour has to be convex for that, only
+        // to be seen whole from the middle - which holds even with the corners scooped, because a scoop can
+        // never reach past the centre once the radii have been held to the edges they sit on.
         private void AddFan(VertexHelper vh, Rect rect, List<Vector2> contour, Color32 fill)
         {
             int count = contour.Count;
@@ -563,9 +627,34 @@ namespace FlappyTemplate
 
             CollectStops(fillGradient);
 
-            sliceRemainder.Clear();
-            sliceRemainder.AddRange(contour);
+            // Cutting the whole outline at once relies on it being convex: a straight line through a convex
+            // shape leaves exactly the two pieces this walks away with. A scoop breaks that - a line can
+            // enter and leave a bitten corner more than once, and the two lists would come back as tangles.
+            // Fanning first and cutting each triangle is slower by a few dozen triangles and always right,
+            // since a triangle is convex whatever the outline around it is doing.
+            if (!HasScoopedCorner)
+            {
+                sliceRemainder.Clear();
+                sliceRemainder.AddRange(contour);
+                SliceIntoBands(vh, rect, axis, min, max, tint);
+                return;
+            }
 
+            var center = rect.center;
+            for (int i = 0; i < contour.Count; i++)
+            {
+                sliceRemainder.Clear();
+                sliceRemainder.Add(center);
+                sliceRemainder.Add(contour[i]);
+                sliceRemainder.Add(contour[(i + 1) % contour.Count]);
+
+                SliceIntoBands(vh, rect, axis, min, max, tint);
+            }
+        }
+
+        // Walks whatever is in sliceRemainder, cutting a band off at each stop and emitting it.
+        private void SliceIntoBands(VertexHelper vh, Rect rect, Vector2 axis, float min, float max, Color tint)
+        {
             for (int i = 1; i < gradientStops.Count; i++)
             {
                 float from = gradientStops[i - 1];
@@ -586,6 +675,9 @@ namespace FlappyTemplate
                 sliceRemainder.AddRange(sliceRest);
             }
         }
+
+        private bool HasScoopedCorner =>
+            radiusTopLeft < 0f || radiusTopRight < 0f || radiusBottomRight < 0f || radiusBottomLeft < 0f;
 
         // Rings instead of bands: the shape scaled about its own centre, so the gradient follows a rounded
         // box out to a rounded box rather than a circle that leaves the corners behind.
@@ -1049,10 +1141,6 @@ namespace FlappyTemplate
             borderTop = Mathf.Max(0f, borderTop);
             borderRight = Mathf.Max(0f, borderRight);
             borderBottom = Mathf.Max(0f, borderBottom);
-            radiusTopLeft = Mathf.Max(0f, radiusTopLeft);
-            radiusTopRight = Mathf.Max(0f, radiusTopRight);
-            radiusBottomRight = Mathf.Max(0f, radiusBottomRight);
-            radiusBottomLeft = Mathf.Max(0f, radiusBottomLeft);
             cornerSegments = Mathf.Clamp(cornerSegments, 1, MaxCornerSegments);
 
             // Graphic's own OnValidate is what marks the mesh for a rebuild, so the change shows in the

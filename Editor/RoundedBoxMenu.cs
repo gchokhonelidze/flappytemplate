@@ -110,7 +110,18 @@ namespace FlappyTemplate.Editor
             if (box == null)
                 return null;
 
-            var effect = ObjectFactory.CreateGameObject("Border Particles", typeof(RectTransform), typeof(ParticleSystem), typeof(RoundedBoxBorderShape));
+            // Drawn through a UI mesh from the start. A particle system left to draw itself cannot be sorted
+            // into a canvas - in front of every element or behind every one, and behind all of them in an
+            // overlay canvas whatever the sorting layers say - which is a wall to walk into later rather
+            // than a default worth keeping. Delete the renderer component to hand it back to the particle
+            // system.
+            var effect = ObjectFactory.CreateGameObject(
+                "Border Particles",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(ParticleSystem),
+                typeof(RoundedBoxBorderShape),
+                typeof(UiParticleRenderer));
             Undo.SetTransformParent(effect.transform, box.transform, string.Empty);
             Stretch((RectTransform)effect.transform);
             effect.layer = box.gameObject.layer;
@@ -131,9 +142,9 @@ namespace FlappyTemplate.Editor
             var main = particles.main;
             main.startLifetime = 0.7f;
 
-            // No speed of its own: a mesh shape sends particles along the triangle's normal, and this mesh
-            // lies flat, so anything here would fire them at the camera. The drift comes from below.
-            main.startSpeed = 0f;
+            // Sent off along the shape's own normals, which the border mesh points away from the frame. The
+            // drift below then carries them upward once they are clear of it.
+            main.startSpeed = new ParticleSystem.MinMaxCurve(scale * 0.05f, scale * 0.18f);
             main.startSize = scale * 0.12f;
             main.startColor = new Color(1f, 0.78f, 0.35f, 1f);
             main.simulationSpace = ParticleSystemSimulationSpace.Local;
@@ -154,8 +165,8 @@ namespace FlappyTemplate.Editor
             // the others is rejected outright - so x and z are given ranges too rather than left at their
             // defaults. The sideways one is not padding either: a little wander is what stops the flames
             // rising in parallel lines.
-            velocity.x = new ParticleSystem.MinMaxCurve(scale * -0.08f, scale * 0.08f);
-            velocity.y = new ParticleSystem.MinMaxCurve(scale * 0.25f, scale * 0.6f);
+            velocity.x = new ParticleSystem.MinMaxCurve(scale * -0.06f, scale * 0.06f);
+            velocity.y = new ParticleSystem.MinMaxCurve(scale * 0.18f, scale * 0.45f);
             velocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
 
             var colorOverLifetime = particles.colorOverLifetime;

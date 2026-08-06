@@ -313,20 +313,18 @@ namespace FlappyTemplate.Editor
             }
         }
 
-        // Particles are renderers, not graphics, so an overlay canvas has nowhere to put them in its draw
-        // order - they land in front of the whole UI or behind all of it, never between this box and the
-        // one next to it. Said only once there is actually an effect to be surprised by.
+        // Particles are renderers, not graphics, so a canvas has nowhere to put them in its draw order -
+        // they land in front of the whole UI or behind all of it, and behind all of it in an overlay canvas
+        // whatever the sorting layers are set to. An effect built here is drawn through a UI mesh instead
+        // and has no such trouble, so this is only for one that has had that taken off it.
         private static void DrawParticleSortingNote(RoundedBox box)
         {
-            if (box.GetComponentInChildren<RoundedBoxBorderShape>(true) == null)
-                return;
-
-            var canvas = box.canvas;
-            if (canvas == null || canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+            var effect = box.GetComponentInChildren<RoundedBoxBorderShape>(true);
+            if (effect == null || effect.GetComponent<UiParticleRenderer>() != null)
                 return;
 
             EditorGUILayout.HelpBox(
-                "This canvas is Screen Space - Overlay, which draws particles either in front of the whole UI or behind all of it. Switch it to Screen Space - Camera or World Space and set the particle renderer's sorting layer and order to place the effect within the UI.",
+                "This effect is drawn by the particle system rather than as UI, so it cannot be sorted between elements of a canvas - and an overlay canvas will cover it entirely. Add a Ui Particle Renderer to it, or switch the canvas to Screen Space - Camera and sort the particle renderer above it.",
                 MessageType.Info);
         }
 
@@ -431,7 +429,6 @@ namespace FlappyTemplate.Editor
             EditorGUI.PropertyField(rect, radius, GUIContent.none);
             if (EditorGUI.EndChangeCheck())
             {
-                radius.floatValue = Mathf.Max(0f, radius.floatValue);
                 if (uniformCorners.boolValue)
                 {
                     // Written straight onto the other three rather than kept behind a flag the runtime
@@ -445,7 +442,8 @@ namespace FlappyTemplate.Editor
                 }
             }
 
-            Tooltip(rect, tooltip + (uniformCorners.boolValue ? " Linked - this sets all four." : string.Empty));
+            Tooltip(rect, tooltip + " Negative scoops the corner out instead of rounding it off."
+                + (uniformCorners.boolValue ? " Linked - this sets all four." : string.Empty));
         }
 
         private void DrawSide(Rect sizeRect, Rect colorRect, SerializedProperty size, SerializedProperty tint, string tooltip)
@@ -599,6 +597,11 @@ namespace FlappyTemplate.Editor
         private struct Shape
         {
             public Rect Rect;
+
+            // Scoops are centred on the corners of this rather than on Rect's. For the outline itself the
+            // two are the same, but the border's inner edge keeps the outer box's corners as its centres -
+            // the arc is concentric with the one outside it, which is what holds the border even.
+            public Rect ScoopRect;
             public Vector2 TopLeft;
             public Vector2 TopRight;
             public Vector2 BottomRight;
@@ -855,17 +858,18 @@ namespace FlappyTemplate.Editor
                 borders.w *= k;
             }
 
+            // Signs kept: a negative radius is a scooped corner, and the size of it is what has to fit.
             radii = new Vector4(
-                Mathf.Max(0f, radiusTopLeft.floatValue),
-                Mathf.Max(0f, radiusTopRight.floatValue),
-                Mathf.Max(0f, radiusBottomRight.floatValue),
-                Mathf.Max(0f, radiusBottomLeft.floatValue));
+                radiusTopLeft.floatValue,
+                radiusTopRight.floatValue,
+                radiusBottomRight.floatValue,
+                radiusBottomLeft.floatValue);
 
             float scale = 1f;
-            scale = Mathf.Min(scale, EdgeRatio(source.x, radii.x + radii.y));
-            scale = Mathf.Min(scale, EdgeRatio(source.x, radii.w + radii.z));
-            scale = Mathf.Min(scale, EdgeRatio(source.y, radii.x + radii.w));
-            scale = Mathf.Min(scale, EdgeRatio(source.y, radii.y + radii.z));
+            scale = Mathf.Min(scale, EdgeRatio(source.x, Mathf.Abs(radii.x) + Mathf.Abs(radii.y)));
+            scale = Mathf.Min(scale, EdgeRatio(source.x, Mathf.Abs(radii.w) + Mathf.Abs(radii.z)));
+            scale = Mathf.Min(scale, EdgeRatio(source.y, Mathf.Abs(radii.x) + Mathf.Abs(radii.w)));
+            scale = Mathf.Min(scale, EdgeRatio(source.y, Mathf.Abs(radii.y) + Mathf.Abs(radii.z)));
             radii *= scale;
 
             // Both come back in source units; everything downstream works in preview pixels.
@@ -876,11 +880,14 @@ namespace FlappyTemplate.Editor
 
         private static float EdgeRatio(float length, float demand) => demand > length ? length / demand : 1f;
 
+        private static Vector2 Abs(Vector2 value) => new Vector2(Mathf.Abs(value.x), Mathf.Abs(value.y));
+
         private static Shape Outer(Rect box, Vector4 radii)
         {
             return new Shape
             {
                 Rect = box,
+                ScoopRect = box,
                 TopLeft = new Vector2(radii.x, radii.x),
                 TopRight = new Vector2(radii.y, radii.y),
                 BottomRight = new Vector2(radii.z, radii.z),
@@ -899,11 +906,25 @@ namespace FlappyTemplate.Editor
             return new Shape
             {
                 Rect = rect,
-                TopLeft = new Vector2(Mathf.Max(0f, radii.x - borders.x), Mathf.Max(0f, radii.x - borders.y)),
-                TopRight = new Vector2(Mathf.Max(0f, radii.y - borders.z), Mathf.Max(0f, radii.y - borders.y)),
-                BottomRight = new Vector2(Mathf.Max(0f, radii.z - borders.z), Mathf.Max(0f, radii.z - borders.w)),
-                BottomLeft = new Vector2(Mathf.Max(0f, radii.w - borders.x), Mathf.Max(0f, radii.w - borders.w)),
+                ScoopRect = box,
+                TopLeft = InnerRadius(radii.x, borders.x, borders.y),
+                TopRight = InnerRadius(radii.y, borders.z, borders.y),
+                BottomRight = InnerRadius(radii.z, borders.z, borders.w),
+                BottomLeft = InnerRadius(radii.w, borders.x, borders.w),
             };
+        }
+
+        private static Vector2 InnerRadius(float radius, float borderX, float borderY)
+        {
+            float size = Mathf.Abs(radius);
+
+            // A scoop's material is on the far side of its arc, so the border's inner edge is the wider
+            // ellipse about the same centre rather than a narrower one. The radii cross over with it: the
+            // one reached along x lands on a horizontal side, and takes that side's thickness.
+            if (radius < 0f)
+                return new Vector2(-(size + borderY), -(size + borderX));
+
+            return new Vector2(Mathf.Max(0f, size - borderX), Mathf.Max(0f, size - borderY));
         }
 
         // How much of a pixel the shape covers, from its signed distance: one pixel of falloff either side
@@ -919,27 +940,50 @@ namespace FlappyTemplate.Editor
                 Mathf.Max(rect.xMin - point.x, point.x - rect.xMax),
                 Mathf.Max(rect.yMin - point.y, point.y - rect.yMax));
 
-            Vector2 center;
+            // Sizes for working out which corner the point is in, signs kept for what to do about it.
+            var topLeft = Abs(shape.TopLeft);
+            var topRight = Abs(shape.TopRight);
+            var bottomRight = Abs(shape.BottomRight);
+            var bottomLeft = Abs(shape.BottomLeft);
+
+            // A scoop is measured from the corner it was bitten out of, which for the border's inner edge is
+            // a corner of the box outside it rather than one of its own.
+            var scoops = shape.ScoopRect;
+
+            Vector2 corner;
             Vector2 radius;
-            if (point.x <= rect.xMin + shape.TopLeft.x && point.y >= rect.yMax - shape.TopLeft.y)
+            bool scooped;
+            if (shape.TopLeft.x < 0f
+                ? point.x <= scoops.xMin + topLeft.x && point.y >= scoops.yMax - topLeft.y
+                : point.x <= rect.xMin + topLeft.x && point.y >= rect.yMax - topLeft.y)
             {
-                center = new Vector2(rect.xMin + shape.TopLeft.x, rect.yMax - shape.TopLeft.y);
-                radius = shape.TopLeft;
+                scooped = shape.TopLeft.x < 0f;
+                corner = scooped ? new Vector2(scoops.xMin, scoops.yMax) : new Vector2(rect.xMin, rect.yMax);
+                radius = topLeft;
             }
-            else if (point.x >= rect.xMax - shape.TopRight.x && point.y >= rect.yMax - shape.TopRight.y)
+            else if (shape.TopRight.x < 0f
+                ? point.x >= scoops.xMax - topRight.x && point.y >= scoops.yMax - topRight.y
+                : point.x >= rect.xMax - topRight.x && point.y >= rect.yMax - topRight.y)
             {
-                center = new Vector2(rect.xMax - shape.TopRight.x, rect.yMax - shape.TopRight.y);
-                radius = shape.TopRight;
+                scooped = shape.TopRight.x < 0f;
+                corner = scooped ? new Vector2(scoops.xMax, scoops.yMax) : new Vector2(rect.xMax, rect.yMax);
+                radius = topRight;
             }
-            else if (point.x >= rect.xMax - shape.BottomRight.x && point.y <= rect.yMin + shape.BottomRight.y)
+            else if (shape.BottomRight.x < 0f
+                ? point.x >= scoops.xMax - bottomRight.x && point.y <= scoops.yMin + bottomRight.y
+                : point.x >= rect.xMax - bottomRight.x && point.y <= rect.yMin + bottomRight.y)
             {
-                center = new Vector2(rect.xMax - shape.BottomRight.x, rect.yMin + shape.BottomRight.y);
-                radius = shape.BottomRight;
+                scooped = shape.BottomRight.x < 0f;
+                corner = scooped ? new Vector2(scoops.xMax, scoops.yMin) : new Vector2(rect.xMax, rect.yMin);
+                radius = bottomRight;
             }
-            else if (point.x <= rect.xMin + shape.BottomLeft.x && point.y <= rect.yMin + shape.BottomLeft.y)
+            else if (shape.BottomLeft.x < 0f
+                ? point.x <= scoops.xMin + bottomLeft.x && point.y <= scoops.yMin + bottomLeft.y
+                : point.x <= rect.xMin + bottomLeft.x && point.y <= rect.yMin + bottomLeft.y)
             {
-                center = new Vector2(rect.xMin + shape.BottomLeft.x, rect.yMin + shape.BottomLeft.y);
-                radius = shape.BottomLeft;
+                scooped = shape.BottomLeft.x < 0f;
+                corner = scooped ? new Vector2(scoops.xMin, scoops.yMin) : new Vector2(rect.xMin, rect.yMin);
+                radius = bottomLeft;
             }
             else
             {
@@ -952,8 +996,24 @@ namespace FlappyTemplate.Editor
             // Squashing the corner back to a unit circle handles the elliptical case for free; the result
             // is stretched by the smaller radius, which turns it back into something near enough a
             // distance for one pixel of falloff to be measured against.
+            float reach = Mathf.Min(radius.x, radius.y);
+
+            if (scooped)
+            {
+                // A scoop is the corner with a disc taken out of it, so the shape is what the box has and
+                // the disc has not: inside one and outside the other, whichever of the two is the tighter
+                // constraint here. The disc is centred on the corner itself rather than in from it.
+                var bite = new Vector2((point.x - corner.x) / radius.x, (point.y - corner.y) / radius.y);
+                return Mathf.Max(box, (1f - bite.magnitude) * reach);
+            }
+
+            // A round sits its centre in from the corner by its own radius, on both axes, toward the middle.
+            var center = new Vector2(
+                corner.x + (corner.x < rect.center.x ? radius.x : -radius.x),
+                corner.y + (corner.y < rect.center.y ? radius.y : -radius.y));
+
             var offset = new Vector2((point.x - center.x) / radius.x, (point.y - center.y) / radius.y);
-            return (offset.magnitude - 1f) * Mathf.Min(radius.x, radius.y);
+            return (offset.magnitude - 1f) * reach;
         }
 
         // Which side's colour a point on the border takes. Inside a corner's quadrant the two sides that
