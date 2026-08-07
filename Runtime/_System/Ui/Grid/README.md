@@ -8,7 +8,8 @@ hand over from code as a single string.
 Every cell is a **child RectTransform of its own** — a panel you can select, colour, animate and prefab.
 That is the difference from `GridLayoutGroup`, whose cells are all one size and are not objects at all.
 
-*Describes package 1.0.41. Update this file with the code.*
+*Describes package 1.0.42. Update this file with the code — and **README.html** beside it, which is the same
+content laid out for a browser, with the layouts drawn rather than described.*
 
 ---
 
@@ -237,6 +238,84 @@ answer questions about cells; `UiGridCell.Overlaps` compares two items.
 
 ---
 
+## Examples
+
+All of these are in **UiGridExample.cs** next to this file — drop it on the grid and press the keys.
+
+**Switching arrangement as the window changes shape.** The reason to keep a layout as one value: both the
+seating and the track sizes change, which is what a media query does in CSS.
+
+```csharp
+const string Wide =
+    "cols: 200 1fr 240\n" +
+    "rows: 64 1fr 48\n" +
+    "header header header\n" +
+    "nav    body   aside\n" +
+    "footer footer footer";
+
+const string Narrow = "cols: 1fr\nrows: 64 1fr 48\nheader\nbody\nfooter";
+
+void Update()
+{
+    bool wide = (float)Screen.width / Screen.height >= 1f;
+
+    // Only on the change: setting a layout walks the children to show and hide them.
+    if (wide != isWide)
+    {
+        isWide = wide;
+        grid.Layout = wide ? Wide : Narrow;
+    }
+}
+```
+
+**One-line layouts.** A slash is a row break, so a whole arrangement fits in an argument.
+
+```csharp
+grid.SetLayout("cols: 1fr 1fr / header header / . prompt / footer footer");
+
+// A sidebar that never squeezes below its icons and never grows past a readable width.
+grid.SetLayout("cols: 1fr[160..400] 3fr / nav body");
+```
+
+**Assembled from parts.** The case a string is bad at: a layout that is not the same every time.
+
+```csharp
+public void Show(bool withSidebar)
+{
+    var layout = UiGridLayout.Build()
+        .Columns(withSidebar ? GridTrack.Fixed(200) : GridTrack.Flexible(), GridTrack.Flexible(3f))
+        .Rows(GridTrack.Fixed(64), GridTrack.Flexible(), GridTrack.Fixed(48))
+        .Row("header", "header");
+
+    layout = withSidebar ? layout.Row("nav", "body") : layout.Row("body", "body");
+
+    grid.SetLayout(layout.Row("footer", "footer").Done());
+}
+```
+
+**Finding out what it did.**
+
+```csharp
+Debug.Log(grid.ReadLayout());                   // the current arrangement, as a layout string
+Debug.Log(grid.Shows("nav") ? "showing" : "hidden");
+
+var snapshot = grid.Snapshot();
+Debug.Log($"{snapshot.ColumnCount} x {snapshot.RowCount}, first column {snapshot.ColumnSizes[0]} units");
+```
+
+**Wiring a panel by hand.**
+
+```csharp
+var item = panel.GetComponent<UiGridItem>();
+item.Area = "aside";        // what the layout calls it; blank means the object's name
+item.PlaceAt(2, 1);         // used when no layout names it
+item.Span(1, 2);            // two rows tall
+item.OverrideAlign = true;
+item.VerticalAlign = EGridAlign.Start;
+```
+
+---
+
 ## The inspector
 
 The map is a picture of the grid at its real proportions, and everything in it is live.
@@ -282,4 +361,5 @@ in two separate blocks.
 | `GridTrack.cs` | One row or column |
 | `UiGridCell.cs`, `UiGridSnapshot.cs` | Where everything landed, for the inspector and for you |
 | `UiGridExample.cs` | A MonoBehaviour doing all of the above |
+| `README.html` | This, laid out for a browser, with the layouts drawn |
 | `Editor/Grid/` | The map, the item inspector, the menu and cell building |

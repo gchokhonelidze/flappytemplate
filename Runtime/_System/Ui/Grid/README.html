@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ui Grid — FlappyBet Template</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --ink: #1c1f24;
+    --soft: #5b6472;
+    --line: #dfe3e8;
+    --accent: #3f6fd8;
+    --code-bg: #f2f4f7;
+    --warn-bg: #fff6e5;
+    --warn-line: #e6a23c;
+    --note-bg: #eef4ff;
+    --note-line: #6f9bea;
+    --cell-a: #cddcf5;
+    --cell-b: #d6e9d6;
+    --cell-c: #e6dcf2;
+    --cell-empty: #e9ebee;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --panel: #1d2025;
+      --ink: #e4e7ec;
+      --soft: #9aa3b0;
+      --line: #2c3038;
+      --accent: #7aa2f7;
+      --code-bg: #12141a;
+      --warn-bg: #2c2415;
+      --warn-line: #b98330;
+      --note-bg: #161d2b;
+      --note-line: #4a6ea8;
+      --cell-a: #2f4468;
+      --cell-b: #2e4a33;
+      --cell-c: #3b3155;
+      --cell-empty: #23262c;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 28px 96px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 64px; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 14px;
+    border-left: 2px solid var(--line);
+    padding-left: 16px;
+  }
+  nav.toc strong { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--soft); }
+  nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+
+  header.title { margin-bottom: 28px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 44px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  p { margin: 12px 0; }
+  a { color: var(--accent); }
+
+  .lede { font-size: 17px; color: var(--soft); margin-top: 0; }
+  .version { display: inline-block; margin-top: 10px; padding: 3px 10px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); font-size: 12.5px; color: var(--soft); }
+
+  code { font-family: Consolas, "SF Mono", Menlo, Monaco, "Courier New", monospace; font-size: 90%; background: var(--code-bg); padding: 1.5px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; margin: 14px 0; }
+  pre code { background: none; padding: 0; font-size: 13.5px; line-height: 1.55; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; display: block; overflow-x: auto; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--soft); border-bottom: 2px solid var(--line); white-space: nowrap; }
+  tbody tr:hover { background: var(--panel); }
+
+  ul, ol { padding-left: 22px; }
+  li { margin: 6px 0; }
+
+  .callout { border-left: 3px solid var(--note-line); background: var(--note-bg); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 18px 0; }
+  .callout.warn { border-left-color: var(--warn-line); background: var(--warn-bg); }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  /* The layouts, drawn with the thing they describe. */
+  .demos { display: flex; flex-wrap: wrap; gap: 24px; margin: 18px 0 6px; }
+  .demo { flex: 1 1 260px; min-width: 240px; }
+  .demo figcaption { font-size: 13px; color: var(--soft); margin-bottom: 8px; }
+  .demo figcaption code { font-size: 12px; }
+
+  .grid {
+    display: grid;
+    gap: 6px;
+    padding: 6px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    height: 190px;
+  }
+  .grid > div {
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 5px;
+    font-family: Consolas, Menlo, monospace;
+    font-size: 12px;
+    color: var(--ink);
+  }
+  .wide { grid-template-columns: 90px 1fr 70px; grid-template-rows: 34px 1fr 26px; }
+  .narrow { grid-template-columns: 1fr; grid-template-rows: 34px 1fr 26px; }
+  .areas { grid-template-columns: 1fr 2fr; grid-template-rows: 34px 1fr; }
+  .head { background: var(--cell-a); grid-column: 1 / -1; }
+  .nav  { background: var(--cell-b); }
+  .body { background: var(--cell-c); }
+  .side { background: var(--cell-b); }
+  .foot { background: var(--cell-a); grid-column: 1 / -1; }
+  .none { background: var(--cell-empty); color: var(--soft); }
+
+  .files td:first-child code { white-space: nowrap; }
+  footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--soft); }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <a href="#start">Quick start</a>
+  <a href="#tracks">Tracks</a>
+  <a href="#items">Items</a>
+  <a href="#flow">Flow</a>
+  <a href="#layouts">Layouts</a>
+  <a class="sub" href="#layout-tracks">Track sizes in a layout</a>
+  <a class="sub" href="#from-code">From code</a>
+  <a class="sub" href="#builder">Built rather than written</a>
+  <a class="sub" href="#tracks-code">Tracks from code</a>
+  <a class="sub" href="#reading">Reading the result</a>
+  <a href="#examples">Examples</a>
+  <a href="#inspector">The inspector</a>
+  <a href="#notes">Notes</a>
+  <a href="#files">Files</a>
+</nav>
+
+<main>
+<header class="title">
+  <h1>Ui Grid</h1>
+  <p class="lede">A grid layout for uGUI in the shape of CSS's, cut to what a canvas can do cheaply. Tracks that
+  are a fixed size, a share of the leftover, a percentage of the box or as big as their contents; items that
+  span more than one of either; a flow that drops anything unplaced into the first free cell; and an
+  arrangement you can hand over from code as a single string.</p>
+  <p>Every cell is a <strong>child RectTransform of its own</strong> — a panel you can select, colour, animate
+  and prefab. That is the difference from <code>GridLayoutGroup</code>, whose cells are all one size and are
+  not objects at all.</p>
+  <span class="version">Describes package 1.0.42 · keep in step with README.md and the code</span>
+</header>
+
+<h2 id="start">Quick start</h2>
+<ol>
+  <li><strong>GameObject ▸ UI (Canvas) ▸ Grid</strong> — a 2×2 grid with four panels. <em>Grid (Empty)</em>
+      leaves out the panels.</li>
+  <li>Click an empty cell in the inspector map to add a panel there. Drag a divider to resize a track.</li>
+  <li>Name the panels (<code>header</code>, <code>body</code>, <code>footer</code>) and press
+      <strong>Read Grid</strong> to get a layout string.</li>
+  <li>Hand that string to <code>grid.Layout</code> from code to switch arrangements.</li>
+</ol>
+
+<h2 id="tracks">Tracks</h2>
+<p>A grid is a list of columns and a list of rows. Each track is one of:</p>
+<table>
+  <thead><tr><th>Mode</th><th>Means</th><th>CSS</th></tr></thead>
+  <tbody>
+    <tr><td><code>Fixed</code></td><td>Canvas units, the same whatever the grid is given</td><td><code>120px</code></td></tr>
+    <tr><td><code>Flexible</code></td><td>A weight — the leftover is split between the flexible tracks in proportion</td><td><code>1fr</code></td></tr>
+    <tr><td><code>Percent</code></td><td>A share of the content box, gaps already taken out, so 50 and 50 fill it exactly</td><td><code>50%</code></td></tr>
+    <tr><td><code>Auto</code></td><td>As big as the largest item in it reports itself to be</td><td><code>auto</code></td></tr>
+  </tbody>
+</table>
+<p>Each also has a <strong>Min</strong> and a <strong>Max</strong> in canvas units (<code>Max</code> of 0 means
+none). A flexible track that hits a limit takes itself out of the sharing and the rest is split again, so a
+sidebar capped at 300 does not swallow the space it could not use. Together they are CSS's
+<code>minmax(160px, 1fr)</code>.</p>
+<p><strong>Gaps</strong> sit between tracks; <strong>Padding</strong> sits inside the grid's own rect. Both are
+taken out before percentages and shares are worked out, so tracks still add up to the full width.</p>
+<p>Tracks asked for beyond the end of a list are <strong>implicit</strong> — drawn from the Implicit Rows /
+Implicit Columns template under Flow and Alignment. They show faintly in the map; editing one makes it real.</p>
+<p>A <a href="#layouts">layout</a> can override these sizes for as long as it is set, which is how one
+arrangement gets a fixed sidebar and the next gets a single column that fills the width.</p>
+
+<div class="callout warn">
+  <p><code>Auto</code> asks the items in a track how big they need to be. A plain panel has no answer and the
+  track comes out at <strong>zero, and is not on screen at all</strong> — give it a <code>Min</code>, make it
+  <code>Fixed</code>, or put a <code>LayoutElement</code> on what is inside it. The inspector names any track
+  this happens to.</p>
+</div>
+
+<h2 id="items">Items</h2>
+<p>Any child is laid out. A child with a <strong>Ui Grid Item</strong> can say more about where it goes:</p>
+<table>
+  <thead><tr><th>Field</th><th>Means</th></tr></thead>
+  <tbody>
+    <tr><td><code>Area</code></td><td>The name this panel answers to in a layout. Blank means the object's own name.</td></tr>
+    <tr><td><code>Auto Place</code></td><td>On, the flow finds it a cell. Off, <code>Column</code>/<code>Row</code> are used exactly.</td></tr>
+    <tr><td><code>Column</code>, <code>Row</code></td><td>Counted from 0, left and top.</td></tr>
+    <tr><td><code>Span</code></td><td>How many columns across and rows down it covers. Honoured while auto-placing too.</td></tr>
+    <tr><td><code>Override Align</code></td><td>Use this item's alignment instead of the grid's.</td></tr>
+  </tbody>
+</table>
+<p><strong>Alignment</strong> is per axis: <code>Stretch</code> fills the cell and writes the item's size;
+<code>Start</code>, <code>Center</code> and <code>End</code> leave the size alone and only place it. Where a
+non-stretched item has no preferred size of its own — a plain panel, which is most of them — its own width and
+height stay editable and only its position is driven.</p>
+<p>A child with <code>ignoreLayout</code> (a <code>LayoutElement</code>) is left out of everything, placement
+and layouts both. That is the way to keep a background or an overlay inside the grid without it being part of
+the arrangement.</p>
+
+<h2 id="flow">Flow</h2>
+<p>Items with no placement of their own are carried into the first free cell. <code>Auto Flow</code> picks the
+direction: <code>Row</code> fills the columns you defined and adds rows underneath as it needs them,
+<code>Column</code> the opposite. <code>Dense</code> lets a later small item fall back into a hole an earlier
+large one skipped — off, what is on screen follows the order in the hierarchy.</p>
+
+<h2 id="layouts">Layouts</h2>
+<p>An arrangement written as a picture, one name per cell. CSS calls it <code>grid-template-areas</code>.</p>
+
+<pre><code>header header header
+nav    body   aside
+footer footer footer</code></pre>
+
+<div class="demos">
+  <figure class="demo">
+    <figcaption>…which lays out as this</figcaption>
+    <div class="grid wide">
+      <div class="head">header</div>
+      <div class="nav">nav</div>
+      <div class="body">body</div>
+      <div class="side">aside</div>
+      <div class="foot">footer</div>
+    </div>
+  </figure>
+  <figure class="demo">
+    <figcaption><code>cols: 1fr / header / body / footer</code></figcaption>
+    <div class="grid narrow">
+      <div class="head">header</div>
+      <div class="body">body</div>
+      <div class="foot">footer</div>
+    </div>
+  </figure>
+</div>
+
+<ul>
+  <li>A name repeated over neighbouring cells is <strong>one panel spanning them</strong>.</li>
+  <li><code>.</code> is an empty cell.</li>
+  <li>Rows split on a <strong>newline or a slash</strong>, so the same layout fits on one line where that reads
+      better: <code>"header header / nav body / footer footer"</code>. In the inspector's Layout box, Return
+      starts a new row and a slash does the same thing without leaving the line.</li>
+  <li>Names are the panels' <strong>object names</strong>, unless a Ui Grid Item's <code>Area</code> overrides
+      them.</li>
+  <li>Quotes around a row, commas and pipes are all tolerated — paste in CSS and it will read.</li>
+</ul>
+
+<p>Setting a layout <strong>shows the panels it names and hides the ones it does not</strong>. It also decides
+<strong>how many columns and rows there are</strong> — a grid set up with four rows and given a layout of three
+has three, and the fourth track stops taking up the space its size asked for. Tracks are still added past the
+picture where an item needs one: a panel the flow carried below it, or one holding a row of its own.</p>
+
+<p>A name with nothing to match is not an error — those cells are held open, so a layout can be written before
+the panel exists. The inspector lists any it cannot match, since a misspelling looks exactly the same.</p>
+
+<h3 id="layout-tracks">Track sizes in a layout</h3>
+<p>A layout can carry the track sizes too, which is the other half of what CSS changes in a media query. Add a
+<code>cols:</code> or <code>rows:</code> line — anywhere in the string, in any order:</p>
+
+<pre><code>cols: 200 1fr 240
+rows: 64 1fr 48
+header header header
+nav    body   aside
+footer footer footer</code></pre>
+
+<p>Without them, a narrow layout that leaves one column standing gets whatever column 0 already was — a fixed
+sidebar width, most likely — which is rarely what you want:</p>
+
+<pre><code>cols: 1fr            &lt;- the one column left now fills the width
+rows: 64 1fr 48
+header
+body
+footer</code></pre>
+
+<table>
+  <thead><tr><th>Token</th><th>Track</th></tr></thead>
+  <tbody>
+    <tr><td><code>120</code>, <code>120px</code>, <code>120u</code></td><td>Fixed, canvas units</td></tr>
+    <tr><td><code>1fr</code>, <code>2.5fr</code>, <code>*</code></td><td>Flexible, that weight</td></tr>
+    <tr><td><code>25%</code></td><td>Percent</td></tr>
+    <tr><td><code>auto</code></td><td>Auto</td></tr>
+    <tr><td><code>1fr[160]</code></td><td>…with a Min of 160</td></tr>
+    <tr><td><code>1fr[160..400]</code></td><td>…with a Min and a Max — CSS's <code>minmax</code></td></tr>
+    <tr><td><code>auto[..300]</code></td><td>…with a Max only</td></tr>
+  </tbody>
+</table>
+
+<div class="callout warn">
+  <p><strong><code>auto</code> on a row of plain panels comes out at nothing.</strong> It means "as big as the
+  items in it need", and a panel with no text and no sprite needs nothing — so the row is 0 high and the grid
+  looks like it lost a row. Write a size (<code>64</code>), a floor (<code>auto[64]</code>), or put a
+  <code>LayoutElement</code> on what is inside it. CSS does the same thing to an empty div; it is just easier to
+  walk into here. The inspector names any track it happens to.</p>
+</div>
+
+<p>A track the line covers is <strong>taken from the layout entirely</strong>, limits included; the grid's own
+list is what tracks past the end of the line fall back to. <code>cols:</code> and <code>rows:</code> are
+headings, not names — a panel can still be called <code>rows</code> if the colon is not there. Anything on the
+line that is not a size is ignored rather than guessed at, so a typo leaves that track alone instead of
+collapsing it.</p>
+
+<p>While a layout gives a track its size, the map header for it is drawn in the layout colour, and resizing it
+by dragging or by the header menu <strong>rewrites that line in the layout</strong> rather than the list
+underneath.</p>
+
+<h3 id="from-code">From code</h3>
+<pre><code>grid.Layout = "cols: 200 1fr / nav body";
+grid.SetLayout(compact);              // the same thing as a method — takes a string or a UiGridLayout
+grid.ClearLayout();                   // every panel shown again, placed by its own Column and Row
+bool visible = grid.Shows("aside");   // would this panel be showing?
+string now = grid.ReadLayout();       // what it is arranged as right now, in the same form</code></pre>
+<p><code>ReadLayout</code> is how you get the first one: arrange the panels in the inspector, print it, paste it
+into the code that switches between it and the next.</p>
+
+<h3 id="builder">Built rather than written</h3>
+<p>A picture is the right shape for a layout you keep whole — in the inspector, in a <code>const</code>,
+switched between at runtime. It is the wrong shape for one assembled from parts, where it turns into string
+concatenation and the compiler stops helping. <code>UiGridLayout.Build()</code> produces the same thing with
+types:</p>
+
+<pre><code>grid.SetLayout(UiGridLayout.Build()
+    .Columns(GridTrack.Fixed(200), GridTrack.Flexible(), GridTrack.Fixed(240))
+    .Rows(GridTrack.Fixed(64), GridTrack.Flexible(), GridTrack.Fixed(48))
+    .Row("header", "header", "header")
+    .Row("nav",    "body",   "aside")
+    .Row("footer", "footer", "footer")
+    .Done());</code></pre>
+
+<table>
+  <thead><tr><th>Call</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>.Columns(…)</code>, <code>.Rows(…)</code></td><td>The track sizes — the same as a <code>cols:</code> / <code>rows:</code> line</td></tr>
+    <tr><td><code>.Row(names…)</code></td><td>Adds a row of the picture. <code>UiGridLayout.Empty</code> for a gap</td></tr>
+    <tr><td><code>.Area(name, column, row, columnSpan, rowSpan)</code></td><td>Places one name outright, instead of drawing every cell</td></tr>
+    <tr><td><code>.Size(columns, rows)</code></td><td>Holds the grid open to at least this, for rows that hold nothing</td></tr>
+    <tr><td><code>.Done()</code></td><td>The finished <code>UiGridLayout</code>, for <code>SetLayout</code></td></tr>
+  </tbody>
+</table>
+
+<p><code>Row</code> and <code>Area</code> mix — rows are laid down first and blocks stamped over them — so the
+bulk can be drawn and the exceptions stated. Where only a few panels are placed, <code>Area</code> says it in a
+line each:</p>
+
+<div class="demos">
+  <figure class="demo">
+    <figcaption>The layout below, as it lands</figcaption>
+    <div class="grid areas">
+      <div class="head">header</div>
+      <div class="nav">nav</div>
+      <div class="body">body</div>
+    </div>
+  </figure>
+  <figure class="demo" style="flex: 2 1 380px;">
+    <figcaption>&nbsp;</figcaption>
+<pre style="margin:0"><code>grid.SetLayout(UiGridLayout.Build()
+    .Columns(GridTrack.Flexible(), GridTrack.Flexible(2f))
+    .Rows(GridTrack.Fixed(64), GridTrack.Flexible())
+    .Area("header", 0, 0, columnSpan: 2)
+    .Area("nav", 0, 1)
+    .Area("body", 1, 1)
+    .Done());</code></pre>
+  </figure>
+</div>
+
+<p><code>grid.SetLayout</code> takes either a <code>string</code> or a <code>UiGridLayout</code>, and
+<code>UiGridLayout.Parse</code> and <code>ToString</code> convert between them, so the two forms are
+interchangeable — the same layout, chosen by which reads better where you are standing. A layout given as an
+object is kept as it is; the string is still written, because that is what the scene saves and the inspector
+shows.</p>
+
+<div class="callout">
+  <p>Names must be <strong>one word</strong>. A layout is stored as text, so a name with a space or a separator
+  in it comes back as two cells. The builder says so when it happens; give that panel a <code>Ui Grid Item</code>
+  and set its <code>Area</code>.</p>
+</div>
+
+<h3 id="tracks-code">Tracks from code</h3>
+<p>The track lists are ordinary lists of ordinary objects. Nothing watches them, so say when you are done:</p>
+<pre><code>grid.Columns[0].Mode = EGridTrack.Fixed;
+grid.Columns[0].Size = 320f;
+grid.Columns.Add(GridTrack.Flexible());
+grid.ColumnGap = 12f;
+grid.Rebuild();</code></pre>
+<p><code>GridTrack.Fixed(120f)</code>, <code>GridTrack.Flexible(2f)</code>, <code>GridTrack.Percent(25f)</code>
+and <code>GridTrack.Auto()</code> build them. The properties on <code>UiGrid</code> itself —
+<code>ColumnGap</code>, <code>RowGap</code>, <code>Flow</code>, <code>Dense</code>,
+<code>HorizontalAlign</code>, <code>VerticalAlign</code> — rebuild on their own.</p>
+
+<h3 id="reading">Reading the result</h3>
+<p><code>grid.Snapshot()</code> measures the whole layout and hands back where every track and every item landed
+— positions, sizes, spans, and which item is in which cell. The inspector draws its map from this, so what it
+shows is what the layout really did rather than a second guess at it. <code>CellAt</code>, <code>CountAt</code>
+and <code>HasOverlap</code> answer questions about cells; <code>UiGridCell.Overlaps</code> compares two items.</p>
+
+<h2 id="examples">Examples</h2>
+<p>All of these are in <code>UiGridExample.cs</code> next to this file — drop it on the grid and press the keys.</p>
+
+<h3>Switching arrangement as the window changes shape</h3>
+<p>The reason to keep a layout as one value. Both the seating and the track sizes change, which is what a media
+query does in CSS.</p>
+<pre><code>const string Wide =
+    "cols: 200 1fr 240\n" +
+    "rows: 64 1fr 48\n" +
+    "header header header\n" +
+    "nav    body   aside\n" +
+    "footer footer footer";
+
+const string Narrow =
+    "cols: 1fr\n" +
+    "rows: 64 1fr 48\n" +
+    "header\n" +
+    "body\n" +
+    "footer";
+
+void Update()
+{
+    bool wide = (float)Screen.width / Screen.height >= 1f;
+
+    // Only on the change: setting a layout walks the children to show and hide them.
+    if (wide != isWide)
+    {
+        isWide = wide;
+        grid.Layout = wide ? Wide : Narrow;
+    }
+}</code></pre>
+
+<h3>One-line layouts</h3>
+<p>A slash is a row break, so a whole arrangement fits in an argument.</p>
+<pre><code>grid.SetLayout("cols: 1fr 1fr / header header / . prompt / footer footer");
+
+// A sidebar that never squeezes below its icons and never grows past a readable width.
+grid.SetLayout("cols: 1fr[160..400] 3fr / nav body");</code></pre>
+
+<h3>Assembled from parts</h3>
+<p>The case a string is bad at: a layout that is not the same every time.</p>
+<pre><code>public void Show(bool withSidebar)
+{
+    var layout = UiGridLayout.Build()
+        .Columns(withSidebar ? GridTrack.Fixed(200) : GridTrack.Flexible(), GridTrack.Flexible(3f))
+        .Rows(GridTrack.Fixed(64), GridTrack.Flexible(), GridTrack.Fixed(48))
+        .Row("header", "header");
+
+    layout = withSidebar ? layout.Row("nav", "body") : layout.Row("body", "body");
+
+    grid.SetLayout(layout.Row("footer", "footer").Done());
+}</code></pre>
+
+<h3>Changing tracks without a layout</h3>
+<pre><code>public void WidenSidebar()
+{
+    var first = grid.Columns[0];
+    first.Mode = EGridTrack.Fixed;
+    first.Size = first.Size &gt;= 300f ? 120f : 320f;
+
+    grid.Rebuild();   // nothing watches the list
+}
+
+public void ThreeEvenColumns()
+{
+    grid.Columns.Clear();
+    grid.Columns.Add(GridTrack.Flexible());
+    grid.Columns.Add(GridTrack.Flexible());
+    grid.Columns.Add(GridTrack.Flexible());
+
+    grid.Columns[0].Min = 160f;
+    grid.Columns[0].Max = 400f;
+    grid.ColumnGap = 12f;
+    grid.Rebuild();
+}</code></pre>
+
+<h3>Finding out what it did</h3>
+<pre><code>Debug.Log(grid.ReadLayout());                   // the current arrangement, as a layout string
+Debug.Log(grid.Shows("nav") ? "showing" : "hidden");
+
+var snapshot = grid.Snapshot();
+Debug.Log($"{snapshot.ColumnCount} x {snapshot.RowCount}, first column {snapshot.ColumnSizes[0]} units");</code></pre>
+
+<h3>Wiring a panel by hand</h3>
+<pre><code>var item = panel.GetComponent&lt;UiGridItem&gt;();
+item.Area = "aside";        // what the layout calls it; blank means the object's name
+item.PlaceAt(2, 1);         // used when no layout names it
+item.Span(1, 2);            // two rows tall
+item.OverrideAlign = true;
+item.VerticalAlign = EGridAlign.Start;</code></pre>
+
+<h2 id="inspector">The inspector</h2>
+<p>The map is a picture of the grid at its real proportions, and everything in it is live.</p>
+<table>
+  <thead><tr><th>Do this</th><th>Get this</th></tr></thead>
+  <tbody>
+    <tr><td>Click an empty cell</td><td>Builds a panel there — the kind is the dropdown next to <em>Fill Empty Cells</em></td></tr>
+    <tr><td>Click a panel</td><td>Selects it in the hierarchy</td></tr>
+    <tr><td>Drag a panel</td><td>Moves it. Onto another panel, the two <strong>swap</strong></td></tr>
+    <tr><td>Drag a divider</td><td>Resizes that track. Dragging an <code>Auto</code> track makes it <code>Fixed</code> at the size it had</td></tr>
+    <tr><td>Click a track header</td><td>Mode, fit to size, insert, duplicate, delete</td></tr>
+    <tr><td>Right-click a cell</td><td>Pin, let it flow, span wider/taller, delete</td></tr>
+  </tbody>
+</table>
+<p>Colours: green is pinned by hand, blue was placed by the flow, purple came from the layout, red is a stack.</p>
+<p>Insert and Delete move the items' line numbers with the tracks, the way inserting a row in a spreadsheet does
+— everything below comes along, and a panel spanning across the cut grows or shrinks by one.</p>
+<p>It warns about what it cannot fix on its own: cells holding more than one panel (with a <strong>Separate
+Stacked Panels</strong> button), <code>Auto</code> tracks that measured zero, names in the layout that match
+nothing, and names drawn in two separate blocks.</p>
+
+<h2 id="notes">Notes</h2>
+<ul>
+  <li><strong>Two panels can share a cell.</strong> Explicit placements are allowed to overlap, as in CSS, and a
+      stack draws as a single panel. The map marks them <code>×2</code> and offers to separate them.
+      Auto-placed items never overlap.</li>
+  <li><strong>z is not touched</strong> at runtime, matching every other uGUI layout group. Panels built from
+      the menu are zeroed; one dragged in by hand keeps whatever z it had — check that before its placement if
+      it vanishes.</li>
+  <li><strong>Rebuilding</strong> is automatic for anything with a property setter and for anything the
+      inspector does. It is not automatic for reaching into <code>Columns</code>/<code>Rows</code> and changing
+      a <code>GridTrack</code>; call <code>Rebuild()</code>.</li>
+  <li><strong>Widths are settled before heights are measured</strong>, as uGUI expects, so a label that wraps
+      reports the height it needs at the width the grid just gave it.</li>
+</ul>
+
+<h2 id="files">Files</h2>
+<table class="files">
+  <thead><tr><th>File</th><th>What</th></tr></thead>
+  <tbody>
+    <tr><td><code>UiGrid.cs</code></td><td>The layout group: tracks, placement, sizing, the layout string</td></tr>
+    <tr><td><code>UiGridItem.cs</code></td><td>Per-panel name, placement and alignment</td></tr>
+    <tr><td><code>UiGridLayout.cs</code></td><td>Layout strings: parsing, formatting, editing, and the builder</td></tr>
+    <tr><td><code>GridTrack.cs</code></td><td>One row or column</td></tr>
+    <tr><td><code>UiGridCell.cs</code>, <code>UiGridSnapshot.cs</code></td><td>Where everything landed, for the inspector and for you</td></tr>
+    <tr><td><code>UiGridExample.cs</code></td><td>A MonoBehaviour doing all of the above</td></tr>
+    <tr><td><code>Editor/Grid/</code></td><td>The map, the item inspector, the menu and cell building</td></tr>
+  </tbody>
+</table>
+
+<footer>
+  FlappyBet Template · com.biznetx.flappytemplate · the same content as README.md, which is the one to read in
+  an editor.
+</footer>
+</main>
+</div>
+</body>
+</html>
