@@ -81,8 +81,20 @@ namespace FlappyTemplate
         public Sprite CloseIcon;
 
         [Header("Content")]
-        [Tooltip("Inset of the content area from the panel edges. Top is measured from the bottom of the caption.")]
-        public RectOffset ContentPadding = new RectOffset(20, 20, 0, 20);
+        // Four floats rather than a RectOffset, which looks like the obvious type for this and is the wrong
+        // one twice over. A RectOffset is a handle onto a native object, so building one in a field
+        // initialiser throws before the component exists - "set_left is not allowed to be called from a
+        // MonoBehaviour constructor" - and it is a class, so a style copied field by field would go on
+        // sharing its padding with the style it came from.
+        [Tooltip("Inset of the content area from the left of the panel.")]
+        public float ContentPaddingLeft = 20f;
+
+        [Tooltip("Inset of the content area below the caption. Measured from the bottom of the caption, not the top of the panel.")]
+        public float ContentPaddingTop = 0f;
+
+        public float ContentPaddingRight = 20f;
+
+        public float ContentPaddingBottom = 20f;
 
         [Header("Backdrop")]
         public Color BackdropColor = new Color(0f, 0f, 0f, 0.55f);
@@ -92,20 +104,9 @@ namespace FlappyTemplate
         [Min(0f)]
         public float OpenScale = 0.86f;
 
-        /// <summary>A deep copy, for a window that wants its own colours without editing the shared style.</summary>
-        // RectOffset is a class, so a field-by-field copy would still leave the two styles sharing one
-        // padding - which is the sort of thing that shows up three screens later as a window that moved
-        // when a different window was themed.
-        public UiWindowStyle Clone()
-        {
-            var copy = (UiWindowStyle)MemberwiseClone();
-            copy.ContentPadding = new RectOffset(
-                ContentPadding.left,
-                ContentPadding.right,
-                ContentPadding.top,
-                ContentPadding.bottom);
-
-            return copy;
-        }
+        /// <summary>A copy, for a window that wants its own colours without editing the shared style.</summary>
+        // Every field here is a value or a reference to something the style does not own - a font, a sprite -
+        // so a shallow copy is a whole copy. Anything added later that is neither has to be copied by hand.
+        public UiWindowStyle Clone() => (UiWindowStyle)MemberwiseClone();
     }
 }

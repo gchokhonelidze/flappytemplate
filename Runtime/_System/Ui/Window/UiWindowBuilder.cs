@@ -104,6 +104,16 @@ namespace FlappyTemplate
             return this;
         }
 
+        /// <summary>Scales the whole window, chrome and contents alike. The transition is measured against
+        /// this, so opening does not undo it.</summary>
+        public UiWindowBuilder Scale(float uniform)
+        {
+            if (window != null)
+                window.SetScale(uniform);
+
+            return this;
+        }
+
         public UiWindowBuilder At(Vector2 anchoredPosition)
         {
             if (window != null)
@@ -207,16 +217,23 @@ namespace FlappyTemplate
             return this;
         }
 
-        /// <summary>Inset of the content area from the panel edges.</summary>
-        public UiWindowBuilder Padding(int left, int top, int right, int bottom)
+        /// <summary>Inset of the content area from the panel edges. Top is measured from the bottom of the
+        /// caption rather than the top of the panel.</summary>
+        public UiWindowBuilder Padding(float left, float top, float right, float bottom)
         {
             if (window == null)
                 return this;
 
-            window.Style.ContentPadding = new RectOffset(left, right, top, bottom);
+            window.Style.ContentPaddingLeft = left;
+            window.Style.ContentPaddingTop = top;
+            window.Style.ContentPaddingRight = right;
+            window.Style.ContentPaddingBottom = bottom;
             window.ApplyStyle();
             return this;
         }
+
+        /// <summary>The same inset on all four sides.</summary>
+        public UiWindowBuilder Padding(float all) => Padding(all, all, all, all);
 
         public UiWindowBuilder CloseButton(bool shown = true)
         {
@@ -292,6 +309,31 @@ namespace FlappyTemplate
         {
             if (window != null)
                 window.ShowBackdrop = false;
+
+            return this;
+        }
+
+        /// <summary>Draws the window on a canvas of its own, above everything sorting below this order -
+        /// other canvases and the game's own sprites alike. On by default; this is for changing the order.</summary>
+        public UiWindowBuilder OnTop(int order = 100, string layer = null)
+        {
+            if (window == null)
+                return this;
+
+            window.SortingOrder = order;
+
+            if (layer != null)
+                window.SortingLayer = layer;
+
+            window.AlwaysOnTop = true;
+            return this;
+        }
+
+        /// <summary>Sorted by hierarchy position like any other UI object.</summary>
+        public UiWindowBuilder InLine()
+        {
+            if (window != null)
+                window.AlwaysOnTop = false;
 
             return this;
         }

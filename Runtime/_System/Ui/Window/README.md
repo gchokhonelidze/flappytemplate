@@ -8,10 +8,16 @@ when a game decides its dialogs have square corners after all.
 `StatisticsWindow` beside it is one worked example of filling a window in: the two-tab statistics panel,
 reading `MainState.Statistics` and resetting the current session through the socket.
 
-*Describes package 1.0.45. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.55. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the window drawn rather than described.*
 
-Add Component → UI → Ui Window, or build one from code:
+**GameObject → UI (Canvas) → Window**, which makes a canvas if the scene has none, drops the window under
+whatever was right-clicked, and builds the whole thing on the spot so it arrives looking like a window
+rather than as an empty rect waiting for play mode.
+
+Adding the component by hand instead, it belongs on an **empty RectTransform**, not a UI Panel: the window
+draws its own panel, so a Panel's Image leaves two backgrounds stacked, and anything already inside that
+Panel ends up beside the caption rather than under `Content`. Or build one from code:
 
 ```csharp
 UiWindowBuilder.Create(canvas, "Settings")
@@ -33,10 +39,13 @@ UiWindowBuilder.Create(canvas, "Settings")
 | Start Closed | Hide at Awake and wait for `Open`. Off leaves the window exactly as the scene saved it. |
 | Destroy On Close | For a window built for one message — it takes itself down with it. |
 | Draggable / Drag Anywhere | By the caption, or by any part of the window. Anywhere catches drags on everything inside it that does not handle its own. |
-| Clamp To Parent | Keep the window inside its parent. One larger than its parent is centred on the axis it does not fit rather than fighting the edge. |
+| Clamp To Parent | Keep the window inside its parent, per axis — see below. |
+| Keep Visible | How much of a window too big for its parent has to stay inside it. |
 | Bring To Front | Draw over the siblings when grabbed or opened. |
 | Show Backdrop | A sheet across the parent behind the window, which is what makes it modal — it swallows every click that misses. |
 | Close On Backdrop Click | |
+| Always On Top | On by default. Gives the window a canvas of its own with Override Sorting, which is what lifts it clear of the game — see below. |
+| Sorting Order / Layer | Where that canvas sorts. The backdrop takes one less, so it stays behind its own window and over everything else. Leave the layer empty for the parent canvas's own. |
 | Transition | `None`, `Fade`, `Scale`, `ScaleFade`, `SlideUp/Down/Left/Right`. Slides are named for the way the window travels as it opens. |
 | Open / Close Duration, Easing | |
 | Unscaled Time | On by default, so a window still opens over a paused game. |
@@ -56,7 +65,7 @@ finished**, not when `Close` was called — a window is still on screen for the 
 | Close Size / Offset / Fill / Border / Corner Radius | Offset is measured inwards from the top right corner. A negative corner radius means a circle at any size. |
 | Close Icon Color / Thickness / Scale | |
 | Close Icon | A sprite in place of the drawn cross. Its colour still comes from the style. |
-| Content Padding | Inset of the content area. Top is measured from the bottom of the caption. |
+| Content Padding Left / Top / Right / Bottom | Inset of the content area. Top is measured from the bottom of the caption, not the top of the panel. Four floats rather than a `RectOffset`: that type is a handle onto a native object and cannot be built in a field initialiser. |
 | Backdrop Color | |
 | Open Scale | What a window grows from, and shrinks back to. |
 
@@ -93,13 +102,14 @@ UiWindowBuilder.For(window)
 | Step | Notes |
 | --- | --- |
 | `Create(parent, name)` / `For(window)` | Start. `Create` centres the new rect in its parent. |
-| `Size(w, h)` · `At(pos)` | |
+| `Size(w, h)` · `At(pos)` · `Scale(uniform)` | |
 | `Title(text)` · `TitleFont(font, size)` · `TitleColor(c)` | |
 | `Caption(height, fill)` · `NoCaption()` | |
 | `Style(style)` | A whole style at once. Copied. |
 | `Fill(c)` · `Border(size, c)` · `Corners(r)` · `Padding(l, t, r, b)` | |
 | `CloseButton(bool)` · `CloseIcon(sprite)` · `CloseColors(fill, icon)` | |
 | `Draggable(anywhere, clamp)` · `Fixed()` | |
+| `OnTop(order, layer)` · `InLine()` | Own canvas and sorting, or hierarchy order like any other UI object. |
 | `Backdrop(closeOnClick)` · `Backdrop(color, closeOnClick)` · `NoBackdrop()` | |
 | `Transition(kind, open, close)` · `Easing(open, close)` | |
 | `StartOpen()` · `DestroyOnClose()` | |
@@ -124,7 +134,8 @@ window.Open();
 
 ## Statistics
 
-Add Component → UI → Statistics Window on a `UiWindow`, or the whole thing in one line:
+**GameObject → UI (Canvas) → Statistics Window**, or Add Component → UI → Statistics Window on a `UiWindow`,
+or the whole thing in one line:
 
 ```csharp
 var stats = StatisticsWindow.Create(canvas);
@@ -216,20 +227,61 @@ stats.OnResetRequested.AddListener(PlayClearSound);
 stats.OnTabChanged.AddListener(tab => Debug.Log(tab));
 ```
 
+## Drawing over the game
+
+A window that comes out behind the game is not a hierarchy problem, and moving it down the hierarchy will
+not fix it. **Bring To Front only settles the window against its own siblings.** Everything else on screen —
+another canvas, and anything the scene draws rather than the canvas: sprites, meshes, particles — is sorted
+long before sibling order is consulted.
+
+**Always On Top** is the answer, and is on by default: the window gets a `Canvas` of its own with *Override
+Sorting*, at **Sorting Order** 100. A canvas and a sprite sort against each other by exactly that number, so
+100 clears anything the game draws below it. A `GraphicRaycaster` goes on with it and is not optional — a
+nested canvas takes its graphics out of the parent canvas's raycast list, and without one the window would
+draw on top and let every click fall through to whatever is behind it.
+
+Two cases it does not cover on its own:
+
+- **The game draws on a higher sorting layer.** A layer outranks every order within it, so no number wins.
+  Name that layer in **Sorting Layer**, or move the game's sprites to one below the UI's.
+- **The window is under a Screen Space - Overlay canvas and still hidden.** An overlay canvas draws over the
+  whole scene, so the thing in front is other UI. Raise the order, or check that the window is not inside a
+  panel that clips it.
+
 ## Worth knowing
 
 - **The close cross and the reset arrow are drawn, not fetched.** Two rotated boxes and a ring with a notch
   in it, which costs no atlas entry and stays sharp at any size. The notch is *painted in the button's own
   colour*, not cut, so it only disappears against a flat button — give the style a `ResetIcon` sprite if the
   button is ever a gradient.
+- **Scaling the rect is a fair way to size a whole window down.** The panel is generated geometry and the
+  text is SDF, so neither softens the way a sprite would. The transition measures its scaling against
+  whatever the window rests at rather than against 1, so opening does not throw that scale away; `RestScale`
+  and `SetScale(uniform)` set the same thing from code, and take effect on a window already on screen. The
+  drag clamp and the slide distance both take the scale into account, so a scaled window is bounded by what
+  it draws rather than by what its rect says.
 - **Slides are measured against the parent**, not the window, so a window leaves the screen rather than
   moving its own width and stopping where it can still be seen. That assumes a window roughly centred in its
   parent, which is what `Create` leaves.
 - **Dragging is a delta**, not a placement: the pointer's travel since the grab is added to where the window
   was. A window grabbed by its corner does not jump so its middle lands under the cursor, and none of it
   depends on how the anchors or the pivot are set.
+- **The clamp works per axis, and changes rule when the window does not fit.** On an axis where it fits, the
+  window is held wholly inside the parent. On one where it does not — a window taller than the canvas, which
+  is easy to arrive at — containment has no meaning, so it is dropped for an overlap: drag as far as leaving
+  **Keep Visible** units of the window inside. Without that, a too-tall window is pinned on the axis it
+  overflows and the drag reads as working sideways and dead vertically.
 - **Tweens run on unscaled time by default.** A window that opens over a paused game is the usual reason to
   have one.
+- **A window saved switched off wakes inside the first `Open`.** Unity runs `Awake` from the `SetActive`
+  that call makes, so **Start Closed** has to know it is being asked to hide a window that is in the middle
+  of being opened, and leave it alone. `IsOpen` is set before that `SetActive` for exactly this reason —
+  without it the first press is swallowed and the window appears on the second.
+- **Listeners are re-hooked on every load, not only when the window is built.** `AddListener` is not
+  serialized, so the handlers put on the close button and the backdrop when a window was built in the editor
+  are gone by the time the scene is played — while the parts they were added to, and the flag saying the
+  window is built, both survive. Hooking only where the parts are made leaves a close button that does
+  nothing.
 - Parts are found by name before they are made, so `EnsureBuilt` can be called as often as you like and a
   window saved as a prefab rebuilds into itself rather than into two of everything. `Rebuild()` from the
   component's context menu is the way out of a hierarchy that has been edited into a state the style can no
@@ -252,4 +304,5 @@ stats.OnTabChanged.AddListener(tab => Debug.Log(tab));
 | `StatisticsWindowStyle.cs`, `StatisticsRow.cs` | What it looks like, and what it shows. |
 | `EStatsTab.cs`, `EStatField.cs`, `EStatTint.cs` | |
 | `UiWindowExample.cs` | Three windows built from code. Drop it on an empty RectTransform in a canvas. |
+| `Editor/Window/UiWindowMenu.cs` | The two GameObject → UI entries. |
 | `../RoundedBox/` | Every panel here is one. |

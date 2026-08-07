@@ -571,9 +571,11 @@ namespace FlappyTemplate
             if (host == null || host.Style == null)
                 return;
 
-            var padding = host.Style.ContentPadding ?? new RectOffset();
             float border = Mathf.Max(0f, host.Style.BorderSize);
-            float chrome = (host.ShowCaption ? host.Style.CaptionHeight : border) + padding.top + padding.bottom + border;
+            float chrome = (host.ShowCaption ? host.Style.CaptionHeight : border)
+                + host.Style.ContentPaddingTop
+                + host.Style.ContentPaddingBottom
+                + border;
 
             float height = chrome + tabsHeight + style.TabGap + rowsHeight + bottomRoom;
             var rect = host.Rect;
