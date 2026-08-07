@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Window — FlappyBet Template</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --ink: #1c1f24;
+    --soft: #5b6472;
+    --line: #dfe3e8;
+    --accent: #3f6fd8;
+    --code-bg: #f2f4f7;
+    --note-bg: #eef4ff;
+    --note-line: #6f9bea;
+    --stage: #e9ebef;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --panel: #1d2025;
+      --ink: #e4e7ec;
+      --soft: #9aa3b0;
+      --line: #2c3038;
+      --accent: #7aa2f7;
+      --code-bg: #12141a;
+      --note-bg: #161d2b;
+      --note-line: #4a6ea8;
+      --stage: #0f1114;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 28px 96px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 64px; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 14px;
+    border-left: 2px solid var(--line);
+    padding-left: 16px;
+  }
+  nav.toc strong { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--soft); }
+  nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+
+  header.title { margin-bottom: 28px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 44px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  p { margin: 12px 0; max-width: 74ch; }
+  a { color: var(--accent); }
+  .lede { color: var(--soft); }
+  .stamp { color: var(--soft); font-size: 13.5px; font-style: italic; }
+  ul { max-width: 74ch; }
+
+  code, pre { font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 4px; font-size: 0.86em; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--soft); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td:first-child { white-space: nowrap; }
+
+  .note {
+    border-left: 3px solid var(--note-line);
+    background: var(--note-bg);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+  .note p { margin: 0; }
+  .note p + p { margin-top: 10px; }
+
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(276px, 1fr)); gap: 20px; margin: 24px 0; }
+  .specimen { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
+  .stage {
+    background: var(--stage);
+    padding: 24px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+  }
+  .stage.wide { padding: 34px 20px; }
+  .caption { padding: 11px 14px 0; font-weight: 600; font-size: 14px; }
+  .specimen .why { padding: 2px 14px 10px; margin: 0; color: var(--soft); font-size: 13px; max-width: none; }
+  .specimen pre { margin: 0 14px 14px; border: none; background: transparent; padding: 0; font-size: 12px; }
+
+  /* ---- the windows themselves, drawn rather than described ---- */
+
+  .win {
+    --fill: #5b4c9e;
+    --edge: #3a2e6b;
+    position: relative;
+    width: 236px;
+    background: var(--fill);
+    border: 3px solid var(--edge);
+    border-radius: 26px;
+    color: #fff;
+    font-size: 13px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .35);
+  }
+  .win .cap {
+    height: 78px;
+    background: rgba(0, 0, 0, .12);
+    border-radius: 23px 23px 0 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 10px;
+    font-weight: 800;
+    font-size: 21px;
+    letter-spacing: .01em;
+  }
+  .win .x {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: #fff;
+    color: #2e2a5c;
+    display: grid;
+    place-items: center;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .win .body { padding: 0 16px 16px; }
+
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .tab {
+    height: 34px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 13px;
+    background: #2e2a5c;
+    color: #fff;
+  }
+  .tab.on { background: #90e39a; color: #1c1a4a; }
+
+  .stat { text-align: center; margin-bottom: 12px; }
+  .stat .k { font-weight: 700; font-size: 13px; }
+  .stat .v { font-weight: 800; font-size: 17px; }
+  .up { color: #4ade80; }
+  .down { color: #ef4444; }
+  .count { color: #fbbf24; }
+  .sep { color: #fff; }
+
+  .reset {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #90e39a;
+    color: #1c1a4a;
+    display: grid;
+    place-items: center;
+    font-size: 19px;
+    font-weight: 700;
+  }
+
+  .plain .body { padding: 0 16px 20px; color: rgba(255, 255, 255, .72); text-align: center; }
+  .modal { position: relative; padding: 18px; background: rgba(0, 0, 0, .55); border-radius: 12px; }
+  .modal .win { width: 200px; }
+  .drag { border: 2px dashed rgba(255, 255, 255, .45); border-radius: 23px 23px 0 0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <a href="#look">What it looks like</a>
+  <a href="#window">The window</a>
+  <a class="sub" href="#style">Style</a>
+  <a href="#code">From code</a>
+  <a class="sub" href="#steps">Every step</a>
+  <a href="#statistics">Statistics</a>
+  <a class="sub" href="#rows">Rows</a>
+  <a class="sub" href="#values">Values</a>
+  <a class="sub" href="#reset">Reset</a>
+  <a href="#notes">Worth knowing</a>
+  <a href="#files">Files</a>
+</nav>
+
+<main>
+
+<header class="title">
+  <h1>Window</h1>
+  <p class="lede">A dialog that is one component rather than a prefab: a rounded panel, a caption, a close
+  button, a drag, and an opening that is animated rather than a SetActive. Everything it is made of is built
+  from code the first time it is needed, so there is no hierarchy to keep in step with the palette and
+  nothing to rebuild when a game decides its dialogs have square corners after all.</p>
+  <p class="stamp">Describes package 1.0.45. Update this file with the code — and README.md beside it.</p>
+  <p><strong>Add Component → UI → Ui Window</strong>, or one chain from code.</p>
+</header>
+
+<h2 id="look">What it looks like</h2>
+
+<div class="gallery">
+
+  <div class="specimen">
+    <div class="stage wide">
+      <div class="win">
+        <div class="x">✕</div>
+        <div class="cap">Statistics</div>
+        <div class="body">
+          <div class="tabs">
+            <div class="tab on">Current</div>
+            <div class="tab">Overall</div>
+          </div>
+          <div class="stat"><div class="k">Total wagered</div><div class="v">0</div></div>
+          <div class="stat">
+            <div class="k">Bets / Wins / Losses</div>
+            <div class="v"><span class="count">0</span><span class="sep"> / </span><span class="up">0</span><span class="sep"> / </span><span class="down">0</span></div>
+          </div>
+          <div class="stat"><div class="k">Revenue</div><div class="v up">0</div></div>
+          <div class="stat"><div class="k">Total profit</div><div class="v up">0</div></div>
+          <div class="stat"><div class="k">Luck</div><div class="v down">0</div></div>
+          <div class="reset">↺</div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">Statistics</div>
+    <p class="why">Two tabs, five rows and a reset button, all of it built into an ordinary window.</p>
+    <pre><code>var stats = StatisticsWindow.Create(canvas);
+stats.Window.Open();</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage wide">
+      <div class="win plain">
+        <div class="x">✕</div>
+        <div class="cap drag">Draggable</div>
+        <div class="body">Grabbed by the caption. Content goes here.</div>
+      </div>
+    </div>
+    <div class="caption">Plain</div>
+    <p class="why">A panel, a caption, a close button, and a drag by that caption. Everything else is the
+    style's defaults.</p>
+    <pre><code>UiWindowBuilder.Create(canvas, "Plain")
+    .Size(340f, 220f)
+    .Title("Draggable")
+    .Draggable()
+    .Open();</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage wide">
+      <div class="modal">
+        <div class="win">
+          <div class="x">✕</div>
+          <div class="cap">Modal</div>
+          <div class="body plain">Every click that misses lands on the sheet.</div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">Modal</div>
+    <p class="why">The backdrop is what makes it modal — a sheet across the parent that swallows every
+    click that misses, and takes the window down when clicked.</p>
+    <pre><code>UiWindowBuilder.Create(canvas, "Message")
+    .Backdrop(new Color(0f, 0f, 0f, .65f))
+    .Transition(EWindowTransition.SlideUp, .34f, .24f)
+    .Fixed()
+    .DestroyOnClose()
+    .Open();</code></pre>
+  </div>
+
+</div>
+
+<h2 id="window">The window</h2>
+
+<table>
+  <tr><th>Field</th><th>What it does</th></tr>
+  <tr><td>Title</td><td>The caption text. Also <code>Title</code> from code, live.</td></tr>
+  <tr><td>Style</td><td>Colours, sizes and fonts — the table below.</td></tr>
+  <tr><td>Show Caption</td><td>Off drops the whole header and starts the content at the top of the panel. The close button stays.</td></tr>
+  <tr><td>Show Close Button</td><td></td></tr>
+  <tr><td>Start Closed</td><td>Hide at Awake and wait for <code>Open</code>. Off leaves the window exactly as the scene saved it.</td></tr>
+  <tr><td>Destroy On Close</td><td>For a window built for one message — it takes itself down with it.</td></tr>
+  <tr><td>Draggable / Drag Anywhere</td><td>By the caption, or by any part of the window. Anywhere catches drags on everything inside it that does not handle its own.</td></tr>
+  <tr><td>Clamp To Parent</td><td>Keep the window inside its parent. One larger than its parent is centred on the axis it does not fit rather than fighting the edge.</td></tr>
+  <tr><td>Bring To Front</td><td>Draw over the siblings when grabbed or opened.</td></tr>
+  <tr><td>Show Backdrop</td><td>A sheet across the parent behind the window, which is what makes it modal.</td></tr>
+  <tr><td>Close On Backdrop Click</td><td></td></tr>
+  <tr><td>Transition</td><td><code>None</code>, <code>Fade</code>, <code>Scale</code>, <code>ScaleFade</code>, <code>SlideUp/Down/Left/Right</code>. Slides are named for the way the window travels as it opens.</td></tr>
+  <tr><td>Durations, Easing</td><td>One of each, for opening and closing.</td></tr>
+  <tr><td>Unscaled Time</td><td>On by default, so a window still opens over a paused game.</td></tr>
+</table>
+
+<div class="note">
+  <p><code>OnOpened</code>, <code>OnClosed</code> and <code>OnCloseClicked</code> are UnityEvents.
+  <strong>OnClosed fires when the animation has finished</strong>, not when <code>Close</code> was called —
+  a window is still on screen for the length of its close.</p>
+</div>
+
+<h3 id="style">Style</h3>
+
+<table>
+  <tr><th>Field</th><th>What it does</th></tr>
+  <tr><td>Fill, Border, Corner Radius, Edge Softness</td><td>The panel. Straight through to <code>RoundedBox</code>.</td></tr>
+  <tr><td>Caption Height</td><td>The whole header block: the drag strip, the close button and the title. Content starts under it.</td></tr>
+  <tr><td>Caption Fill</td><td>Drawn <em>over</em> the panel fill, so the default is a wash rather than a colour — alpha at nothing leaves the header the same colour as the body.</td></tr>
+  <tr><td>Title Top Inset</td><td>Space above the title, which is what leaves room for the close button over it.</td></tr>
+  <tr><td>Title Font / Size / Color / Style / Alignment</td><td></td></tr>
+  <tr><td>Close Size / Offset / Fill / Border / Corner Radius</td><td>Offset is measured inwards from the top right corner. A negative corner radius means a circle at any size.</td></tr>
+  <tr><td>Close Icon Color / Thickness / Scale</td><td></td></tr>
+  <tr><td>Close Icon</td><td>A sprite in place of the drawn cross. Its colour still comes from the style.</td></tr>
+  <tr><td>Content Padding</td><td>Inset of the content area. Top is measured from the bottom of the caption.</td></tr>
+  <tr><td>Backdrop Color</td><td></td></tr>
+  <tr><td>Open Scale</td><td>What a window grows from, and shrinks back to.</td></tr>
+</table>
+
+<p><code>ApplyStyle()</code> pushes the lot onto the parts and is cheap enough to call on a window that is
+already open — which is what a theme change is. <code>Style</code> as a property applies itself when
+assigned. <code>Clone()</code> gives a window its own copy so it can be themed without the change reaching
+every other window sharing that style.</p>
+
+<h2 id="code">From code</h2>
+
+<p><code>UiWindowBuilder</code> says a whole window in one chain, the way <code>RoundedBoxBuilder</code> does
+a box. A struct holding one reference, so a chain allocates nothing, and a step against a window that has
+been destroyed is passed over rather than thrown.</p>
+
+<pre><code>// A modal that slides up and takes itself down afterwards
+UiWindowBuilder.Create(canvas, "Message")
+    .Size(420f, 260f)
+    .Title("Well played")
+    .Backdrop(new Color(0f, 0f, 0f, .65f))
+    .Transition(EWindowTransition.SlideUp, .34f, .24f)
+    .Easing(Ease.OutCubic, Ease.InCubic)
+    .Fixed()
+    .DestroyOnClose()
+    .OnClosed(NextRound)
+    .Open();
+
+// Or reconfigure one that already exists
+UiWindowBuilder.For(window)
+    .Title("Paused")
+    .Fill(Color.black)
+    .NoBackdrop();</code></pre>
+
+<h3 id="steps">Every step</h3>
+
+<table>
+  <tr><th>Step</th><th>Notes</th></tr>
+  <tr><td><code>Create(parent, name)</code> / <code>For(window)</code></td><td>Start. <code>Create</code> centres the new rect in its parent.</td></tr>
+  <tr><td><code>Size(w, h)</code> · <code>At(pos)</code></td><td></td></tr>
+  <tr><td><code>Title(text)</code> · <code>TitleFont(font, size)</code> · <code>TitleColor(c)</code></td><td></td></tr>
+  <tr><td><code>Caption(height, fill)</code> · <code>NoCaption()</code></td><td></td></tr>
+  <tr><td><code>Style(style)</code></td><td>A whole style at once. Copied.</td></tr>
+  <tr><td><code>Fill(c)</code> · <code>Border(size, c)</code> · <code>Corners(r)</code> · <code>Padding(l, t, r, b)</code></td><td></td></tr>
+  <tr><td><code>CloseButton(bool)</code> · <code>CloseIcon(sprite)</code> · <code>CloseColors(fill, icon)</code></td><td></td></tr>
+  <tr><td><code>Draggable(anywhere, clamp)</code> · <code>Fixed()</code></td><td></td></tr>
+  <tr><td><code>Backdrop(...)</code> · <code>NoBackdrop()</code></td><td>With or without a colour.</td></tr>
+  <tr><td><code>Transition(kind, open, close)</code> · <code>Easing(open, close)</code></td><td></td></tr>
+  <tr><td><code>StartOpen()</code> · <code>DestroyOnClose()</code></td><td></td></tr>
+  <tr><td><code>OnOpened(handler)</code> · <code>OnClosed(handler)</code></td><td></td></tr>
+  <tr><td><code>Add&lt;T&gt;(out T)</code></td><td>A component on the window before it wakes.</td></tr>
+  <tr><td><code>With(child)</code></td><td>Parents something into the content area.</td></tr>
+  <tr><td><code>Done()</code> · <code>Open()</code> · <code>OpenInstant()</code></td><td>The end of the chain.</td></tr>
+</table>
+
+<div class="note">
+  <p><code>Create</code> leaves the new object <strong>switched off</strong> until the chain ends. That is
+  not a detail: a MonoBehaviour added to an active object runs <code>Awake</code> there and then, and a
+  window that woke in the middle of the chain would have built and hidden itself before it had been told how
+  big it is. <code>Done</code> switches it on, and the window wakes with every answer already in place.</p>
+  <p><code>Add&lt;T&gt;</code> exists for the same reason — it is how <code>StatisticsWindow</code> gets onto
+  a window built from code.</p>
+</div>
+
+<p>Whatever the window is for goes under <code>Content</code>:</p>
+
+<pre><code>var window = UiWindowBuilder.Create(canvas, "Rules").Size(420f, 520f).Title("Rules").Done();
+Instantiate(rulesPrefab, window.Content, false);
+window.Open();</code></pre>
+
+<h2 id="statistics">Statistics</h2>
+
+<p>Add Component → UI → Statistics Window on a <code>UiWindow</code>, or the whole thing in one line:</p>
+
+<pre><code>var stats = StatisticsWindow.Create(canvas);
+stats.Window.Open();</code></pre>
+
+<p>Everything it shows comes from <code>MainState.Statistics</code>, which the server fills in and refreshes
+over the socket. Nothing is polled: the window redraws when <code>OnStatistics</code> fires and when the
+player switches tabs, and sits still the rest of the time. Both halves — current and overall — arrive
+together, so switching tabs asks the server for nothing.</p>
+
+<table>
+  <tr><th>Field</th><th>What it does</th></tr>
+  <tr><td>Style</td><td>Tabs, rows and reset button. The panel around them is the window's own style.</td></tr>
+  <tr><td>Current / Overall Label</td><td>The tab captions. Nothing here is translated.</td></tr>
+  <tr><td>Tab</td><td>Which half is showing. <code>Tab</code>, <code>SetTab</code>, <code>ShowCurrent()</code> and <code>ShowOverall()</code> from code.</td></tr>
+  <tr><td>Rows</td><td>What it shows, in the order it shows it.</td></tr>
+  <tr><td>Show Reset</td><td></td></tr>
+  <tr><td>Reset On Current Only</td><td>Hide the button on the Overall tab. On by default: there is no such thing as resetting the overall figures, and a button that does nothing is worse than no button.</td></tr>
+  <tr><td>Reserve Reset Room</td><td>Keep the rows clear of the button. Off lets it sit over the bottom of the column, which is tighter.</td></tr>
+  <tr><td>Follow State</td><td>Redraw when the server sends new statistics.</td></tr>
+  <tr><td>Fit Window Height</td><td>Resize the window to exactly the rows it is showing.</td></tr>
+</table>
+
+<h3 id="rows">Rows</h3>
+
+<p><code>StatsDto</code> carries ten fields and no game wants all ten, so the rows are a list rather than
+anything fixed. Each is a caption, the field under it, how it is coloured, and an optional suffix.</p>
+
+<table>
+  <tr><th>Field</th><th>What it does</th></tr>
+  <tr><td>Label</td><td>The caption above the value.</td></tr>
+  <tr><td>Field</td><td><code>Wager</code>, <code>WagerWon</code>, <code>WagerLost</code>, <code>GrossWin</code>, <code>NetProfit</code>, <code>Payouts</code>, <code>Luck</code>, <code>BetCount</code>, <code>WinCount</code>, <code>LoseCount</code>, or <code>Counts</code> for all three counts on one line.</td></tr>
+  <tr><td>Tint</td><td><code>Plain</code>, <code>Signed</code>, <code>Strict</code> or <code>Counts</code>.</td></tr>
+  <tr><td>Suffix</td><td>Printed after the value — a percent sign, a currency code.</td></tr>
+  <tr><td>Enabled</td><td>Off leaves the row out entirely rather than blank, so the ones below close up.</td></tr>
+</table>
+
+<p>Where the line between the two colours falls is not the same for every number, which is why there are two
+signed tints. <code>Signed</code> prints zero and above in the positive colour: nothing wagered yet is not a
+loss. <code>Strict</code> prints only above zero: luck of zero is the worst there is. The defaults are the
+five rows the design was drawn with —</p>
+
+<pre><code>new StatisticsRow("Total wagered", EStatField.Wager),
+new StatisticsRow("Bets / Wins / Losses", EStatField.Counts, EStatTint.Counts),
+new StatisticsRow("Revenue", EStatField.GrossWin, EStatTint.Signed),
+new StatisticsRow("Total profit", EStatField.NetProfit, EStatTint.Signed),
+new StatisticsRow("Luck", EStatField.Luck, EStatTint.Strict),</code></pre>
+
+<p>— and the list is public, so a game can build its own and call <code>Rebuild()</code>:</p>
+
+<pre><code>stats.Rows.Clear();
+stats.Rows.Add(new StatisticsRow("Staked", EStatField.Wager));
+stats.Rows.Add(new StatisticsRow("Return", EStatField.Luck, EStatTint.Strict, "%"));
+stats.Rebuild();</code></pre>
+
+<p>The counts line is one label with the colours written into it as rich text rather than three labels to
+lay out, so the row stays one row however wide the numbers get.</p>
+
+<h3 id="values">Values</h3>
+
+<div class="note">
+  <p>Money arrives from the server as <strong>strings</strong>, and is kept as strings all the way to the
+  label: a decimal that has been through a float is no longer the number that was wagered. It is parsed only
+  to decide which side of zero it falls on, and reformatted only when <code>Decimals</code> says to.</p>
+</div>
+
+<table>
+  <tr><th>Field</th><th>What it does</th></tr>
+  <tr><td>Decimals</td><td>Below zero prints the number exactly as the server sent it, which is the only way to be sure nothing was rounded off.</td></tr>
+  <tr><td>Group Digits</td><td>Thousands separators, when a decimal count is set.</td></tr>
+  <tr><td>Prefix</td><td>Printed before every money value — a currency symbol. Counts and luck are left alone.</td></tr>
+</table>
+
+<p>Anything that will not parse is printed exactly as it came, whatever the settings say.</p>
+
+<h3 id="reset">Reset</h3>
+
+<p>The button emits <code>STAT_RESET</code> through <code>Emitter</code> and returns. The figures come back
+as an ordinary statistics broadcast, so the window is never showing anything the server has not confirmed.
+It refuses on the Overall tab whatever is wired to it — <code>ResetCurrent()</code> is a no-op there, not
+just a hidden button.</p>
+
+<p>With no socket at all — a scene with no <code>StateManager</code> in it — the window falls back to a
+sample set of figures so there is something to look at, and the reset clears those instead. A
+<code>StateManager</code> that is running but has not been sent statistics yet shows zeroes rather than the
+sample; a real game must never show invented numbers.</p>
+
+<pre><code>stats.OnResetRequested.AddListener(PlayClearSound);
+stats.OnTabChanged.AddListener(tab =&gt; Debug.Log(tab));</code></pre>
+
+<h2 id="notes">Worth knowing</h2>
+
+<ul>
+  <li><strong>The close cross and the reset arrow are drawn, not fetched.</strong> Two rotated boxes, and a
+  ring with a notch in it, which costs no atlas entry and stays sharp at any size. The notch is
+  <em>painted in the button's own colour</em>, not cut, so it only disappears against a flat button — give
+  the style a <code>ResetIcon</code> sprite if the button is ever a gradient.</li>
+  <li><strong>Slides are measured against the parent</strong>, not the window, so a window leaves the screen
+  rather than moving its own width and stopping where it can still be seen. That assumes a window roughly
+  centred in its parent, which is what <code>Create</code> leaves.</li>
+  <li><strong>Dragging is a delta</strong>, not a placement: the pointer's travel since the grab is added to
+  where the window was. A window grabbed by its corner does not jump so its middle lands under the cursor,
+  and none of it depends on how the anchors or the pivot are set.</li>
+  <li><strong>Tweens run on unscaled time by default.</strong> A window that opens over a paused game is the
+  usual reason to have one.</li>
+  <li>Parts are found by name before they are made, so <code>EnsureBuilt</code> can be called as often as you
+  like and a window saved as a prefab rebuilds into itself rather than into two of everything.
+  <code>Rebuild()</code> from the component's context menu is the way out of a hierarchy that has been edited
+  into a state the style can no longer describe.</li>
+  <li>Every tween is built with <code>DOTween.To</code> rather than the <code>DOFade</code> /
+  <code>DOAnchorPos</code> shortcuts. Those live in DOTween's UI module, which is compiled into the project's
+  own assembly and cannot be reached from a package. <code>Toast</code> does the same thing for the same
+  reason.</li>
+</ul>
+
+<h2 id="files">Files</h2>
+
+<table>
+  <tr><th>File</th><th></th></tr>
+  <tr><td><code>UiWindow.cs</code></td><td>The window: parts, style, drag, transition.</td></tr>
+  <tr><td><code>UiWindowBuilder.cs</code></td><td>The fluent API.</td></tr>
+  <tr><td><code>UiWindowStyle.cs</code></td><td>Everything a window looks like.</td></tr>
+  <tr><td><code>UiWindowDragHandle.cs</code></td><td>The grab. Usable on its own, for a custom header.</td></tr>
+  <tr><td><code>UiWindowParts.cs</code></td><td>Making and finding children. Internal.</td></tr>
+  <tr><td><code>EWindowTransition.cs</code></td><td></td></tr>
+  <tr><td><code>StatisticsWindow.cs</code></td><td>The statistics panel.</td></tr>
+  <tr><td><code>StatisticsWindowStyle.cs</code>, <code>StatisticsRow.cs</code></td><td>What it looks like, and what it shows.</td></tr>
+  <tr><td><code>EStatsTab.cs</code>, <code>EStatField.cs</code>, <code>EStatTint.cs</code></td><td></td></tr>
+  <tr><td><code>UiWindowExample.cs</code></td><td>Three windows built from code. Drop it on an empty RectTransform in a canvas.</td></tr>
+  <tr><td><code>../RoundedBox/</code></td><td>Every panel here is one.</td></tr>
+</table>
+
+</main>
+</div>
+</body>
+</html>
