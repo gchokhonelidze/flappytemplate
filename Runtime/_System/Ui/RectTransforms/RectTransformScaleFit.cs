@@ -19,10 +19,25 @@ namespace FlappyTemplate
     // real design size wants - note that a panel stretched to its parent has no size of its own to fit,
     // so it needs fixed Width/Height to be worth fitting. Content measures the panel and its children
     // together, for a container whose children stick out past it.
+    //
+    // The one thing this does not share is a panel that animates its own scale - a UiWindow set to the
+    // Scale or Scale Fade transition tweens localScale, and with Follow on the two write over each
+    // other every frame. Put the fit on a content rect inside the window, so the window animates around
+    // it, or leave Follow off and call Apply once the window has finished opening.
     [ExecuteAlways]
     [RequireComponent(typeof(RectTransform))]
     public class RectTransformScaleFit : MonoBehaviour
     {
+        // Below this a scale is treated as no scale at all: a panel that small draws nothing, and every
+        // measurement taken of it is noise. Well above float precision on purpose, so a scale on its way
+        // to zero is caught while its measurements still mean something - and above the 0.0001 UiWindow
+        // opens a scale transition from, so a fit that catches a window mid-animation reads it as the
+        // transient it is rather than as the size the panel wants to be.
+        private const float MinScale = 0.001f;
+
+        // Canvas units. A rect thinner than this is a rect being laid out, not a rect to fit into.
+        private const float MinExtent = 0.0001f;
+
         [Tooltip("The rect that is fitted into. Empty uses this panel's parent rect.")]
         [SerializeField]
         private RectTransform source;
@@ -73,9 +88,10 @@ namespace FlappyTemplate
 
         private RectTransform rect;
 
-        // The scale and position the panel was authored with. Both are driven while this runs, so they
-        // are never serialized and this is what the scene file still holds; keeping them lets Off give
-        // the panel back untouched, and gives Allow Upscale a ceiling to cap at.
+        // The scale and position the panel was authored with, read once on enable. Both are driven while
+        // this runs, so neither is ever serialized and this is what the scene file still holds: keeping
+        // them lets Off give the panel back untouched, gives Allow Upscale a ceiling to cap at, and
+        // gives a panel found at zero scale something to be put back to.
         private Vector3 baseScale = Vector3.one;
         private Vector3 basePosition;
 
@@ -87,6 +103,12 @@ namespace FlappyTemplate
         private static readonly Vector3[] Corners = new Vector3[4];
 
         private RectTransform Source => source != null ? source : rect != null ? rect.parent as RectTransform : null;
+
+        // A base read while the panel happened to be scaled to nothing - enabled mid-animation, or
+        // caught in a window's open transition - is not an authored value worth keeping: as a ceiling it
+        // would cap the fit at nothing and pin the panel shut, and as a fallback it would restore the
+        // very state being recovered from.
+        private Vector3 SafeBase => new Vector3(SafeScale(baseScale.x), SafeScale(baseScale.y), baseScale.z);
 
         void OnEnable()
         {
@@ -122,8 +144,8 @@ namespace FlappyTemplate
             if (rect == null)
                 return;
 
-            if (fit != EFitMode.None && rect.localScale != baseScale)
-                rect.localScale = baseScale;
+            if (fit != EFitMode.None && rect.localScale != SafeBase)
+                rect.localScale = SafeBase;
             if (align && rect.localPosition != basePosition)
                 rect.localPosition = basePosition;
         }
@@ -137,8 +159,7 @@ namespace FlappyTemplate
 
         /// <summary>Measures the source and scales this panel to fit inside it.</summary>
         // With Follow off this is the hook to call when either side changes - a panel rebuilt with more
-        // rows, a source resized by a layout group. Fitting on demand also dodges the trap of a
-        // per-frame fit: a panel that tweens in from zero scale would otherwise be measured mid-animation.
+        // rows, a source resized by a layout group, a window that has finished its open animation.
         [ContextMenu("Apply Now")]
         public void Apply()
         {
@@ -165,36 +186,81 @@ namespace FlappyTemplate
                 return false;
 
             var available = (src.rect.size - padding) * fill;
-            if (available.x <= 0f || available.y <= 0f)
+            if (!IsFinite(available) || available.x <= MinExtent || available.y <= MinExtent)
                 return false;
 
-            // Both sides are measured in the source's local space, so the factor comes out clean
+            // Both sides are measured in the source's local space, so the numbers come out comparable
             // whatever sits between the two - a nested canvas, a scaled holder, an extra parent.
             var bounds = Measure(src);
-            if (bounds.size.x <= Mathf.Epsilon && bounds.size.y <= Mathf.Epsilon)
+
+            // A canvas with no size to speak of - the game window minimised, a scale factor that has
+            // gone to zero - leaves the source's world-to-local matrix singular, and the corners come
+            // back as infinities. Nothing measured that frame means anything, so nothing is written:
+            // NaN reaching localScale is refused by Unity and NaN reaching the fit would stay there,
+            // since every later frame multiplies through it.
+            if (!IsFinite(bounds.size))
                 return false;
+
+            if (bounds.size.x <= MinExtent && bounds.size.y <= MinExtent)
+            {
+                // Nothing measurable. Either the panel is sitting at a scale of zero - tweened out, or
+                // put there by an earlier fit - or there is nothing under it to measure. A panel
+                // measuring nothing has no size to work back from, so rather than leave it there for
+                // good it is put back on its authored scale, which gives the next frame something real
+                // to measure and the fit lands normally from there.
+                if (fit == EFitMode.None)
+                    return false;
+
+                scale = SafeBase;
+                return true;
+            }
 
             var factor = Vector2.one;
             if (fit != EFitMode.None)
             {
-                // Relative, not absolute: the factor is measured from where the panel stands right now,
-                // so re-applying it every frame converges instead of compounding - once it fits, the
-                // factor is 1. z is left alone; a UI panel has no depth to scale and zeroing it would
-                // take the children with it.
-                factor = TransformBounds.GetFitScale(available, bounds.size, fit, stretch);
-                var fitted = new Vector3(scale.x * factor.x, scale.y * factor.y, scale.z);
+                // What the panel would measure at a scale of 1. Measuring is only ever possible at the
+                // scale the panel is standing at, so its own scale is divided straight back out, and
+                // the fit that follows is absolute: the scale written is worked out from the panel's
+                // design size every time. Nudging the current scale by a factor instead - the way the
+                // sprite side does it, where there is no such thing as an unscaled measurement - would
+                // fold every frame's rounding, and every frame measured against a half-built canvas,
+                // into the next frame's answer, and a panel that reached zero that way could never
+                // climb back out.
+                var divisor = new Vector2(Divisor(scale.x), Divisor(scale.y));
+                var unit = new Vector3(
+                    bounds.size.x / Mathf.Abs(divisor.x),
+                    bounds.size.y / Mathf.Abs(divisor.y),
+                    bounds.size.z
+                );
 
+                var ceiling = SafeBase;
+                var fitted = TransformBounds.GetFitScale(available, unit, fit, stretch);
                 if (!allowUpscale)
                 {
-                    fitted.x = ClampToBase(fitted.x, baseScale.x);
-                    fitted.y = ClampToBase(fitted.y, baseScale.y);
-
-                    // Align lines the panel up at the scale it will actually reach, so it has to be
-                    // told what the cap left of the factor rather than what the fit asked for.
-                    factor = new Vector2(Ratio(fitted.x, scale.x), Ratio(fitted.y, scale.y));
+                    fitted.x = Mathf.Min(fitted.x, Mathf.Abs(ceiling.x));
+                    fitted.y = Mathf.Min(fitted.y, Mathf.Abs(ceiling.y));
                 }
 
-                scale = fitted;
+                // A stretch leaves the axis it was not asked to fit at the scale it was authored with;
+                // a uniform fit drives both axes with the same number. The sign comes from the authored
+                // scale either way, so a panel mirrored by a negative scale stays mirrored. z is left
+                // alone: a UI panel has no depth to scale and zeroing it would take the children with it.
+                var target = new Vector3(
+                    stretch && fit == EFitMode.Height ? ceiling.x : fitted.x * Mathf.Sign(ceiling.x),
+                    stretch && fit == EFitMode.Width ? ceiling.y : fitted.y * Mathf.Sign(ceiling.y),
+                    scale.z
+                );
+
+                // Whatever the arithmetic came to, a scale of nothing is never the answer - it is the
+                // one value the panel cannot be measured at again, so it is refused at the door rather
+                // than written and recovered from next frame.
+                if (!IsFinite(target) || Mathf.Abs(target.x) < MinScale || Mathf.Abs(target.y) < MinScale)
+                    return false;
+
+                // Align lines the panel up at the scale it will actually reach, so it is told how far
+                // the scale is about to move rather than what the fit asked for.
+                factor = new Vector2(target.x / divisor.x, target.y / divisor.y);
+                scale = target;
             }
 
             if (align)
@@ -217,6 +283,9 @@ namespace FlappyTemplate
                     pivot.z
                 );
 
+                if (!IsFinite(local))
+                    return false;
+
                 // Back out through the source rather than writing anchoredPosition, so the panel does
                 // not have to be a direct child of the rect it is being fitted into. z is kept as
                 // authored, so fitting never reorders anything sorted by depth.
@@ -234,8 +303,8 @@ namespace FlappyTemplate
             if (scope == ERectScope.Content)
                 return RectTransformUtility.CalculateRelativeRectTransformBounds(src, rect);
 
-            // Corners come back with the panel's own rotation and scale already baked in, which is what
-            // makes the factor relative in the same way Content's is.
+            // Corners come back with the panel's own rotation and scale already baked in, which is why
+            // the caller divides that scale back out to get the panel's size as authored.
             rect.GetWorldCorners(Corners);
             var toLocal = src.worldToLocalMatrix;
 
@@ -272,18 +341,26 @@ namespace FlappyTemplate
                 rect.position = position;
         }
 
-        // Caps how far the fit may go without touching its sign, so a panel mirrored by a negative
-        // scale is held to its own magnitude instead of being flipped back the right way round.
-        private static float ClampToBase(float value, float baseValue)
+        // Never zero and never NaN, and it keeps its sign, so dividing by the scale the panel is
+        // standing at is safe even when the panel is standing at nothing.
+        private static float Divisor(float value)
         {
-            float limit = Mathf.Abs(baseValue);
-            return Mathf.Abs(value) <= limit ? value : Mathf.Sign(value) * limit;
+            if (float.IsNaN(value) || Mathf.Abs(value) < MinScale)
+                return value < 0f ? -MinScale : MinScale;
+
+            return value;
         }
 
-        // A panel left at zero scale - tweened out, or authored that way - has no factor to speak of,
-        // so alignment treats it as unscaled rather than dividing by nothing.
-        private static float Ratio(float fitted, float current) =>
-            Mathf.Abs(current) > Mathf.Epsilon ? fitted / current : 1f;
+        private static float SafeScale(float value) =>
+            !IsFinite(value) || Mathf.Abs(value) < MinScale ? 1f : value;
+
+        // float.IsFinite is not in every scripting profile Unity can be set to, so the test is spelled
+        // out rather than assumed.
+        private static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+
+        private static bool IsFinite(Vector2 value) => IsFinite(value.x) && IsFinite(value.y);
+
+        private static bool IsFinite(Vector3 value) => IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
 
 #if UNITY_EDITOR
         // So changing the fit or the anchor in the inspector takes effect right away, even with Follow
