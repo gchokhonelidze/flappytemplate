@@ -8,7 +8,7 @@ hand over from code as a single string.
 Every cell is a **child RectTransform of its own** — a panel you can select, colour, animate and prefab.
 That is the difference from `GridLayoutGroup`, whose cells are all one size and are not objects at all.
 
-*Describes package 1.0.39. Update this file with the code.*
+*Describes package 1.0.41. Update this file with the code.*
 
 ---
 
@@ -95,8 +95,10 @@ footer footer footer
 - Names are the panels' **object names**, unless a Ui Grid Item's `Area` overrides them.
 - Quotes around a row, commas and pipes are all tolerated — paste in CSS and it will read.
 
-Setting a layout **shows the panels it names and hides the ones it does not**. It also decides how many
-columns and rows there are.
+Setting a layout **shows the panels it names and hides the ones it does not**. It also decides **how many
+columns and rows there are** — a grid set up with four rows and given a layout of three has three, and the
+fourth track stops taking up the space its size asked for. Tracks are still added past the picture where an
+item needs one: a panel the flow carried below it, or one holding a row of its own.
 
 A name with nothing to match is not an error — those cells are held open, so a layout can be written before
 the panel exists. The inspector lists any it cannot match, since a misspelling looks exactly the same.
@@ -153,7 +155,7 @@ by dragging or by the header menu **rewrites that line in the layout** rather th
 
 ```csharp
 grid.Layout = "cols: 200 1fr / nav body";
-grid.SetLayout(compact);              // the same thing as a method
+grid.SetLayout(compact);              // the same thing as a method — takes a string or a UiGridLayout
 grid.ClearLayout();                   // every panel shown again, placed by its own Column and Row
 bool visible = grid.Shows("aside");   // would this panel be showing?
 string now = grid.ReadLayout();       // what it is arranged as right now, in the same form
@@ -161,6 +163,51 @@ string now = grid.ReadLayout();       // what it is arranged as right now, in th
 
 `ReadLayout` is how you get the first one: arrange the panels in the inspector, print it, paste it into the
 code that switches between it and the next.
+
+### Built rather than written
+
+A picture is the right shape for a layout you keep whole — in the inspector, in a `const`, switched between
+at runtime. It is the wrong shape for one assembled from parts, where it turns into string concatenation and
+the compiler stops helping. `UiGridLayout.Build()` produces the same thing with types:
+
+```csharp
+grid.SetLayout(UiGridLayout.Build()
+    .Columns(GridTrack.Fixed(200), GridTrack.Flexible(), GridTrack.Fixed(240))
+    .Rows(GridTrack.Fixed(64), GridTrack.Flexible(), GridTrack.Fixed(48))
+    .Row("header", "header", "header")
+    .Row("nav",    "body",   "aside")
+    .Row("footer", "footer", "footer")
+    .Done());
+```
+
+| Call | Does |
+|---|---|
+| `.Columns(…)`, `.Rows(…)` | The track sizes — the same as a `cols:` / `rows:` line |
+| `.Row(names…)` | Adds a row of the picture. `UiGridLayout.Empty` for a gap |
+| `.Area(name, column, row, columnSpan, rowSpan)` | Places one name outright, instead of drawing every cell |
+| `.Size(columns, rows)` | Holds the grid open to at least this, for rows that hold nothing |
+| `.Done()` | The finished `UiGridLayout`, for `SetLayout` |
+
+`Row` and `Area` mix — rows are laid down first and blocks stamped over them — so the bulk can be drawn and
+the exceptions stated. Where only a few panels are placed, `Area` says it in a line each:
+
+```csharp
+grid.SetLayout(UiGridLayout.Build()
+    .Columns(GridTrack.Flexible(), GridTrack.Flexible(2f))
+    .Rows(GridTrack.Fixed(64), GridTrack.Flexible())
+    .Area("header", 0, 0, columnSpan: 2)
+    .Area("nav", 0, 1)
+    .Area("body", 1, 1)
+    .Done());
+```
+
+`grid.SetLayout` takes either a `string` or a `UiGridLayout`, and `UiGridLayout.Parse` and `ToString` convert
+between them, so the two forms are interchangeable — the same layout, chosen by which reads better where you
+are standing. A layout given as an object is kept as it is; the string is still written, because that is what
+the scene saves and the inspector shows.
+
+> Names must be **one word**. A layout is stored as text, so a name with a space or a separator in it comes
+> back as two cells. The builder says so when it happens; give that panel a `Ui Grid Item` and set its `Area`.
 
 ### Tracks from code
 
@@ -231,7 +278,7 @@ in two separate blocks.
 |---|---|
 | `UiGrid.cs` | The layout group: tracks, placement, sizing, the layout string |
 | `UiGridItem.cs` | Per-panel name, placement and alignment |
-| `UiGridLayout.cs` | Parsing, formatting and editing of layout strings |
+| `UiGridLayout.cs` | Layout strings: parsing, formatting, editing, and the builder |
 | `GridTrack.cs` | One row or column |
 | `UiGridCell.cs`, `UiGridSnapshot.cs` | Where everything landed, for the inspector and for you |
 | `UiGridExample.cs` | A MonoBehaviour doing all of the above |

@@ -55,6 +55,161 @@ namespace FlappyTemplate
 
         public int Count => areas.Count;
 
+        /// <summary>Starts building a layout in code, where a picture typed as a string reads as noise.</summary>
+        // A string is the right shape for a layout kept in the inspector, switched at runtime or pasted
+        // between the two. It is the wrong shape for one assembled from parts - a size that came from a
+        // setting, a row that is only there in one mode - where it turns into string concatenation and the
+        // compiler stops being able to help. Both build the same UiGridLayout, so the choice is only ever
+        // about which reads better at the call site.
+        public static Builder Build() => new Builder();
+
+        /// <summary>Assembles a layout from tracks, rows and blocks. Finish with <see cref="Done"/>.</summary>
+        public class Builder
+        {
+            // Anything that would come back out of ToString as two cells instead of one, or as a new row.
+            private static readonly char[] Illegal = { ' ', '\t', ',', '|', '\n', '\r', '/', '"', '\'', ':' };
+
+            private struct Block
+            {
+                public string Name;
+                public int Column;
+                public int Row;
+                public int ColumnSpan;
+                public int RowSpan;
+            }
+
+            private readonly List<string[]> picture = new List<string[]>();
+            private readonly List<Block> blocks = new List<Block>();
+
+            private GridTrack[] columnTracks;
+            private GridTrack[] rowTracks;
+            private int leastColumns;
+            private int leastRows;
+
+            /// <summary>The column sizes, left to right. Same as a cols: line.</summary>
+            public Builder Columns(params GridTrack[] tracks)
+            {
+                columnTracks = tracks != null && tracks.Length > 0 ? (GridTrack[])tracks.Clone() : null;
+                return this;
+            }
+
+            /// <summary>The row sizes, top to bottom. Same as a rows: line.</summary>
+            public Builder Rows(params GridTrack[] tracks)
+            {
+                rowTracks = tracks != null && tracks.Length > 0 ? (GridTrack[])tracks.Clone() : null;
+                return this;
+            }
+
+            /// <summary>Adds a row of the picture, a name per cell. Pass <see cref="Empty"/> for a gap.</summary>
+            public Builder Row(params string[] names)
+            {
+                picture.Add(names ?? new string[0]);
+                return this;
+            }
+
+            /// <summary>Puts one name in one block of cells, wherever the rows so far have got to.</summary>
+            // The other way round from Row, and better where only a few things are placed: saying that the
+            // header is the top two cells beats drawing every cell of a grid to say where one of them goes.
+            // Blocks are stamped after the rows, so one may be used to override the other.
+            public Builder Area(string name, int column, int row, int columnSpan = 1, int rowSpan = 1)
+            {
+                blocks.Add(new Block
+                {
+                    Name = name,
+                    Column = Mathf.Max(0, column),
+                    Row = Mathf.Max(0, row),
+                    ColumnSpan = Mathf.Max(1, columnSpan),
+                    RowSpan = Mathf.Max(1, rowSpan),
+                });
+
+                return this;
+            }
+
+            /// <summary>Holds the grid open to at least this many tracks, for rows that hold nothing.</summary>
+            public Builder Size(int columns, int rows)
+            {
+                leastColumns = Mathf.Max(0, columns);
+                leastRows = Mathf.Max(0, rows);
+                return this;
+            }
+
+            /// <summary>The finished layout, ready for <c>grid.SetLayout</c>.</summary>
+            public UiGridLayout Done()
+            {
+                int columns = leastColumns;
+                int rows = Mathf.Max(leastRows, picture.Count);
+
+                for (int i = 0; i < picture.Count; i++)
+                    columns = Mathf.Max(columns, picture[i].Length);
+
+                for (int i = 0; i < blocks.Count; i++)
+                {
+                    columns = Mathf.Max(columns, blocks[i].Column + blocks[i].ColumnSpan);
+                    rows = Mathf.Max(rows, blocks[i].Row + blocks[i].RowSpan);
+                }
+
+                // A line of sizes makes those tracks exist, the same as it does when one is read out of a
+                // string - Columns(a, b, c) on its own is a three column grid with nothing in it yet.
+                if (columnTracks != null)
+                    columns = Mathf.Max(columns, columnTracks.Length);
+
+                if (rowTracks != null)
+                    rows = Mathf.Max(rows, rowTracks.Length);
+
+                columns = Mathf.Max(1, columns);
+                rows = Mathf.Max(1, rows);
+
+                var cells = new string[columns * rows];
+
+                for (int row = 0; row < picture.Count; row++)
+                {
+                    var names = picture[row];
+                    for (int column = 0; column < names.Length && column < columns; column++)
+                        cells[row * columns + column] = Clean(names[column]);
+                }
+
+                foreach (var block in blocks)
+                {
+                    var name = Clean(block.Name);
+                    if (name == null)
+                        continue;
+
+                    for (int y = block.Row; y < block.Row + block.RowSpan && y < rows; y++)
+                    {
+                        for (int x = block.Column; x < block.Column + block.ColumnSpan && x < columns; x++)
+                            cells[y * columns + x] = name;
+                    }
+                }
+
+                return Create(cells, columns, rows, columnTracks, rowTracks);
+            }
+
+            public override string ToString() => Done().ToString();
+
+            // A name is one word, because a layout has to survive being written out as a string and read
+            // back - that is how it is stored in a scene. A name with a space in it would come back as two
+            // cells, so it is said here, where the name was given, rather than found later as a panel that
+            // will not show up.
+            private static string Clean(string name)
+            {
+                if (string.IsNullOrEmpty(name))
+                    return null;
+
+                var trimmed = name.Trim();
+                if (trimmed.Length == 0 || trimmed == Empty || trimmed == "-" || trimmed == "_")
+                    return null;
+
+                if (trimmed.IndexOfAny(Illegal) < 0)
+                    return trimmed;
+
+                Debug.LogWarning(
+                    $"Ui Grid layout: \"{trimmed}\" cannot be a layout name - it has a space or a separator in it, "
+                    + "and a layout is stored as text. Give that panel a Ui Grid Item and set its Area to a single word.");
+
+                return trimmed;
+            }
+        }
+
         /// <summary>Reads a layout, or null if there is nothing in it to read.</summary>
         // Forgiving on purpose: this is typed into an inspector and pasted out of code, so quotes around a
         // row, commas, pipes and any amount of spacing are all allowed to mean the same thing. What it will
@@ -119,7 +274,6 @@ namespace FlappyTemplate
             rowCount = Mathf.Max(1, rowCount);
 
             var cells = new string[columns * rowCount];
-            var areas = new Dictionary<string, RectInt>();
 
             for (int row = 0; row < rows.Count; row++)
             {
@@ -131,6 +285,26 @@ namespace FlappyTemplate
                         continue;
 
                     cells[row * columns + column] = name;
+                }
+            }
+
+            return Create(cells, columns, rowCount, columnTracks, rowTracks);
+        }
+
+        // Where the blocks come from, whether the cells were read out of a string or put there by a builder.
+        // One implementation, so the two ways of writing a layout cannot come to different conclusions about
+        // what it says.
+        private static UiGridLayout Create(string[] cells, int columns, int rows, GridTrack[] columnTracks, GridTrack[] rowTracks)
+        {
+            var areas = new Dictionary<string, RectInt>();
+
+            for (int row = 0; row < rows; row++)
+            {
+                for (int column = 0; column < columns; column++)
+                {
+                    var name = cells[row * columns + column];
+                    if (string.IsNullOrEmpty(name))
+                        continue;
 
                     // A name met again anywhere else widens its box to reach there. Two separate blocks
                     // with one name become one block covering both and whatever is between them, which is
@@ -148,7 +322,7 @@ namespace FlappyTemplate
                 }
             }
 
-            return new UiGridLayout(cells, columns, rowCount, areas, columnTracks, rowTracks);
+            return new UiGridLayout(cells, columns, rows, areas, columnTracks, rowTracks);
         }
 
         // Which axis a line is about, or -1 for a line that is part of the picture. The colon is what makes

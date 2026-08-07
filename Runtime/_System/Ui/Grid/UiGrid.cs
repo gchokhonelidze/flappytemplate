@@ -204,8 +204,23 @@ namespace FlappyTemplate
             SetDirty();
         }
 
+        /// <summary>The same, given a layout built in code rather than written as a picture.</summary>
+        // The object is kept as it was handed over instead of being written out and read back: it is
+        // already the answer, and a round trip through text could only lose to it. The string is still
+        // written, because that is what a scene saves and what the inspector shows.
+        public void SetLayout(UiGridLayout template)
+        {
+            layout = template != null ? template.ToString() : null;
+            parsed = template;
+            parsedFrom = layout;
+            parseValid = true;
+
+            ApplyVisibility();
+            SetDirty();
+        }
+
         /// <summary>Drops the layout: every panel is shown again and placed by its own Column and Row.</summary>
-        public void ClearLayout() => SetLayout(null);
+        public void ClearLayout() => SetLayout((string)null);
 
         /// <summary>Whether this panel would be shown by the current layout. True when there is no layout.</summary>
         public bool Shows(string area)
@@ -496,23 +511,31 @@ namespace FlappyTemplate
                 }
             }
 
+            // How many tracks the growing axis has. The defined list answers that only when nothing else
+            // does: a layout is a picture of the whole grid, so it is the one that says. A grid set up with
+            // four rows and given a layout of three has three - the fourth was a track the layout does not
+            // draw on, and leaving it there would put an empty band across the bottom and take the space
+            // its size asked for out of everything above it.
+            //
+            // Taken as a floor rather than as the answer, because an item can still be placed past the edge
+            // of the picture - one carried there by the flow, or one holding a row of its own - and a track
+            // has to exist under it. A picture row of nothing but dots is why the layout is a floor too: no
+            // item reaches it, and the gap it was drawn to make would go missing.
+            int defined = template != null
+                ? (rowFlow ? template.Rows : template.Columns)
+                : (rowFlow ? rows.Count : columns.Count);
+
+            int growing = Mathf.Max(1, Mathf.Max(defined, lines));
+
             if (rowFlow)
             {
                 columnCount = fixedCount;
-                rowCount = Mathf.Max(Mathf.Max(1, rows.Count), lines);
+                rowCount = growing;
             }
             else
             {
                 rowCount = fixedCount;
-                columnCount = Mathf.Max(Mathf.Max(1, columns.Count), lines);
-            }
-
-            // A layout with a row of nothing but dots has no item to reach that far, and the row would go
-            // missing - along with the gap it was there to make.
-            if (template != null)
-            {
-                columnCount = Mathf.Max(columnCount, template.Columns);
-                rowCount = Mathf.Max(rowCount, template.Rows);
+                columnCount = growing;
             }
         }
 

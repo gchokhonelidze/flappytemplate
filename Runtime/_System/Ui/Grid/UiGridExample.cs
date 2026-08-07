@@ -85,6 +85,15 @@ namespace FlappyTemplate
 
             if (Input.GetKeyDown(KeyCode.Alpha5))
                 Print();
+
+            if (Input.GetKeyDown(KeyCode.Alpha6))
+                ShowBuilt();
+
+            if (Input.GetKeyDown(KeyCode.Alpha7))
+                ShowByAreas();
+
+            if (Input.GetKeyDown(KeyCode.Alpha8))
+                ShowAssembled(Screen.width > 900);
         }
 
         /// <summary>The whole arrangement in one assignment: named panels are shown and placed, the rest hidden.</summary>
@@ -102,6 +111,48 @@ namespace FlappyTemplate
         // The sidebar never squeezes below its icons and never grows past a readable width, the body takes
         // what is left, and none of it needs the track list to have been set up beforehand.
         public void ShowCapped() => grid.SetLayout("cols: 1fr[160..400] 3fr / nav body");
+
+        // The same layout built rather than written. Worth it when the parts come from somewhere - the
+        // compiler checks the sizes, the names are in one place each, and a row can be left out with an if
+        // instead of by splicing strings together.
+        public void ShowBuilt()
+        {
+            grid.SetLayout(UiGridLayout.Build()
+                .Columns(GridTrack.Fixed(200), GridTrack.Flexible(), GridTrack.Fixed(240))
+                .Rows(GridTrack.Fixed(64), GridTrack.Flexible(), GridTrack.Fixed(48))
+                .Row("header", "header", "header")
+                .Row("nav", "body", "aside")
+                .Row("footer", "footer", "footer")
+                .Done());
+        }
+
+        /// <summary>Saying where a few panels go, rather than drawing every cell to place them.</summary>
+        // Area is the other way round from Row: spans are given outright instead of by repeating a name,
+        // and cells nobody claims stay empty. The two mix - rows first, blocks stamped over them.
+        public void ShowByAreas()
+        {
+            grid.SetLayout(UiGridLayout.Build()
+                .Columns(GridTrack.Flexible(), GridTrack.Flexible(2f))
+                .Rows(GridTrack.Fixed(64), GridTrack.Flexible())
+                .Area("header", 0, 0, columnSpan: 2)
+                .Area("nav", 0, 1)
+                .Area("body", 1, 1)
+                .Done());
+        }
+
+        /// <summary>The reason to build rather than write: a layout that is not the same every time.</summary>
+        public void ShowAssembled(bool withSidebar)
+        {
+            var layout = UiGridLayout.Build()
+                .Columns(withSidebar ? GridTrack.Fixed(200) : GridTrack.Flexible(), GridTrack.Flexible(3f))
+                .Rows(GridTrack.Fixed(64), GridTrack.Flexible(), GridTrack.Fixed(48))
+                .Row("header", "header");
+
+            // A row that is only there in one of the two, which as a string would mean building the string.
+            layout = withSidebar ? layout.Row("nav", "body") : layout.Row("body", "body");
+
+            grid.SetLayout(layout.Row("footer", "footer").Done());
+        }
 
         // Tracks are ordinary objects on a list, so anything about them can be changed - the size, the mode
         // it is measured in, its floor and its ceiling. Nothing watches that list, so say when you are done.
