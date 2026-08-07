@@ -36,35 +36,64 @@
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    padding: 0 24px 96px;
     background: var(--bg);
     color: var(--ink);
-    font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
-  main { max-width: 940px; margin: 0 auto; }
 
-  header { padding: 56px 0 28px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
-  h1 { margin: 0 0 10px; font-size: 30px; letter-spacing: -0.02em; }
-  h2 { margin: 52px 0 4px; font-size: 21px; letter-spacing: -0.01em; }
-  h3 { margin: 34px 0 4px; font-size: 16px; }
-  .lede { margin: 0; color: var(--soft); max-width: 68ch; }
-  .stamp { margin: 18px 0 0; color: var(--soft); font-size: 13px; font-style: italic; max-width: 68ch; }
-  p { max-width: 72ch; }
+  .page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 28px 96px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 64px; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 14px;
+    border-left: 2px solid var(--line);
+    padding-left: 16px;
+  }
+  nav.toc strong { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--soft); }
+  nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+
+  header.title { margin-bottom: 28px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 44px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  p { margin: 12px 0; max-width: 74ch; }
+  a { color: var(--accent); }
+  .lede { color: var(--soft); }
+  .stamp { color: var(--soft); font-size: 13.5px; font-style: italic; }
+  ul { max-width: 74ch; }
 
   code, pre { font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
-  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 4px; font-size: 0.88em; }
+  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 4px; font-size: 0.86em; }
   pre {
     background: var(--code-bg);
     border: 1px solid var(--line);
     border-radius: 8px;
     padding: 14px 16px;
     overflow-x: auto;
-    font-size: 12.5px;
+    font-size: 13px;
     line-height: 1.6;
   }
   pre code { background: none; padding: 0; font-size: inherit; }
 
-  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14px; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; }
   th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
   th { font-weight: 600; color: var(--soft); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
   td:first-child { white-space: nowrap; }
@@ -79,21 +108,22 @@
   .note p { margin: 0; }
   .note p + p { margin-top: 10px; }
 
-  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin: 24px 0; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(276px, 1fr)); gap: 20px; margin: 24px 0; }
   .specimen { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
   .stage {
     background: var(--stage);
-    padding: 26px 20px;
+    padding: 24px 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 136px;
+    min-height: 140px;
   }
-  .caption { padding: 11px 14px 0; font-weight: 600; font-size: 13.5px; }
-  .specimen .why { padding: 2px 14px 10px; margin: 0; color: var(--soft); font-size: 12.5px; max-width: none; }
-  .specimen pre { margin: 0 14px 14px; border: none; background: transparent; padding: 0; font-size: 11.5px; }
+  .stage.colourful { background: linear-gradient(130deg, #6b4cf6, #1fb6d6 60%, #f0a13c); }
+  .caption { padding: 11px 14px 0; font-weight: 600; font-size: 14px; }
+  .specimen .why { padding: 2px 14px 10px; margin: 0; color: var(--soft); font-size: 13px; max-width: none; }
+  .specimen pre { margin: 0 14px 14px; border: none; background: transparent; padding: 0; font-size: 12px; }
 
-  .box { width: 190px; height: 108px; }
+  .box { width: 186px; height: 104px; }
   .card { background: #fff; border-radius: 18px; border: 2px solid #d8dae1; }
   .outline { border-radius: 18px; border: 2px solid #66b2ff; }
   .tab { background: #292c33; border-radius: 18px 18px 0 0; }
@@ -101,24 +131,53 @@
   .radial { border-radius: 999px; height: 52px; background: radial-gradient(ellipse at center, #52e09e, #156b53); }
   .gradborder { border-radius: 18px; background: linear-gradient(120deg, #ff6680, #66d9ff); padding: 3px; }
   .gradborder > div { width: 100%; height: 100%; border-radius: 15px; background: #171a21; }
+
+  .avatar { width: 108px; height: 108px; border-radius: 999px; background: linear-gradient(135deg, #ffd166, #ef476f 55%, #7b5cff); padding: 4px; }
+  .avatar > div { width: 100%; height: 100%; border-radius: 999px; background: #2a2d34; }
+  .banner { background: #2a2419; border-radius: 10px; border-left: 6px solid #f0a13c; }
+  .field { background: rgba(128, 150, 190, 0.13); border-radius: 8px 8px 2px 2px; border-bottom: 2px solid #66b2ff; height: 56px; }
+  .track { width: 186px; height: 22px; border-radius: 999px; border: 2px solid #4a5160; padding: 3px; }
+  .track > div { width: 62%; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #45d0a8, #2f8cff); }
+  .glass { border-radius: 16px; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.42); backdrop-filter: blur(2px); }
+  .bevel { border-radius: 14px; background: #3a3f4b; border: 3px solid; border-color: #eef0f5 #6c7280 #6c7280 #eef0f5; }
 </style>
 </head>
 <body>
+<div class="page">
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <a href="#shapes">What it can look like</a>
+  <a class="sub" href="#basics">Basics</a>
+  <a class="sub" href="#gradients">Gradients</a>
+  <a class="sub" href="#corners">Corners</a>
+  <a class="sub" href="#recipes">Interface pieces</a>
+  <a href="#inspector">The inspector</a>
+  <a href="#code">From code</a>
+  <a class="sub" href="#builder">The builder</a>
+  <a class="sub" href="#steps">Every step</a>
+  <a href="#masked">A picture inside</a>
+  <a href="#particles">Particles</a>
+  <a href="#notes">Worth knowing</a>
+  <a href="#files">Files</a>
+</nav>
+
 <main>
 
-<header>
+<header class="title">
   <h1>Rounded Box</h1>
   <p class="lede">A panel drawn from a generated mesh rather than a sprite: a fill, a border and rounded
   corners, with every side and every corner set on its own. It replaces the usual round-rect workflow of
   exporting a 9-sliced image per variant — a card, a highlighted card and a warning card differ only in
   border colour and radius, and here that is a few fields instead of three more atlas entries. The corners
   are geometry, not pixels, so they stay clean at any size the layout ends up at.</p>
-  <p class="stamp">Describes package 1.0.43. Update this file with the code — and README.md beside it.</p>
+  <p class="stamp">Describes package 1.0.44. Update this file with the code — and README.md beside it.</p>
+  <p><strong>GameObject → UI (Canvas) → Rounded Box</strong>, or Add Component → UI → Rounded Box.</p>
 </header>
 
-<p><strong>GameObject → UI (Canvas) → Rounded Box</strong>, or Add Component → UI → Rounded Box.</p>
+<h2 id="shapes">What it can look like</h2>
 
-<h2>What it can look like</h2>
+<h3 id="basics">Basics</h3>
 <div class="gallery">
 
   <div class="specimen">
@@ -143,12 +202,20 @@
   </div>
 
   <div class="specimen">
-    <div class="stage"><div class="box tab"></div></div>
-    <div class="caption">Tab</div>
-    <p class="why">Corners set one at a time — square at the bottom is what makes it a tab.</p>
+    <div class="stage"><div class="box bevel"></div></div>
+    <div class="caption">Bevel</div>
+    <p class="why">Four side colours, light above and left, dark below and right. They blend into each
+    other across the corner between them rather than breaking.</p>
     <pre><code>RoundedBoxBuilder.For(box)
-    .Corners(18f, 18f, 0f, 0f);</code></pre>
+    .Corners(14f)
+    .Border(3f, Color.white)
+    .BorderColors(light, light, dark, dark);</code></pre>
   </div>
+
+</div>
+
+<h3 id="gradients">Gradients</h3>
+<div class="gallery">
 
   <div class="specimen">
     <div class="stage"><div class="box grad"></div></div>
@@ -158,6 +225,16 @@
     <pre><code>RoundedBoxBuilder.For(box)
     .Fill(ramp, 60f)
     .Corners(18f);</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage"><div class="box radial"></div></div>
+    <div class="caption">Radial fill</div>
+    <p class="why">From the middle out along the shape, so it follows a capsule round rather than
+    leaving the ends behind.</p>
+    <pre><code>RoundedBoxBuilder.For(box)
+    .RadialFill(ramp)
+    .Pill();</code></pre>
   </div>
 
   <div class="specimen">
@@ -172,7 +249,7 @@
 
   <div class="specimen">
     <div class="stage">
-      <svg class="box" viewBox="0 0 190 108" aria-label="Picture frame border">
+      <svg class="box" viewBox="0 0 186 104" aria-label="Picture frame border">
         <defs>
           <linearGradient id="fTop" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#f2d99a"/><stop offset="1" stop-color="#735226"/>
@@ -187,11 +264,11 @@
             <stop offset="0" stop-color="#f2d99a"/><stop offset="1" stop-color="#735226"/>
           </linearGradient>
         </defs>
-        <path d="M0,0 H190 L176,14 H14 Z" fill="url(#fTop)"/>
-        <path d="M190,0 V108 L176,94 V14 Z" fill="url(#fRight)"/>
-        <path d="M190,108 H0 L14,94 H176 Z" fill="url(#fBottom)"/>
-        <path d="M0,108 V0 L14,14 V94 Z" fill="url(#fLeft)"/>
-        <rect x="14" y="14" width="162" height="80" fill="#1e1e22"/>
+        <path d="M0,0 H186 L172,14 H14 Z" fill="url(#fTop)"/>
+        <path d="M186,0 V104 L172,90 V14 Z" fill="url(#fRight)"/>
+        <path d="M186,104 H0 L14,90 H172 Z" fill="url(#fBottom)"/>
+        <path d="M0,104 V0 L14,14 V90 Z" fill="url(#fLeft)"/>
+        <rect x="14" y="14" width="158" height="76" fill="#1e1e22"/>
       </svg>
     </div>
     <div class="caption">Frame border</div>
@@ -202,14 +279,27 @@
     .BorderGradient(ramp, EBorderGradient.Frame);</code></pre>
   </div>
 
+</div>
+
+<h3 id="corners">Corners</h3>
+<div class="gallery">
+
+  <div class="specimen">
+    <div class="stage"><div class="box tab"></div></div>
+    <div class="caption">Tab</div>
+    <p class="why">Corners set one at a time — square at the bottom is what makes it a tab.</p>
+    <pre><code>RoundedBoxBuilder.For(box)
+    .Corners(18f, 18f, 0f, 0f);</code></pre>
+  </div>
+
   <div class="specimen">
     <div class="stage">
-      <svg class="box" viewBox="0 0 190 108" aria-label="Scooped corners">
-        <path d="M20,0 H170 A20,20 0 0 0 190,20 V88 A20,20 0 0 0 170,108 H20
-                 A20,20 0 0 0 0,88 V20 A20,20 0 0 0 20,0 Z" fill="#f7f2e0"/>
+      <svg class="box" viewBox="0 0 186 104" aria-label="Scooped corners">
+        <path d="M20,0 H166 A20,20 0 0 0 186,20 V84 A20,20 0 0 0 166,104 H20
+                 A20,20 0 0 0 0,84 V20 A20,20 0 0 0 20,0 Z" fill="#f7f2e0"/>
       </svg>
     </div>
-    <div class="caption">Scooped corners</div>
+    <div class="caption">Ticket</div>
     <p class="why">A negative radius bites the corner out instead of rounding it off. It meets the two
     edges square — a round is tangent to its edges and a bite out of the same corner cannot be.</p>
     <pre><code>RoundedBoxBuilder.For(box)
@@ -217,18 +307,90 @@
   </div>
 
   <div class="specimen">
-    <div class="stage"><div class="box radial"></div></div>
-    <div class="caption">Pill, radial fill</div>
-    <p class="why">A radius larger than the box is held to it. Radial runs from the middle out along the
-    shape, so it follows the capsule round rather than leaving the ends behind.</p>
+    <div class="stage">
+      <svg class="box" viewBox="0 0 186 104" aria-label="One scooped corner">
+        <path d="M12,0 H174 A12,12 0 0 1 186,12 V104 H12
+                 A22,22 0 0 0 34,82 V12 A12,12 0 0 0 22,0 Z"
+              transform="translate(0,0)" fill="none"/>
+        <path d="M12,0 H174 A12,12 0 0 1 186,12 V82 A22,22 0 0 0 164,104 H12
+                 A12,12 0 0 1 0,92 V12 A12,12 0 0 1 12,0 Z" fill="#2f7d6b"/>
+      </svg>
+    </div>
+    <div class="caption">Bookmark</div>
+    <p class="why">Mixed signs. One corner scooped and the rest rounded, which is the shape of a folded
+    label.</p>
     <pre><code>RoundedBoxBuilder.For(box)
-    .RadialFill(ramp)
-    .Pill();</code></pre>
+    .Corners(12f, 12f, -22f, 12f);</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage"><div class="avatar"><div></div></div></div>
+    <div class="caption">Avatar ring</div>
+    <p class="why">A square rect plus <code>Pill</code> is a circle — the radius is held to the box, so it
+    never needs to match the size.</p>
+    <pre><code>RoundedBoxBuilder.Create(panel, "Avatar")
+    .Size(120f, 120f)
+    .Pill()
+    .Border(4f, Color.white)
+    .BorderGradient(ramp, EBorderGradient.Around);</code></pre>
   </div>
 
 </div>
 
-<h2>The inspector</h2>
+<h3 id="recipes">Interface pieces</h3>
+<div class="gallery">
+
+  <div class="specimen">
+    <div class="stage"><div class="box banner"></div></div>
+    <div class="caption">Accent banner</div>
+    <p class="why">One side thick and the other three at nothing. The two <code>Border</code> overloads
+    compose: colour on all four, then thickness where it is wanted.</p>
+    <pre><code>RoundedBoxBuilder.For(box)
+    .Fill(surface)
+    .Corners(10f)
+    .Border(6f, amber)
+    .Border(6f, 0f, 0f, 0f);   // l, t, r, b</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage"><div class="box field"></div></div>
+    <div class="caption">Underlined field</div>
+    <p class="why">The same trick on the bottom edge, with the top corners rounded and the bottom left
+    square so the rule reads as a rule.</p>
+    <pre><code>RoundedBoxBuilder.For(box)
+    .Fill(new Color(1f, 1f, 1f, .06f))
+    .Corners(8f, 8f, 2f, 2f)
+    .Border(2f, accent)
+    .Border(0f, 0f, 0f, 2f);</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage"><div class="track"><div></div></div></div>
+    <div class="caption">Progress track</div>
+    <p class="why">Two boxes. The inner one is stretched to the track and inset, so the fill keeps its
+    margin at any width.</p>
+    <pre><code>var track = RoundedBoxBuilder.Create(row, "Track")
+    .Size(280f, 22f).Fill(Color.clear)
+    .Pill().Border(2f, rail).Done();
+
+RoundedBoxBuilder.Create(track.transform, "Fill")
+    .Stretch(3f).Fill(ramp, 0f).Pill();</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage colourful"><div class="box glass"></div></div>
+    <div class="caption">Glass panel</div>
+    <p class="why">A fill carries its alpha, so a panel can sit over artwork without a sprite. The hairline
+    border is what stops it reading as a smudge.</p>
+    <pre><code>RoundedBoxBuilder.For(box)
+    .Fill(new Color(1f, 1f, 1f, .14f))
+    .Corners(16f)
+    .Border(1f, new Color(1f, 1f, 1f, .42f));</code></pre>
+  </div>
+
+</div>
+
+<h2 id="inspector">The inspector</h2>
 <p>The fields are laid out on a live picture of the box: each radius sits on the corner it rounds, each
 thickness and swatch against the side it thickens. The preview is drawn from the real RectTransform's
 proportions, so the percentage in the header tells you why a 2 unit border reads as a hairline.</p>
@@ -245,7 +407,9 @@ proportions, so the percentage in the header tells you why a 2 unit border reads
   <tr><td>Link Sides<br>Link Corners</td><td>Type one value, all four follow. The four fields stay live either way.</td></tr>
 </table>
 
-<h2>From code</h2>
+<h2 id="code">From code</h2>
+
+<h3 id="builder">The builder</h3>
 <p><code>RoundedBoxBuilder</code> says in one chain what would otherwise be a dozen assignments. It is a
 struct holding one reference, so a chain allocates nothing, and every step is skipped rather than thrown if
 the box has been destroyed.</p>
@@ -265,30 +429,31 @@ RoundedBoxBuilder.For(card)
     .Fill(Color.red)
     .Border(3f, Color.white);</code></pre>
 
+<p><code>RoundedBoxExample</code> builds one of each kind of box as a grid — drop it on an empty
+RectTransform in a canvas and press play, or use <strong>Build Now</strong> from its context menu.</p>
+
+<h3 id="steps">Every step</h3>
 <table>
   <tr><th>Step</th><th>Notes</th></tr>
   <tr><td><code>Create(parent, name)</code><br><code>For(box)</code></td><td>Start. <code>Create</code> adds the RectTransform and CanvasRenderer with it.</td></tr>
-  <tr><td><code>Size</code> · <code>Stretch</code> · <code>At</code></td><td>Layout.</td></tr>
+  <tr><td><code>Size</code> · <code>Stretch</code> · <code>At</code></td><td>Layout. <code>Stretch(margin)</code> fills the parent, inset on every side.</td></tr>
   <tr><td><code>Fill(color)</code></td><td>Flat. Clears any gradient.</td></tr>
   <tr><td><code>Fill(gradient, angle)</code><br><code>RadialFill(gradient)</code></td><td>0° left to right, 90° bottom to top.</td></tr>
   <tr><td><code>FillTint(color)</code></td><td>Multiplies without replacing — the way to fade a gradient.</td></tr>
-  <tr><td><code>Border(size, color)</code><br><code>Border(l, t, r, b)</code><br><code>BorderColors(…)</code><br><code>NoBorder()</code></td><td></td></tr>
+  <tr><td><code>Border(size, color)</code><br><code>Border(l, t, r, b)</code><br><code>BorderColors(…)</code><br><code>NoBorder()</code></td><td>The first two compose: set the colour on all four, then the thickness where it belongs.</td></tr>
   <tr><td><code>BorderGradient(g, mode, angle)</code></td><td><code>Linear</code>, <code>Around</code> or <code>Frame</code>.</td></tr>
-  <tr><td><code>Corners(r)</code><br><code>Corners(tl, tr, br, bl)</code><br><code>Scoop(size)</code> · <code>Pill()</code></td><td><code>Pill</code> is a radius larger than the box, held to it.</td></tr>
+  <tr><td><code>Corners(r)</code><br><code>Corners(tl, tr, br, bl)</code><br><code>Scoop(size)</code> · <code>Pill()</code></td><td><code>Pill</code> is a radius larger than the box, held to it — a capsule at any size, a circle on a square rect.</td></tr>
   <tr><td><code>Softness</code> · <code>Segments</code><br><code>Raycast</code> · <code>Tint</code> · <code>Material</code></td><td></td></tr>
   <tr><td><code>Masked(showBox)</code></td><td>Clips children to the shape. Read the masking notes first.</td></tr>
   <tr><td><code>Done()</code></td><td>Returns the box. There is an implicit conversion too.</td></tr>
 </table>
-
-<p><code>RoundedBoxExample</code> builds one of each kind of box as a row — drop it on an empty
-RectTransform in a canvas and press play, or use <strong>Build Now</strong> from its context menu.</p>
 
 <p>Individual properties are public as well (<code>FillColor</code>, <code>BorderLeft</code>,
 <code>RadiusTopLeft</code>, <code>CornerSegments</code> …), plus <code>SetBorderSize</code>,
 <code>SetBorderColor</code> and <code>SetCornerRadius</code> for the all-at-once case. Each setter rebuilds
 only when the value actually changes, so driving one from a tween is safe.</p>
 
-<h2>A picture inside the box</h2>
+<h2 id="masked">A picture inside the box</h2>
 <p><strong>Add Masked Image</strong> builds the whole arrangement:</p>
 <pre><code>Rounded Box     RoundedBox + Mask
 ├── Image       stretched, clipped to the rounded corners
@@ -308,7 +473,7 @@ the border stays one set of fields on the box.</p>
   anti-aliasing survives one.</p>
 </div>
 
-<h2>Particles</h2>
+<h2 id="particles">Particles</h2>
 <p><strong>Add Border Particles</strong> adds a fire, sized to the box, that follows its shape. The
 components live in <code>../Particles/</code>.</p>
 
@@ -330,7 +495,7 @@ mask they are under, so an effect can be kept inside the rounded shape.</p>
   rebuild local. An idle system costs one integer read per frame.</p>
 </div>
 
-<h2>Worth knowing</h2>
+<h2 id="notes">Worth knowing</h2>
 <ul>
   <li><strong>Tint</strong> is the standard <code>Graphic.color</code>. It multiplies the fill and every
   border colour — leave it white unless a fade, an Animator or a CanvasGroup is driving it.</li>
@@ -342,7 +507,7 @@ mask they are under, so an effect can be kept inside the rounded shape.</p>
   stop; a two-key ramp is free, a dozen keys is not.</li>
 </ul>
 
-<h2>Files</h2>
+<h2 id="files">Files</h2>
 <table>
   <tr><td><code>RoundedBox.cs</code></td><td>The component and its mesh.</td></tr>
   <tr><td><code>RoundedBoxBuilder.cs</code></td><td>The fluent API.</td></tr>
@@ -354,5 +519,6 @@ mask they are under, so an effect can be kept inside the rounded shape.</p>
 </table>
 
 </main>
+</div>
 </body>
 </html>

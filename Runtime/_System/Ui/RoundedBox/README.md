@@ -6,7 +6,7 @@ image per variant — a card, a highlighted card and a warning card differ only 
 and here that is a few fields instead of three more atlas entries. The corners are geometry, not pixels, so
 they stay clean at any size the layout ends up at.
 
-*Describes package 1.0.43. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.44. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the shapes drawn rather than described.*
 
 **GameObject → UI (Canvas) → Rounded Box**, or Add Component → UI → Rounded Box.
@@ -65,18 +65,59 @@ RoundedBoxBuilder.For(card)
 | `Masked(showBox)` | Clips children to the shape. Read the masking notes below first. |
 | `Done()` | Returns the box. There is an implicit conversion too. |
 
-Some recipes:
+### Recipes
 
 ```csharp
-.Fill(Color.clear).Border(2f, accent)      // outline only
-.Corners(18f, 18f, 0f, 0f)                 // tab: rounded on top, square below
-.Scoop(20f)                                // ticket: corners bitten out
-.RadialFill(ramp).Pill()                   // capsule with the ramp following the shape
-.Border(12f, Color.white)
-.BorderGradient(ramp, EBorderGradient.Frame)   // picture-frame moulding
+// Outline only — a transparent fill is a fill like any other
+.Fill(Color.clear).Corners(18f).Border(2f, accent)
+
+// Tab: rounded on top, square below
+.Corners(18f, 18f, 0f, 0f)
+
+// Ticket: corners bitten out rather than rounded off
+.Scoop(20f)
+
+// Bookmark: mixed signs, one corner scooped and the rest rounded
+.Corners(12f, 12f, -22f, 12f)
+
+// Capsule, or a circle on a square rect — the radius is held to the box
+.RadialFill(ramp).Pill()
+
+// Avatar ring
+.Size(120f, 120f).Pill().Border(4f, Color.white)
+.BorderGradient(ramp, EBorderGradient.Around)
+
+// Bevel: light above and left, dark below and right, blended across the corners
+.Border(3f, Color.white).BorderColors(light, light, dark, dark)
+
+// Picture-frame moulding
+.Border(12f, Color.white).BorderGradient(ramp, EBorderGradient.Frame)
+
+// Accent banner — the two Border overloads compose: colour on all four,
+// then thickness only where it belongs
+.Corners(10f).Border(6f, amber).Border(6f, 0f, 0f, 0f)   // l, t, r, b
+
+// Underlined field, with the rule left square so it reads as a rule
+.Corners(8f, 8f, 2f, 2f).Border(2f, accent).Border(0f, 0f, 0f, 2f)
+
+// Glass over artwork — the fill carries its alpha, the hairline stops it
+// reading as a smudge
+.Fill(new Color(1f, 1f, 1f, .14f)).Corners(16f)
+.Border(1f, new Color(1f, 1f, 1f, .42f))
 ```
 
-`RoundedBoxExample` builds one of each as a row — drop it on an empty RectTransform in a canvas and press
+A progress track is two boxes, the inner one stretched and inset so the fill keeps its margin at any width:
+
+```csharp
+var track = RoundedBoxBuilder.Create(row, "Track")
+    .Size(280f, 22f).Fill(Color.clear)
+    .Pill().Border(2f, rail).Done();
+
+RoundedBoxBuilder.Create(track.transform, "Fill")
+    .Stretch(3f).Fill(ramp, 0f).Pill();
+```
+
+`RoundedBoxExample` builds one of each as a grid — drop it on an empty RectTransform in a canvas and press
 play, or use **Build Now** from its context menu.
 
 Individual properties are public as well (`FillColor`, `BorderLeft`, `RadiusTopLeft`, `CornerSegments` …),
