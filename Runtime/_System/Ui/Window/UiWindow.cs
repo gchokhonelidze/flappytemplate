@@ -32,10 +32,17 @@ namespace FlappyTemplate
     {
         private const string CaptionName = "Caption";
         private const string TitleName = "Title";
+        private const string ViewportName = "Viewport";
         private const string ContentName = "Content";
         private const string CloseName = "Close";
         private const string CrossName = "Cross";
+        private const string ScrollbarName = "Scrollbar";
         private const string BackdropName = "Window Backdrop";
+
+        // What the caption and the body answer to in the grid's layout. One word each, because a layout is
+        // stored as text.
+        private const string CaptionArea = "caption";
+        private const string BodyArea = "body";
 
         [Header("Window")]
         [SerializeField]
@@ -57,6 +64,25 @@ namespace FlappyTemplate
         [Tooltip("Destroy the window once it has finished closing, rather than leaving it hidden.")]
         [SerializeField]
         private bool destroyOnClose = false;
+
+        [Header("Size")]
+        [Tooltip("Ask the content how tall it wants to be whenever the window opens, and be that tall. Needs something under Content that reports a height - a layout group, a label, a Layout Element. Off, the window is whatever height it was given.")]
+        [SerializeField]
+        private bool fitContentHeight = false;
+
+        [Tooltip("The tallest the window may be, in its own units. Zero means the parent it is drawn in - the screen, for a full-screen canvas - less Screen Margin.")]
+        [Min(0f)]
+        [SerializeField]
+        private float maxHeight = 0f;
+
+        [Tooltip("Room left above and below a window that has grown as far as it may. Only used while Max Height is zero.")]
+        [Min(0f)]
+        [SerializeField]
+        private float screenMargin = 32f;
+
+        [Tooltip("What happens when the content will not fit the height the window is allowed.")]
+        [SerializeField]
+        private EWindowScroll scroll = EWindowScroll.WhenTooTall;
 
         [Header("Dragging")]
         [SerializeField]
@@ -146,6 +172,30 @@ namespace FlappyTemplate
         private TextMeshProUGUI titleText;
 
         [SerializeField, HideInInspector]
+        private UiGrid grid;
+
+        [SerializeField, HideInInspector]
+        private RectTransform viewport;
+
+        [SerializeField, HideInInspector]
+        private RectMask2D clip;
+
+        [SerializeField, HideInInspector]
+        private ScrollRect scroller;
+
+        [SerializeField, HideInInspector]
+        private Scrollbar scrollbar;
+
+        [SerializeField, HideInInspector]
+        private RoundedBox scrollTrack;
+
+        [SerializeField, HideInInspector]
+        private RoundedBox scrollHandle;
+
+        [SerializeField, HideInInspector]
+        private Image grab;
+
+        [SerializeField, HideInInspector]
         private RectTransform content;
 
         [SerializeField, HideInInspector]
@@ -180,6 +230,16 @@ namespace FlappyTemplate
         private Sequence transitionTween;
         private bool finishing;
 
+        // The height the window would be if it were allowed to be, whatever it ended up at. Kept so the clamp
+        // can be worked out again when the room changes - a rotated phone, a resized player window - without
+        // asking the content to measure itself a second time.
+        private float wantedHeight;
+        private float lastLimit = -1f;
+
+        // The height the clamp last wrote, so a height set by hand since can be told from one of its own.
+        private float appliedHeight = -1f;
+        private bool scrolling;
+
         // The scale the window sits at when it is open, which is not necessarily 1: shrinking a whole window
         // by scaling its rect is a reasonable thing to do, and the panel and the text both stay sharp under
         // it. Every scale in the transition is measured against this rather than against one, or opening a
@@ -195,6 +255,82 @@ namespace FlappyTemplate
             {
                 EnsureBuilt();
                 return content;
+            }
+        }
+
+        /// <summary>The masked cell the content sits in and scrolls inside. The grid gives it whatever the
+        /// caption leaves.</summary>
+        public RectTransform Viewport
+        {
+            get
+            {
+                EnsureBuilt();
+                return viewport;
+            }
+        }
+
+        /// <summary>The scroller, for a game that wants to drive it - jump to the bottom, read the position.
+        /// Enabled only while the body is actually scrolling.</summary>
+        public ScrollRect Scroller
+        {
+            get
+            {
+                EnsureBuilt();
+                return scroller;
+            }
+        }
+
+        /// <summary>The grid that lays the caption and the body out. Rows and layout are the window's own; the
+        /// close button and the backdrop are not in it.</summary>
+        public UiGrid Grid
+        {
+            get
+            {
+                EnsureBuilt();
+                return grid;
+            }
+        }
+
+        /// <summary>Whether the body is scrolling as things stand.</summary>
+        public bool IsScrolling => scrolling;
+
+        /// <summary>Ask the content how tall it wants to be on every open.</summary>
+        public bool FitContentHeight
+        {
+            get => fitContentHeight;
+            set => fitContentHeight = value;
+        }
+
+        /// <summary>The tallest the window may be. Zero means the parent, less <see cref="ScreenMargin"/>.</summary>
+        public float MaxHeight
+        {
+            get => maxHeight;
+            set
+            {
+                maxHeight = Mathf.Max(0f, value);
+                Reclamp();
+            }
+        }
+
+        /// <summary>Room left above and below a window that has grown as far as it may.</summary>
+        public float ScreenMargin
+        {
+            get => screenMargin;
+            set
+            {
+                screenMargin = Mathf.Max(0f, value);
+                Reclamp();
+            }
+        }
+
+        /// <summary>When the body scrolls rather than the window growing.</summary>
+        public EWindowScroll Scroll
+        {
+            get => scroll;
+            set
+            {
+                scroll = value;
+                Reclamp();
             }
         }
 
@@ -494,6 +630,19 @@ namespace FlappyTemplate
                 KillTransition();
         }
 
+        // A phone that turned, a player window that was dragged wider: the room the window is allowed changes
+        // without anything asking it to, and a window that was clamped to the old screen would be left either
+        // scrolling for no reason or hanging off the new one. Only ever a float compare per frame, and only for
+        // a window that has been fitted at all.
+        void LateUpdate()
+        {
+            if (!built || wantedHeight <= 0f || transitionTween != null)
+                return;
+
+            if (!Mathf.Approximately(Limit(), lastLimit))
+                Clamp();
+        }
+
         void OnDestroy()
         {
             KillTransition();
@@ -529,7 +678,10 @@ namespace FlappyTemplate
         /// like - parts that exist are found by name rather than made again.</summary>
         public void EnsureBuilt()
         {
-            if (!built || panel == null || content == null)
+            // The viewport and the grid are in that list because a window saved by a version that had neither
+            // comes back saying it is built. Missing parts are what "built" is really asking about, so the flag
+            // alone would leave that window with a null grid and an ApplyStyle that throws.
+            if (!built || panel == null || content == null || viewport == null || grid == null)
                 BuildParts();
 
             // Outside that check, and deliberately. A listener added with AddListener is not serialized, so
@@ -551,9 +703,52 @@ namespace FlappyTemplate
             if (group == null)
                 group = gameObject.AddComponent<CanvasGroup>();
 
+            if (grid == null)
+                grid = UiWindowParts.Grid(Rect);
+
             caption = UiWindowParts.Box(transform, CaptionName);
             titleText = UiWindowParts.Label(caption.transform, TitleName);
-            content = UiWindowParts.Rect(transform, ContentName);
+
+            viewport = UiWindowParts.Rect(transform, ViewportName);
+
+            // A window built before the viewport existed has its Content at the root, with whatever the game
+            // put in it. Moved rather than replaced: finding parts by name would otherwise make a second,
+            // empty Content inside the viewport and leave the full one orphaned beside it.
+            var stray = UiWindowParts.Find<RectTransform>(transform, ContentName);
+            if (stray != null)
+                stray.SetParent(viewport, false);
+
+            content = UiWindowParts.Rect(viewport, ContentName);
+
+            // The mask is what makes scrolling look like scrolling rather than like content sliding over the
+            // caption. RectMask2D rather than Mask: it costs no stencil pass, and both RoundedBox and TMP
+            // clip against it - a rounded box is generated geometry on the default UI material, which reads
+            // the clip rect like any other graphic.
+            if (clip == null)
+                clip = viewport.GetComponent<RectMask2D>();
+            if (clip == null)
+                clip = viewport.gameObject.AddComponent<RectMask2D>();
+
+            if (scroller == null)
+                scroller = viewport.GetComponent<ScrollRect>();
+            if (scroller == null)
+                scroller = viewport.gameObject.AddComponent<ScrollRect>();
+
+            // Something for a finger to take hold of. A ScrollRect is only offered a drag - or a wheel - if the
+            // pointer lands on a raycast target that is the scroller itself or something under it, and every
+            // graphic a window puts in its body is deliberately not one: labels, cards and rules should not
+            // swallow clicks. So the scroller wears an invisible one of its own, over the whole body and behind
+            // everything in it, which is what makes touch scrolling work at all. Switched off along with the
+            // scrolling, so a window that is not scrolling neither draws it nor catches anything with it.
+            if (grab == null)
+                grab = viewport.GetComponent<Image>();
+            if (grab == null)
+                grab = viewport.gameObject.AddComponent<Image>();
+
+            grab.color = new Color(0f, 0f, 0f, 0f);
+            grab.raycastTarget = true;
+
+            BuildScrollbar();
 
             closeBox = UiWindowParts.Box(transform, CloseName);
             closeButton = closeBox.GetComponent<Button>();
@@ -567,12 +762,44 @@ namespace FlappyTemplate
             crossBarB = UiWindowParts.Box(crossIcon, "Bar B");
             spriteIcon = UiWindowParts.Picture(closeBox.transform, "Icon");
 
-            // Content last, so it draws over the caption if the two ever overlap - a window whose caption is
-            // taller than the padding allows for should cover the header, not be covered by it.
-            content.SetAsLastSibling();
+            // The body last, so it draws over the caption if the two ever overlap - a window whose caption is
+            // taller than the grid's row allows for should be covered by its content, not cover it. The close
+            // button goes after that, since it is over everything by definition.
+            viewport.SetAsLastSibling();
+            closeBox.rectTransform.SetAsLastSibling();
+
+            // The two cells the grid arranges, and the one overlay it must keep its hands off. An ignored child
+            // is not placed, not sized, and not shown or hidden by the layout either, which is what lets Show
+            // Close Button stay an ordinary SetActive.
+            UiWindowParts.Name(caption.rectTransform, CaptionArea);
+            UiWindowParts.Name(viewport, BodyArea);
+            UiWindowParts.Ignore(closeBox.rectTransform, true);
 
             built = true;
             ApplyDrag();
+        }
+
+        // A track down the right of the body with a handle in it, in the shape UGUI's Scrollbar expects: the
+        // graphic on the bar itself, a sliding area inside it, and the handle inside that. The Scrollbar writes
+        // the handle's anchors as it moves, so nothing here sets its position - only what it looks like.
+        private void BuildScrollbar()
+        {
+            scrollTrack = UiWindowParts.Box(viewport, ScrollbarName);
+
+            if (scrollbar == null)
+                scrollbar = scrollTrack.GetComponent<Scrollbar>();
+            if (scrollbar == null)
+                scrollbar = scrollTrack.gameObject.AddComponent<Scrollbar>();
+
+            var slide = UiWindowParts.Rect(scrollTrack.transform, "Sliding Area");
+            UiWindowParts.Stretch(slide, 0f, 0f, 0f, 0f);
+
+            scrollHandle = UiWindowParts.Box(slide, "Handle");
+
+            scrollbar.direction = Scrollbar.Direction.BottomToTop;
+            scrollbar.handleRect = scrollHandle.rectTransform;
+            scrollbar.targetGraphic = scrollHandle;
+            scrollbar.transition = Selectable.Transition.None;
         }
 
         /// <summary>Puts the window's own listeners back on its buttons. Called on every build and every
@@ -606,7 +833,8 @@ namespace FlappyTemplate
             if (style == null)
                 style = new UiWindowStyle();
 
-            if (!built || panel == null || caption == null || titleText == null || content == null || closeBox == null)
+            if (!built || panel == null || caption == null || titleText == null || content == null
+                || closeBox == null || viewport == null || grid == null)
                 return;
 
             float border = Mathf.Max(0f, style.BorderSize);
@@ -619,9 +847,30 @@ namespace FlappyTemplate
             panel.EdgeSoftness = style.EdgeSoftness;
             panel.raycastTarget = true;
 
-            // Inset by the border on three sides so the caption wash sits inside the outline rather than
-            // over it, with its top corners following what is left of the panel's radius.
-            UiWindowParts.TopStrip(caption.rectTransform, style.CaptionHeight, border, border);
+            // The caption and the body are two rows of one column, inset by the border so the caption wash sits
+            // inside the outline rather than over it. Said as a layout rather than by switching the caption on
+            // and off: a grid takes its layout as the whole truth about which of its children are showing, and
+            // re-asserts it every time it is enabled - so a caption hidden with SetActive would come back.
+            int inset = Mathf.RoundToInt(border);
+            grid.padding = new RectOffset(inset, inset, inset, inset);
+            grid.RowGap = 0f;
+            grid.ColumnGap = 0f;
+
+            var arrangement = UiGridLayout.Build().Columns(GridTrack.Flexible());
+
+            if (showCaption)
+            {
+                arrangement.Rows(GridTrack.Fixed(style.CaptionHeight), GridTrack.Flexible())
+                    .Row(CaptionArea)
+                    .Row(BodyArea);
+            }
+            else
+            {
+                arrangement.Rows(GridTrack.Flexible()).Row(BodyArea);
+            }
+
+            grid.SetLayout(arrangement.Done());
+
             caption.FillGradientMode = EFillGradient.None;
             caption.FillColor = style.CaptionFill;
             caption.SetBorderSize(0f);
@@ -633,7 +882,6 @@ namespace FlappyTemplate
             caption.RadiusBottomLeft = 0f;
             caption.EdgeSoftness = style.EdgeSoftness;
             caption.raycastTarget = true;
-            caption.gameObject.SetActive(showCaption);
 
             UiWindowParts.Stretch(titleText.rectTransform, 12f, style.TitleTopInset, 12f, 6f);
             titleText.text = title;
@@ -644,14 +892,8 @@ namespace FlappyTemplate
             titleText.alignment = style.TitleAlignment;
             titleText.raycastTarget = false;
 
-            float top = (showCaption ? style.CaptionHeight : border) + style.ContentPaddingTop;
-            UiWindowParts.Stretch(
-                content,
-                style.ContentPaddingLeft + border,
-                top,
-                style.ContentPaddingRight + border,
-                style.ContentPaddingBottom + border);
-
+            ApplyScrollStyle();
+            ApplyScrollState();
             ApplyCloseStyle();
             ApplyBackdropStyle();
             ApplySorting();
@@ -714,6 +956,235 @@ namespace FlappyTemplate
             }
         }
 
+        // ------------------------------------------------------------------ how tall it may be
+
+        /// <summary>Asks the content how tall it wants to be and makes the window that tall - as far as it is
+        /// allowed, after which the body scrolls instead.</summary>
+        // The content has to be able to answer: something under Content that reports a height, which a layout
+        // group, a label or a Layout Element all do and a plain panel does not. A window whose content is
+        // arranged by hand should work out its own number and call FitTo instead.
+        public void Fit()
+        {
+            EnsureBuilt();
+            FitTo(Chrome + Body());
+        }
+
+        /// <summary>Makes the window a height the caller worked out, clamped to what it is allowed - after
+        /// which the body scrolls rather than the window growing.</summary>
+        public void FitTo(float height)
+        {
+            EnsureBuilt();
+
+            wantedHeight = Mathf.Max(0f, height);
+            Clamp();
+        }
+
+        /// <summary>Back to the top of the body. Where a dialog shown again should start.</summary>
+        public void ScrollToTop()
+        {
+            if (scroller != null && scroller.content != null)
+                scroller.verticalNormalizedPosition = 1f;
+        }
+
+        // The part of the height that is not content: the caption's row and the border above and below it. The
+        // content's own padding is inside the viewport and counted with the content.
+        private float Chrome => (showCaption ? style.CaptionHeight : 0f) + Mathf.Max(0f, style.BorderSize) * 2f;
+
+        // What the content says it needs, plus the padding around it. Measured immediately rather than waited
+        // for: a window is fitted at the moment it opens, and a layout that has not run yet reports the height
+        // it had last time.
+        private float Body()
+        {
+            if (content == null)
+                return 0f;
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+
+            float wanted = Mathf.Max(0f, LayoutUtility.GetPreferredHeight(content));
+            return wanted + style.ContentPaddingTop + style.ContentPaddingBottom;
+        }
+
+        // Height, in the window's own units, that the parent has room for. Divided by the scale because the
+        // window is measured in its own space and drawn in its parent's - a window at half scale fits twice as
+        // much of itself on screen, which is the same reasoning the drag clamp uses.
+        private float Limit()
+        {
+            if (maxHeight > 0f)
+                return maxHeight;
+
+            var parent = Rect.parent as RectTransform;
+            float room = parent != null ? parent.rect.height : Screen.height;
+            room -= Mathf.Max(0f, screenMargin) * 2f;
+
+            float scale = Mathf.Max(0.0001f, Mathf.Abs(restScale.y));
+            return Mathf.Max(0f, room / scale);
+        }
+
+        private void Clamp()
+        {
+            lastLimit = Limit();
+
+            float limit = lastLimit > 0f ? lastLimit : float.MaxValue;
+            float height = Mathf.Min(wantedHeight, limit);
+
+            var rect = Rect;
+            if (height > 0f)
+            {
+                if (!Mathf.Approximately(rect.sizeDelta.y, height))
+                    rect.sizeDelta = new Vector2(rect.sizeDelta.x, height);
+
+                appliedHeight = height;
+            }
+
+            ApplyScroll(wantedHeight > height + 0.5f);
+        }
+
+        // The height on the rect is either what this last wrote or what somebody set by hand, and the two mean
+        // very different things: one is a window already held to the screen, the other is a fresh answer to how
+        // tall the window wants to be. Without telling them apart, a window clamped once would take the clamped
+        // height for its wish the next time it opened and stop scrolling - quietly clipping the rest.
+        private void Adopt()
+        {
+            float current = Rect.sizeDelta.y;
+
+            if (appliedHeight < 0f || !Mathf.Approximately(current, appliedHeight))
+                wantedHeight = current;
+        }
+
+        // Only worth doing when the window already knows how tall it wants to be - before the first fit there
+        // is nothing to clamp, and clamping to nothing would collapse a window that was sized by hand.
+        private void Reclamp()
+        {
+            if (built && wantedHeight > 0f)
+                Clamp();
+        }
+
+        private void ApplyScroll(bool needed)
+        {
+            bool was = scrolling;
+            scrolling = scroll == EWindowScroll.Always || (scroll == EWindowScroll.WhenTooTall && needed);
+
+            ApplyScrollState();
+
+            // A body that has just started scrolling starts at the top. Without this it would keep whatever
+            // position the last bet, or the last tab, left it at.
+            if (scrolling && !was)
+                ScrollToTop();
+        }
+
+        // Whatever scrolling currently is, written onto the parts. Called by the style pass as well, so a window
+        // that has never been fitted has its mask and its scroller off rather than however Unity made them.
+        private void ApplyScrollState()
+        {
+            if (scroller != null)
+            {
+                scroller.viewport = viewport;
+                scroller.content = content;
+                scroller.horizontal = false;
+                scroller.vertical = true;
+                scroller.movementType = ScrollRect.MovementType.Clamped;
+                scroller.scrollSensitivity = style.ScrollSensitivity;
+                scroller.verticalScrollbar = style.ShowScrollbar ? scrollbar : null;
+
+                // A flick that carries on after the finger has left is what a touch screen expects, and WebGL on
+                // a phone is a touch screen.
+                scroller.inertia = style.ScrollInertia;
+                scroller.decelerationRate = style.ScrollDeceleration;
+
+                // Permanent, and the bar switched on and off here instead: the automatic modes resize the
+                // viewport to make room, and the viewport is a cell of the grid - two things writing one rect.
+                scroller.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
+                scroller.enabled = scrolling;
+            }
+
+            // Nothing to clip while nothing moves, and a mask that is off is a mask that costs nothing.
+            if (clip != null)
+                clip.enabled = scrolling;
+
+            // Only in the way while there is something to scroll. Off, a drag that started in the body reaches
+            // whatever is behind it - the window's own handle, for a window that is dragged from anywhere.
+            if (grab != null)
+                grab.enabled = scrolling;
+
+            if (scrollTrack != null)
+                scrollTrack.gameObject.SetActive(scrolling && style.ShowScrollbar);
+
+            ApplyBody();
+        }
+
+        // Where the content sits inside the viewport. Not scrolling, it fills it, inset by the padding, exactly
+        // as it did when the window laid itself out by hand. Scrolling, it is as tall as it asked to be and
+        // anchored to the top, which is the shape a ScrollRect moves.
+        private void ApplyBody()
+        {
+            if (content == null || viewport == null)
+                return;
+
+            float left = style.ContentPaddingLeft;
+            float top = style.ContentPaddingTop;
+            float bottom = style.ContentPaddingBottom;
+            float right = style.ContentPaddingRight;
+
+            if (scrolling && style.ShowScrollbar)
+                right += style.ScrollbarWidth + Mathf.Max(0f, style.ScrollbarInset);
+
+            if (!scrolling)
+            {
+                UiWindowParts.Stretch(content, left, top, right, bottom);
+                return;
+            }
+
+            float height = Mathf.Max(0f, wantedHeight - Chrome - top - bottom);
+
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = new Vector2(1f, 1f);
+            content.pivot = new Vector2(0.5f, 1f);
+            content.sizeDelta = new Vector2(-(left + right), height);
+            content.anchoredPosition = new Vector2((left - right) * 0.5f, -top);
+        }
+
+        private void ApplyScrollStyle()
+        {
+            if (scrollTrack == null || scrollHandle == null)
+                return;
+
+            var bar = scrollTrack.rectTransform;
+
+            // Down the right of the viewport, inset by the same padding as the content so the two line up.
+            bar.anchorMin = new Vector2(1f, 0f);
+            bar.anchorMax = new Vector2(1f, 1f);
+            bar.pivot = new Vector2(1f, 0.5f);
+            bar.sizeDelta = new Vector2(style.ScrollbarWidth, -(style.ContentPaddingTop + style.ContentPaddingBottom));
+            bar.anchoredPosition = new Vector2(
+                -Mathf.Max(0f, style.ScrollbarInset),
+                (style.ContentPaddingBottom - style.ContentPaddingTop) * 0.5f);
+
+            float radius = style.ScrollbarCornerRadius < 0f ? 100000f : style.ScrollbarCornerRadius;
+
+            Paint(scrollTrack, style.ScrollbarTrackColor, radius);
+            scrollTrack.raycastTarget = true;
+
+            // UGUI's Scrollbar moves its handle by writing the anchors and nothing else, so the handle's size
+            // and position have to be nothing at all for it to sit exactly in the band it is given. Left at the
+            // 100 by 100 a new rect comes with, it draws a hundred units past the track on every side - which
+            // reads as a scrollbar that is enormous and a Scrollbar Width that does nothing.
+            var handle = scrollHandle.rectTransform;
+            handle.sizeDelta = Vector2.zero;
+            handle.anchoredPosition = Vector2.zero;
+
+            Paint(scrollHandle, style.ScrollbarHandleColor, radius);
+            scrollHandle.raycastTarget = true;
+        }
+
+        private void Paint(RoundedBox box, Color fill, float radius)
+        {
+            box.FillGradientMode = EFillGradient.None;
+            box.FillColor = fill;
+            box.SetBorderSize(0f);
+            box.SetCornerRadius(radius);
+            box.EdgeSoftness = style.EdgeSoftness;
+        }
+
         /// <summary>Opens with the transition. Already open, it is left alone.</summary>
         public void Open() => Open(true);
 
@@ -740,6 +1211,21 @@ namespace FlappyTemplate
             // and now, and Awake reads this to know it is not the one deciding whether the window is open.
             IsOpen = true;
             gameObject.SetActive(true);
+
+            // After the SetActive, because measuring content that has never been enabled measures nothing, and
+            // before the transition, because the transition animates the size the window is about to have.
+            //
+            // Both ways round, a window is held to the screen on the way in: one that was sized by hand and is
+            // taller than the room it has scrolls too, without anybody having to ask for it.
+            if (fitContentHeight)
+            {
+                Fit();
+            }
+            else
+            {
+                Adopt();
+                Clamp();
+            }
 
             if (bringToFront)
                 transform.SetAsLastSibling();

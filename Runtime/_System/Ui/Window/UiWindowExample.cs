@@ -1,17 +1,18 @@
 using DG.Tweening;
+using TMPro;
 using UnityEngine;
 
 namespace FlappyTemplate
 {
-    // Three windows, built at runtime under whatever this sits on: a plain one, a modal one, and the
-    // statistics window. Drop it on an empty RectTransform inside a canvas and press play, or use Build Now
-    // from the component's context menu to see them without leaving the editor.
+    // Four windows, built at runtime under whatever this sits on: a plain one, a modal one, the statistics
+    // window and the bet info window. Drop it on an empty RectTransform inside a canvas and press play, or use
+    // Build Now from the component's context menu to see them without leaving the editor.
     //
     // It is here to be read as much as run. Each window below is one chain, and between them they cover
     // most of what UiWindowBuilder can say - a caption, a backdrop, a transition, a drag, a close.
     //
-    // The keys are the other half of it: 1, 2 and 3 open the three windows, and Escape closes whatever is
-    // open. Opening a window that is already open does nothing, which is why they can be held down.
+    // The keys are the other half of it: 1 to 4 open the four windows, and Escape closes whatever is open.
+    // Opening a window that is already open does nothing, which is why they can be held down.
     [AddComponentMenu("UI/Ui Window Example")]
     [RequireComponent(typeof(RectTransform))]
     public class UiWindowExample : MonoBehaviour
@@ -22,6 +23,7 @@ namespace FlappyTemplate
         private UiWindow plain;
         private UiWindow modal;
         private StatisticsWindow statistics;
+        private BetInfoWindow betInfo;
 
         void Start()
         {
@@ -42,6 +44,9 @@ namespace FlappyTemplate
             if (Input.GetKeyDown(KeyCode.Alpha3) && statistics != null)
                 statistics.Window.Toggle();
 
+            if (Input.GetKeyDown(KeyCode.Alpha4) && betInfo != null)
+                betInfo.Window.Toggle();
+
             if (!Input.GetKeyDown(KeyCode.Escape))
                 return;
 
@@ -49,6 +54,8 @@ namespace FlappyTemplate
             // underneath and leaving the modal sheet over the top of it.
             if (modal != null && modal.IsOpen)
                 modal.Close();
+            else if (betInfo != null && betInfo.Window.IsOpen)
+                betInfo.Window.Close();
             else if (statistics != null && statistics.Window.IsOpen)
                 statistics.Window.Close();
             else if (plain != null && plain.IsOpen)
@@ -89,6 +96,38 @@ namespace FlappyTemplate
             statistics = StatisticsWindow.Create(transform);
             statistics.Window.Draggable = true;
             statistics.Window.Rect.anchoredPosition = new Vector2(260f, 0f);
+
+            // The bet info window is the same idea one step further: it fills itself in from the server, and
+            // leaves one block empty for the game. Show(id) would ask for a real bet; with no socket running
+            // it shows a sample so there is something to look at.
+            betInfo = BetInfoWindow.Create(transform);
+            betInfo.Window.Rect.anchoredPosition = new Vector2(-220f, -40f);
+            betInfo.OnTransaction.AddListener(ShowRoll);
+            ShowRoll(betInfo.Transaction);
+        }
+
+        // What no template can write for a game: the block under the fields that says what actually happened.
+        // A dice game draws the roll here, a crash game the multiplier it stopped at, this one prints whatever
+        // the server called the outcome.
+        //
+        // A label rather than a panel with a label in it, and that is the one thing to know: the row it lands
+        // in is as tall as what is in it says it needs to be, and a label answers that question while a plain
+        // panel does not. Wrap it in something and either give that a Layout Element or set Outcome Height.
+        private void ShowRoll(TransactionPublic data)
+        {
+            if (betInfo == null || data == null)
+                return;
+
+            var label = UiWindowParts.Label(betInfo.Outcome, "Roll");
+            label.alignment = TextAlignmentOptions.Center;
+            label.fontSize = 22f;
+            label.fontStyle = FontStyles.Bold;
+            label.color = new Color(0.98f, 0.8f, 0.08f);
+            label.text = data.Outcome != null && data.Outcome.Count > 0
+                ? "Outcome: " + string.Join(", ", data.Outcome.Keys)
+                : "This game draws its own outcome here";
+
+            betInfo.Refresh();
         }
 
         [ContextMenu("Clear")]
@@ -110,6 +149,7 @@ namespace FlappyTemplate
             plain = null;
             modal = null;
             statistics = null;
+            betInfo = null;
         }
     }
 }

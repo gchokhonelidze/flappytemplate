@@ -120,6 +120,83 @@ namespace FlappyTemplate
             rect.anchoredPosition = new Vector2(0f, -top);
         }
 
+        /// <summary>The grid on a rect, made if it is not there yet.</summary>
+        public static UiGrid Grid(RectTransform rect)
+        {
+            var grid = rect.GetComponent<UiGrid>();
+            if (grid == null)
+                grid = rect.gameObject.AddComponent<UiGrid>();
+
+            return grid;
+        }
+
+        public static UiGridItem Item(RectTransform rect)
+        {
+            var item = rect.GetComponent<UiGridItem>();
+            if (item == null)
+                item = rect.gameObject.AddComponent<UiGridItem>();
+
+            return item;
+        }
+
+        /// <summary>Gives a cell the name its grid's layout knows it by, stretched to fill what it is given.</summary>
+        // Naming rather than switching on and off, and that is not a preference: a grid takes its layout as the
+        // whole truth about which children are showing and re-asserts it whenever it is enabled - so a cell
+        // hidden with SetActive comes back on the next time the window opens.
+        public static void Name(RectTransform rect, string area)
+        {
+            var item = Item(rect);
+            item.Area = area;
+            item.OverrideAlign = false;
+        }
+
+        /// <summary>The same, for a cell that keeps its own size and sits in the middle of what it is given.</summary>
+        public static void Name(RectTransform rect, string area, Vector2 size)
+        {
+            var item = Item(rect);
+            item.Area = area;
+            item.OverrideAlign = true;
+            item.HorizontalAlign = EGridAlign.Center;
+            item.VerticalAlign = EGridAlign.Center;
+            Measured(rect, size);
+        }
+
+        /// <summary>Takes something out of the grid's hands: not placed, not sized, and not shown or hidden by
+        /// the layout either. For an overlay - a close button, a badge over a corner.</summary>
+        public static void Ignore(RectTransform rect, bool ignored)
+        {
+            var element = rect.GetComponent<LayoutElement>();
+
+            if (element == null)
+            {
+                if (!ignored)
+                    return;
+
+                element = rect.gameObject.AddComponent<LayoutElement>();
+            }
+
+            element.ignoreLayout = ignored;
+        }
+
+        /// <summary>Sets a rect's size and says so to whatever is measuring it.</summary>
+        // An auto track is as big as the items in it say they need to be, and a plain rect says nothing at all,
+        // so anything square in a cell - a coin, a tick, a button - would measure as nothing and hang out of
+        // its row. A LayoutElement is how a rect answers that question.
+        public static void Measured(RectTransform rect, Vector2 size)
+        {
+            rect.sizeDelta = size;
+
+            var element = rect.GetComponent<LayoutElement>();
+            if (element == null)
+                element = rect.gameObject.AddComponent<LayoutElement>();
+
+            element.ignoreLayout = false;
+            element.minWidth = size.x;
+            element.minHeight = size.y;
+            element.preferredWidth = size.x;
+            element.preferredHeight = size.y;
+        }
+
         /// <summary>Works in edit mode as well, where Destroy would leave the object behind until play.</summary>
         public static void Discard(Object target)
         {

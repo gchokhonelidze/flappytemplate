@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ui History — FlappyBet Template</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --ink: #1c1f24;
+    --soft: #5b6472;
+    --line: #dfe3e8;
+    --accent: #3f6fd8;
+    --code-bg: #f2f4f7;
+    --note-bg: #eef4ff;
+    --note-line: #6f9bea;
+    --stage: #e9ebef;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --panel: #1d2025;
+      --ink: #e4e7ec;
+      --soft: #9aa3b0;
+      --line: #2c3038;
+      --accent: #7aa2f7;
+      --code-bg: #12141a;
+      --note-bg: #161d2b;
+      --note-line: #4a6ea8;
+      --stage: #0f1114;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 28px 96px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 64px; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 14px;
+    border-left: 2px solid var(--line);
+    padding-left: 16px;
+  }
+  nav.toc strong { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--soft); }
+  nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+
+  header.title { margin-bottom: 28px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 44px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  p { margin: 12px 0; max-width: 74ch; }
+  a { color: var(--accent); }
+  .lede { color: var(--soft); }
+  .stamp { color: var(--soft); font-size: 13.5px; font-style: italic; }
+  ul { max-width: 74ch; }
+
+  code, pre { font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 4px; font-size: 0.86em; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--soft); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td:first-child { white-space: nowrap; }
+
+  .note {
+    border-left: 3px solid var(--note-line);
+    background: var(--note-bg);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+  .note p { margin: 0; }
+  .note p + p { margin-top: 10px; }
+
+  /* --- the strips, drawn --- */
+  .stage {
+    background: #171429;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 18px 0;
+    overflow-x: auto;
+  }
+  .stage .why { margin: 0 0 12px; color: #9a93b8; font-size: 13px; max-width: none; }
+
+  .strip { display: flex; gap: 8px; align-items: center; min-height: 64px; }
+  .strip.end { justify-content: flex-end; }
+  .strip.center { justify-content: center; }
+  .strip.column { flex-direction: column; align-items: stretch; width: 120px; min-height: 0; }
+
+  .chip {
+    position: relative;
+    min-width: 96px;
+    height: 52px;
+    border-radius: 8px;
+    background: #262340;
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font: 600 17px/1 "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    color: #fff;
+    flex: 0 0 auto;
+  }
+  .chip.win { color: #63ff94; }
+  .chip.loss { color: #ff6363; }
+  .chip.push { color: #ccccdb; }
+  .chip.mine::after {
+    content: "";
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: -2px;
+    height: 4px;
+    border-radius: 2px;
+    background: #ffd93e;
+  }
+  .chip.fresh { animation: pop 1.8s ease-out infinite; }
+  @keyframes pop {
+    0%   { transform: scale(0.7); opacity: 0; }
+    24%  { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .chip.gap { visibility: hidden; }
+
+  .tree {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font: 13px/1.7 "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre;
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <a href="#start">Quick start</a>
+  <a href="#says">What a chip says</a>
+  <a href="#case">Which case a bet is</a>
+  <a class="sub" href="#accent">The accent bar</a>
+  <a href="#shape">Shape and direction</a>
+  <a class="sub" href="#clamping">Clamping</a>
+  <a class="sub" href="#scrolling">Scrolling</a>
+  <a href="#own">Your own element</a>
+  <a href="#arrivals">Arrivals</a>
+  <a href="#clicking">Clicking</a>
+  <a href="#feeding">Feeding it yourself</a>
+  <a href="#code">From code</a>
+  <a href="#inspector">The inspector</a>
+  <a href="#notes">Worth knowing</a>
+  <a href="#files">Files</a>
+</nav>
+
+<main>
+
+<header class="title">
+  <h1>Ui History</h1>
+  <p class="lede">The strip of recent bets: the last few rounds as a row of chips over the game, or a column of
+  them down the side. It feeds itself from the socket, animates each arrival, drops the oldest when it runs out
+  of room — or scrolls instead — and opens the bet info dialog on whichever chip is clicked. What it cannot
+  know — what a chip should <em>say</em> about a round of your game, and what counts as a win in it — is a key
+  in the inspector or a one-line function, and both have fallbacks that work without either.</p>
+  <p class="stamp">Describes package 1.0.58. Update this file with the code — and README.md beside it.</p>
+  <p><strong>GameObject → UI (Canvas) → History</strong>, or Add Component → UI → Ui History.</p>
+</header>
+
+<div class="stage">
+  <p class="why">The default strip: nonce or the tail of the bet id, green above the stake and red below it, the
+  player's own bets underlined, newest arriving at the right.</p>
+  <div class="strip end">
+    <div class="chip loss">02.83</div>
+    <div class="chip win">71.73</div>
+    <div class="chip win mine">83.19</div>
+    <div class="chip loss">05.01</div>
+    <div class="chip push">59.36</div>
+    <div class="chip win mine">87.89</div>
+    <div class="chip loss">07.25</div>
+    <div class="chip win">97.05</div>
+    <div class="chip loss fresh">04.30</div>
+  </div>
+</div>
+
+<h2 id="start">Quick start</h2>
+
+<ol>
+  <li><strong>GameObject ▸ UI (Canvas) ▸ History</strong> — a 620×64 strip, filled with sample bets so you can
+  style it.</li>
+  <li>Anchor it where it belongs. Stretch it if you want it to grow with the screen; the count of chips follows
+  the width.</li>
+  <li>Press play. The samples are replaced by <code>MainState.History</code>, and every <code>ON_HISTORY</code>
+  after that arrives with a pop.</li>
+  <li>Click a chip. The bet info window in the scene opens on that bet.</li>
+</ol>
+
+<p>Nothing above needed a line of code. From here on it is a matter of what your game's round looks like:</p>
+
+<pre><code>strip.Style.ElementSize = new Vector2(104f, 52f);   // shape
+strip.TextKey = "multiplier";                       // what a chip says
+strip.TextFormat = "{0}x";
+strip.TextDecimals = 2;
+strip.Classify = data =&gt; Payout(data) &gt;= 2m ? "win" : "loss";</code></pre>
+
+<h2 id="says">What a chip says</h2>
+
+<p>Asked in this order, and the first answer that is not empty wins:</p>
+
+<table>
+  <tr><th>#</th><th>Source</th><th>Set it</th><th>Use it for</th></tr>
+  <tr><td>1</td><td><code>Text</code></td><td>code: <code>strip.Text = data =&gt; …</code></td><td>Anything a key cannot answer — two values, a symbol, a word</td></tr>
+  <tr><td>2</td><td><strong>Text Key</strong></td><td>inspector or <code>strip.TextKey</code></td><td>A value the server already sends in the bet's outcome</td></tr>
+  <tr><td>3</td><td>Nonce</td><td>—</td><td>The default where the game has one</td></tr>
+  <tr><td>4</td><td>Tail of the bet id</td><td><strong>Id Length</strong>, <strong>Id From End</strong></td><td>The last resort, and the reason a chip is never blank</td></tr>
+</table>
+
+<p><code>Text</code> returning <code>null</code> falls through to the rest, so a game that only wants to
+override <em>some</em> bets can.</p>
+
+<p><strong>Text Key</strong> reads the bet's own <code>Outcome</code> payload — both shapes of it, the flat
+<code>_Outcome</code> the socket fills in and the raw JSON it arrived as. Whatever comes out is a string, so
+three fields shape it:</p>
+
+<table>
+  <tr><th>Field</th><th>Does</th><th>Example</th></tr>
+  <tr><td><strong>Text Decimals</strong></td><td>Cuts a number to that many decimals. Negative leaves it exactly as sent</td><td><code>2.839</code> → <code>2.83</code></td></tr>
+  <tr><td><strong>Text Pad</strong></td><td>Pads the whole part with zeros so a strip of numbers lines up</td><td><code>2.83</code> → <code>02.83</code></td></tr>
+  <tr><td><strong>Text Format</strong></td><td>A <code>string.Format</code> pattern for the result</td><td><code>{0}x</code> → <code>02.83x</code></td></tr>
+</table>
+
+<div class="note">
+  <p>Numbers are <strong>truncated, not rounded</strong> — the same as everywhere else in this package. A
+  multiplier the server called <code>2.839</code> was <code>2.83</code>; rounding it up would show the player a
+  number that never happened.</p>
+</div>
+
+<h2 id="case">Which case a bet is</h2>
+
+<p>Every element is painted from a <strong>scenario</strong>: a name and four colours on the style. Which
+scenario a bet gets is asked in the same shape as its text:</p>
+
+<table>
+  <tr><th>#</th><th>Source</th><th>Set it</th></tr>
+  <tr><td>1</td><td><code>Classify</code></td><td>code: <code>strip.Classify = data =&gt; "win"</code></td></tr>
+  <tr><td>2</td><td><strong>Scenario Key</strong></td><td>inspector — a key in the outcome whose <em>value</em> is the scenario name</td></tr>
+  <tr><td>3</td><td>The amounts</td><td>nothing to set</td></tr>
+</table>
+
+<p>The amounts give <code>win</code> when more came back than was staked, <code>push</code> when something did,
+<code>loss</code> when nothing did — and the style ships with one scenario of each name. A game with three
+kinds of round adds a third entry to the list and returns its name from <code>Classify</code>; nothing has to
+be widened for it, because a scenario is a string rather than an enum.</p>
+
+<p>A scenario carries <strong>Fill</strong>, <strong>Border Colour</strong>, <strong>Border Size</strong>
+(negative for the strip's own) and <strong>Text Colour</strong>. Shape — the corner radius, the font, the size
+of a chip — is one look for the whole strip and lives on the style, because a win that is a different
+<em>shape</em> from a loss reads as two components rather than one.</p>
+
+<h3 id="accent">The accent bar</h3>
+
+<p>Each scenario also has an <strong>Accent Colour</strong> and <strong>Accent Size</strong>: a bar under the
+element, drawn only on the bets <code>Mark</code> picks out. Unset, <code>Mark</code> picks out <strong>the
+player's own bets</strong> — it compares <code>IPlayerId</code> against <code>SystemState.Me</code> — which is
+what a shared history strip is really for.</p>
+
+<pre><code>strip.Mark = data =&gt; data.N &gt; 100;        // the accent means whatever you want it to</code></pre>
+
+<p>Set a scenario's <strong>Accent Size</strong> to zero and that case never shows one, however the bet was
+marked.</p>
+
+<h2 id="shape">Shape and direction</h2>
+
+<table>
+  <tr><th>Field</th><th>Means</th></tr>
+  <tr><td><strong>Flow</strong></td><td><code>Horizontal</code> — a row. <code>Vertical</code> — a column</td></tr>
+  <tr><td><strong>Order</strong></td><td>Which end the newest bet lands on: <code>NewestFirst</code> (left, or top) or <code>NewestLast</code></td></tr>
+  <tr><td><strong>Align</strong></td><td>Where the elements sit while there are too few to fill the strip: <code>Start</code>, <code>Center</code>, <code>End</code></td></tr>
+  <tr><td><strong>Overflow</strong></td><td><code>Clamp</code> — show as many as fit and drop the oldest. <code>Scroll</code> — keep them all and let it be dragged</td></tr>
+  <tr><td><strong>Capacity</strong></td><td>How many bets are <em>kept</em>, whatever is shown. Zero keeps everything. The socket itself keeps 15</td></tr>
+  <tr><td><strong>Clip</strong></td><td>Cut anything reaching past the strip's rect. Always on while scrolling</td></tr>
+</table>
+
+<div class="stage">
+  <p class="why">Align: Start — a strip filling from the left. The same three bets, Align: End, arrive against
+  the right edge and push leftwards: the crash-game look.</p>
+  <div class="strip">
+    <div class="chip win">1.94</div>
+    <div class="chip loss">0.00</div>
+    <div class="chip win mine">3.02</div>
+  </div>
+  <div class="strip end">
+    <div class="chip win">1.94</div>
+    <div class="chip loss">0.00</div>
+    <div class="chip win mine">3.02</div>
+  </div>
+</div>
+
+<h3 id="clamping">Clamping</h3>
+
+<p>How many fit is the strip's own width divided by <strong>Element Size</strong> along the flow, gaps taken
+out. So clamping needs that size set — with it at zero there is nothing to count with, everything is shown, and
+anything past the edge is clipped rather than dropped.</p>
+
+<p>The count follows the strip: an anchored strip resized by its parent, by the canvas scaler or by the window
+it sits in re-counts the frame after. Nothing announces a rect change, so the strip watches its own size.</p>
+
+<h3 id="scrolling">Scrolling</h3>
+
+<p><code>Overflow: Scroll</code> puts a <code>ScrollRect</code> and a <code>RectMask2D</code> on the strip and
+lets the content be as long as its elements. Drag it, flick it — inertia is on, because WebGL on a phone is a
+touch screen — or roll the wheel over it. <strong>Follow Newest</strong> slides it back to the newest bet as one
+arrives; <strong>Scroll Sensitivity</strong>, <strong>Scroll Inertia</strong> and
+<strong>Scroll Deceleration</strong> on the style are the feel of it.</p>
+
+<div class="stage">
+  <p class="why">A scrolling column, newest first, keeping everything.</p>
+  <div class="strip column">
+    <div class="chip win mine">4.11</div>
+    <div class="chip loss">0.00</div>
+    <div class="chip win">2.65</div>
+    <div class="chip push">1.00</div>
+  </div>
+</div>
+
+<p>There is no scrollbar. A strip of a dozen chips with a bar under it reads as a list; the drag and the wheel
+are the whole interaction, and <code>ScrollToNewest()</code> is there for the rest.</p>
+
+<h2 id="own">Your own element</h2>
+
+<p><strong>Element Prefab</strong> replaces the built-in chip with a prefab of your own. The field is typed
+<code>UiHistoryElement</code>, so the component goes on the prefab's <strong>root</strong> — which is also the
+only thing the strip needs from it. Three ways in, in the order they cost:</p>
+
+<p><strong>The component alone, fields empty.</strong> No script of your own: the first TextMeshPro label
+inside the prefab gets the value, the background gets the scenario's colours, a child called
+<code>Accent</code> becomes the accent bar, and a <code>Button</code> is wired to open the bet info window. The
+cheapest custom element is a prefab with a label in it and <em>Add Component ▸ UI ▸ Ui History Element</em> on
+the root.</p>
+
+<p><strong>The component with <code>Label</code>, <code>Plate</code> and <code>Accent</code> pointed at by
+hand</strong> — for a prefab whose first label is not the one the value belongs in.</p>
+
+<p><strong>Your own component derived from it</strong>, which is where a game ends up:</p>
+
+<pre><code>public class DiceHistoryChip : UiHistoryElement
+{
+    [SerializeField] private Image face;
+    [SerializeField] private TextMeshProUGUI amount;
+
+    public override void Write(HistoryDto data)
+    {
+        base.Write(data);                       // the label the strip decided on
+        face.sprite = faces[int.Parse(Outcome("roll"))];
+        amount.text = data.WinAmount;
+    }
+
+    public override void Paint(UiHistoryScenario look)
+    {
+        base.Paint(look);                       // or nothing at all, and keep your own colours
+        amount.color = look.TextColor;
+    }
+
+    public override void Appear() { … }         // arrive your own way
+}</code></pre>
+
+<p><code>Data</code> is the whole <code>HistoryDto</code>, <code>Text</code> is what the strip decided this
+element should say, <code>Scenario</code> is the name it was put in, <code>Marked</code> says whether
+<code>Mark</code> picked it out, and <code>Outcome("key")</code> reaches the game's own payload.</p>
+
+<div class="note">
+  <p>Two settings for prefabs: <strong>Paint Elements</strong> off leaves your colours exactly as drawn, and
+  <strong>Element Size</strong> at zero on an axis leaves that side of the element to itself — to its own
+  <code>LayoutElement</code>, or to the width its text asks for.</p>
+  <p>An element with no opinion about its size in an auto track measures as nothing, so give it one or set
+  <strong>Element Size</strong>.</p>
+</div>
+
+<h2 id="arrivals">Arrivals</h2>
+
+<p>A new element grows and fades in, from <strong>Appear Scale</strong> over <strong>Appear Duration</strong> on
+<strong>Appear Ease</strong>, on unscaled time so a game that paused itself still animates its strip. Zero
+duration puts it there with no animation; <strong>Animate Arrivals</strong> off does the same for every
+arrival.</p>
+
+<p>Elements are kept with the bet they show rather than reassigned by position, so a strip that shifts along
+only writes the one chip that is new — a prefab holding state of its own keeps it as it slides. The shift itself
+is not animated: the elements are placed by a grid, and a tween fighting a layout is a tween that loses.</p>
+
+<h2 id="clicking">Clicking</h2>
+
+<p>A click raises <code>OnPicked(HistoryDto)</code> and then opens the bet info dialog on that bet —
+<code>Show(id)</code>, so the dialog asks the server for the whole transaction with its seeds rather than making
+do with the summary the history payload is.</p>
+
+<p>Which dialog: <strong>Bet Info</strong> if it is set, otherwise one found in the scene, including a closed
+one — which every dialog is until it is opened. <strong>Open Bet Info</strong> off leaves the click to
+<code>OnPicked</code> alone.</p>
+
+<h2 id="feeding">Feeding it yourself</h2>
+
+<p><strong>Follow State</strong> on — the default — seeds from <code>MainState.History</code> on enable and adds
+every <code>ON_HISTORY</code> after that. Off hands the feeding over:</p>
+
+<table>
+  <tr><th>Call</th><th>Does</th></tr>
+  <tr><td><code>Add(data)</code></td><td>The newest bet. Animates, drops the oldest past <code>Capacity</code></td></tr>
+  <tr><td><code>AddRange(values)</code></td><td>One after another</td></tr>
+  <tr><td><code>Set(values)</code></td><td>Replaces everything, oldest first. Animates nothing</td></tr>
+  <tr><td><code>Remove(id)</code>, <code>Clear()</code></td><td>What they say</td></tr>
+  <tr><td><code>Refresh()</code></td><td>Writes every element again from the bet it holds — after changing what a chip should say</td></tr>
+</table>
+
+<p><code>Add</code> on a bet whose id is already in the strip replaces it where it is rather than adding a
+second chip (<strong>Dedupe</strong>), which is what a payout arriving after its round should do.</p>
+
+<h2 id="code">From code</h2>
+
+<pre><code>var strip = UiHistory.Create(canvas, "History", 620f, 64f);
+strip.Flow = EHistoryFlow.Vertical;
+strip.Overflow = EHistoryOverflow.Scroll;
+strip.Capacity = 0;
+strip.Style.ElementSize = new Vector2(0f, 48f);
+strip.OnPicked.AddListener(data =&gt; Debug.Log(data.Id));</code></pre>
+
+<table>
+  <tr><th>Member</th><th>Does</th></tr>
+  <tr><td><code>Create(parent, name, width, height)</code></td><td>Builds one, ready to be fed</td></tr>
+  <tr><td><code>Style</code></td><td>The look. Change anything on it and call <code>ApplyStyle()</code></td></tr>
+  <tr><td><code>ApplyStyle()</code></td><td>Writes every colour, gap and scroll setting, then lays out</td></tr>
+  <tr><td><code>Layout()</code></td><td>Binds, names the cells, sets the layout — now, rather than at the end of the frame</td></tr>
+  <tr><td><code>Rebuild()</code></td><td>From scratch. After swapping the prefab, or changing the style wholesale</td></tr>
+  <tr><td><code>Items</code>, <code>Count</code></td><td>The bets it holds, oldest first</td></tr>
+  <tr><td><code>Elements</code></td><td>What is on screen, in the order shown. Worth reading rather than keeping</td></tr>
+  <tr><td><code>ElementFor(id)</code></td><td>The element showing that bet, or null</td></tr>
+  <tr><td><code>Sample(count)</code></td><td>Fills it with made-up bets. What the editor preview uses</td></tr>
+  <tr><td><code>ScrollToNewest(animated)</code></td><td>Slides a scrolling strip to the newest end</td></tr>
+  <tr><td><code>Read(data, key)</code></td><td>A value out of a bet's outcome payload. Static, and useful outside the strip</td></tr>
+  <tr><td><code>Grid</code>, <code>Scroller</code></td><td>The parts, for anything the settings do not reach</td></tr>
+  <tr><td><code>OnPicked</code>, <code>OnElement</code></td><td>A chip was clicked; an element was filled in</td></tr>
+</table>
+
+<p><code>OnElement</code> fires as each element is written, which is where a game decorates one from the
+inspector rather than from a prefab script.</p>
+
+<h2 id="inspector">The inspector</h2>
+
+<table>
+  <tr><th>Group</th><th>Fields</th></tr>
+  <tr><td><strong>Style</strong></td><td>Strip: element size, gap, padding. Element: radius, softness, border, font, text size and style, alignment, inset, shrink. Accent: inset, offset. Scenarios: the default one and the list. Arrival: duration, scale, fade, ease, unscaled. Scrolling: sensitivity, inertia, deceleration</td></tr>
+  <tr><td><strong>Element</strong></td><td>Element Prefab, Paint Elements</td></tr>
+  <tr><td><strong>Strip</strong></td><td>Flow, Order, Align, Overflow, Capacity, Clip, Follow Newest</td></tr>
+  <tr><td><strong>Value</strong></td><td>Text Key, Text Format, Text Decimals, Text Pad, Id Length, Id From End</td></tr>
+  <tr><td><strong>Scenario</strong></td><td>Scenario Key</td></tr>
+  <tr><td><strong>Behaviour</strong></td><td>Follow State, Dedupe, Animate Arrivals, Open Bet Info, Bet Info, Find Bet Info, Preview, Sample Count</td></tr>
+  <tr><td><strong>Events</strong></td><td>On Picked, On Element</td></tr>
+</table>
+
+<p><strong>Preview</strong> is what fills a strip with sample bets when there is no socket running, so the
+component looks like a history strip in the editor rather than like an empty rect. A real session replaces them
+on enable.</p>
+
+<h2 id="notes">Worth knowing</h2>
+
+<p>The hierarchy it builds, for anything that has to be found by hand:</p>
+
+<div class="tree">History      ScrollRect · RectMask2D · Image (grab)
+└ Content    UiGrid · ContentSizeFitter
+   ├ Element   cell "e0"   ← the newest, or the oldest
+   ├ Element   cell "e1"
+   ├ …
+   └ Element   no cell name — a spare, hidden by the layout</div>
+
+<ul>
+  <li><strong>The elements sit in a <code>UiGrid</code>, one track each.</strong> Every element the strip is not
+  showing is a spare kept in the same grid under a name the layout does not mention. That is how it is hidden —
+  a grid shows exactly what its layout names and re-asserts that every time it is enabled, so anything switched
+  off behind its back comes straight back on. Naming is the only way to hide something in a grid that it will
+  not argue with.</li>
+
+  <li><strong>An empty strip still gets a layout</strong> — one empty cell. A grid with <em>no</em> layout shows
+  every child it has, which here would be every spare in the pool.</li>
+
+  <li><strong>A size from the style is written as a <code>LayoutElement</code></strong>, not only as a
+  <code>sizeDelta</code>. An auto track is as big as the items in it say they need to be, and a plain rect says
+  nothing at all.</li>
+
+  <li><strong>The cross axis is always one flexible track.</strong> An element with a fixed size across the flow
+  keeps it and is centred in the strip; a fixed <em>track</em> would pin the row to the top edge and leave the
+  rest of the strip empty under it.</li>
+
+  <li><strong>Drags reach the scroller through the buttons.</strong> A <code>Button</code> does not handle drag,
+  so the event bubbles up to the <code>ScrollRect</code> above it — which is why a chip can be both clicked and
+  dragged. The strip also carries an invisible <code>Image</code> behind the elements, enabled only while
+  scrolling, so a drag that starts in a gap between chips still scrolls.</li>
+
+  <li><strong>One arrangement per frame.</strong> However many bets arrive in a frame, the strip is laid out
+  once, at the end of it. <code>Layout()</code> is the immediate version, for a game that wants to read
+  <code>Elements</code> in the same breath.</li>
+
+  <li><strong>Clipping cuts the accent bar</strong> if the elements fill the strip's height exactly.
+  <strong>Accent Offset</strong> hangs the bar below the chip by default, so leave a couple of units of slack
+  across the flow, or set the offset to zero.</li>
+
+  <li><strong>Every tween is built with <code>DOTween.To</code></strong> rather than the
+  <code>DOScale</code>/<code>DOFade</code> shortcuts. Those live in DOTween's UI module, which is compiled into
+  the project's own assembly and cannot be reached from a package.</li>
+</ul>
+
+<h2 id="files">Files</h2>
+
+<table>
+  <tr><th>File</th><th>What it is</th></tr>
+  <tr><td><code>UiHistory.cs</code></td><td>The component: the feed, the binding, the layout, the clicking</td></tr>
+  <tr><td><code>UiHistoryElement.cs</code></td><td>One bet on screen. What a prefab derives from</td></tr>
+  <tr><td><code>UiHistoryStyle.cs</code></td><td>Shape, spacing, arrival and scrolling, plus the scenarios</td></tr>
+  <tr><td><code>UiHistoryScenario.cs</code></td><td>One named look — what a win looks like</td></tr>
+  <tr><td><code>EHistoryFlow.cs</code><br><code>EHistoryOrder.cs</code><br><code>EHistoryAlign.cs</code><br><code>EHistoryOverflow.cs</code></td><td>Direction, which end is newest, where a part-full strip sits, and what happens when it fills</td></tr>
+  <tr><td><code>UiHistoryExample.cs</code></td><td>Three strips built from code: plain, multipliers, and a scrolling column</td></tr>
+  <tr><td><code>Editor/History/UiHistoryMenu.cs</code></td><td>The GameObject menu entry</td></tr>
+  <tr><td><code>../Grid/</code></td><td><code>UiGrid</code>, which places the elements</td></tr>
+  <tr><td><code>../RoundedBox/</code></td><td><code>RoundedBox</code>, which draws the built-in chip</td></tr>
+  <tr><td><code>../Window/BetInfoWindow.cs</code></td><td>The dialog a click opens</td></tr>
+</table>
+
+</main>
+</div>
+</body>
+</html>

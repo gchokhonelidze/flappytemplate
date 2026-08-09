@@ -565,6 +565,10 @@ namespace FlappyTemplate
 
         // The window is sized from the content out rather than the other way round: the rows are what they
         // are, and a fixed height either clips the last one or leaves a gap under it.
+        //
+        // The number is worked out here rather than measured by the window, because these rows are placed by
+        // hand and a hand-placed rect reports no height of its own. Handed over rather than written straight
+        // onto the rect, so that the window can hold it to what the screen has room for and scroll the rest.
         private void FitWindow(float tabsHeight, float rowsHeight, float bottomRoom)
         {
             var host = Window;
@@ -577,9 +581,7 @@ namespace FlappyTemplate
                 + host.Style.ContentPaddingBottom
                 + border;
 
-            float height = chrome + tabsHeight + style.TabGap + rowsHeight + bottomRoom;
-            var rect = host.Rect;
-            rect.sizeDelta = new Vector2(rect.sizeDelta.x, height);
+            host.FitTo(chrome + tabsHeight + style.TabGap + rowsHeight + bottomRoom);
         }
 
         private void Listen(bool on)

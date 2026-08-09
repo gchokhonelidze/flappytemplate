@@ -203,6 +203,42 @@
   .modal { position: relative; padding: 18px; background: rgba(0, 0, 0, .55); border-radius: 12px; }
   .modal .win { width: 200px; }
   .drag { border: 2px dashed rgba(255, 255, 255, .45); border-radius: 23px 23px 0 0; }
+
+  /* ---- the bet info dialog, same idea ---- */
+
+  .win.info { width: 268px; }
+  .card {
+    background: rgba(255, 255, 255, .1);
+    border-radius: 10px;
+    padding: 12px;
+    display: grid;
+    gap: 9px;
+  }
+  .banner {
+    background: #ff6363;
+    border-radius: 8px;
+    padding: 8px 6px;
+    text-align: center;
+  }
+  .banner .k { font-weight: 800; font-size: 14px; }
+  .banner .v { font-weight: 800; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 7px; }
+  .rule { height: 1px; background: rgba(255, 255, 255, .3); }
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; }
+  .duo .k { font-weight: 700; font-size: 11.5px; opacity: .95; }
+  .duo .v { font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 3px; }
+  .duo .hash { font-weight: 400; font-size: 10px; word-break: break-all; line-height: 1.35; }
+  .coin { width: 18px; height: 18px; border-radius: 999px; background: #fbcc14; color: #2e2a5c; font-size: 10px; font-weight: 800; display: grid; place-items: center; flex: none; }
+  .coin.big { width: 26px; height: 26px; font-size: 13px; }
+  .who { width: 22px; height: 22px; border-radius: 999px; background: #2e2a5c; font-size: 10px; display: grid; place-items: center; flex: none; }
+  .tick { width: 18px; height: 18px; border-radius: 999px; background: #4ade80; color: #fff; font-size: 11px; display: grid; place-items: center; flex: none; }
+  .shot { width: 56px; height: 42px; border-radius: 6px; background: #2e2a5c; display: grid; place-items: center; font-size: 10px; flex: none; }
+  .beside { display: flex; align-items: center; gap: 8px; text-align: left; }
+  .own { border: 1px dashed rgba(251, 204, 20, .8); border-radius: 6px; padding: 6px; text-align: center; font-size: 10.5px; color: #fbcc14; }
+  .bar { display: flex; justify-content: space-between; gap: 8px; margin-top: 9px; }
+  .btn { background: #90e39a; color: #1c1a4a; border-radius: 8px; padding: 6px 14px; font-weight: 800; font-size: 12px; }
+  .dots { display: flex; gap: 8px; justify-content: center; padding: 22px 0; }
+  .dots i { width: 9px; height: 9px; border-radius: 999px; background: rgba(255, 255, 255, .85); }
+  .dots i:nth-child(2) { transform: scale(1.35); }
 </style>
 </head>
 <body>
@@ -215,10 +251,18 @@
   <a class="sub" href="#style">Style</a>
   <a href="#code">From code</a>
   <a class="sub" href="#steps">Every step</a>
+  <a href="#size">How tall it may be</a>
+  <a class="sub" href="#fitting">Fitting</a>
+  <a class="sub" href="#scrolling">Scrolling</a>
   <a href="#statistics">Statistics</a>
   <a class="sub" href="#rows">Rows</a>
   <a class="sub" href="#values">Values</a>
   <a class="sub" href="#reset">Reset</a>
+  <a href="#betinfo">Bet info</a>
+  <a class="sub" href="#own">The game's own half</a>
+  <a class="sub" href="#amounts">Values</a>
+  <a class="sub" href="#seeds">Details and verify</a>
+  <a class="sub" href="#pictures">Pictures</a>
   <a href="#ontop">Drawing over the game</a>
   <a href="#notes">Worth knowing</a>
   <a href="#files">Files</a>
@@ -231,8 +275,9 @@
   <p class="lede">A dialog that is one component rather than a prefab: a rounded panel, a caption, a close
   button, a drag, and an opening that is animated rather than a SetActive. Everything it is made of is built
   from code the first time it is needed, so there is no hierarchy to keep in step with the palette and
-  nothing to rebuild when a game decides its dialogs have square corners after all.</p>
-  <p class="stamp">Describes package 1.0.55. Update this file with the code — and README.md beside it.</p>
+  nothing to rebuild when a game decides its dialogs have square corners after all. Inside, the caption and the
+  body are two rows of a UiGrid, and the body scrolls once the content is taller than the screen has room for.</p>
+  <p class="stamp">Describes package 1.0.58. Update this file with the code — and README.md beside it.</p>
   <p><strong>GameObject → UI (Canvas) → Window</strong>, which makes a canvas if the scene has none, drops
   the window under whatever was right-clicked, and builds the whole thing on the spot so it arrives looking
   like a window rather than as an empty rect waiting for play mode.</p>
@@ -272,6 +317,45 @@
     <p class="why">Two tabs, five rows and a reset button, all of it built into an ordinary window.</p>
     <pre><code>var stats = StatisticsWindow.Create(canvas);
 stats.Window.Open();</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage wide">
+      <div class="win info">
+        <div class="x">✕</div>
+        <div class="cap">Bet info</div>
+        <div class="body">
+          <div class="card">
+            <div class="banner">
+              <div class="k">Profit</div>
+              <div class="v"><span class="coin big">₿</span><span>btc −0.00000001</span></div>
+            </div>
+            <div class="rule"></div>
+            <div class="duo">
+              <div><div class="k">Bet</div><div class="v"><span class="coin">₿</span>0.00000001</div></div>
+              <div><div class="k">Payout</div><div class="v">0.0 x</div></div>
+            </div>
+            <div class="rule"></div>
+            <div class="duo">
+              <div><div class="k">Player</div><div class="v"><span class="who">🦇</span>DEV-TEAM</div></div>
+              <div><div class="k">Bet's id</div><div class="v"><span class="tick">✓</span><span class="hash">019f150cc55377c8b0894c99b556a7df</span></div></div>
+            </div>
+            <div class="rule"></div>
+            <div class="duo">
+              <div class="beside"><span class="shot">🎲</span><div><div class="k">Game</div><div class="v">Dice</div></div></div>
+              <div><div class="k">Time</div><div class="v">🕐 <b>30</b> 00:23:06</div></div>
+            </div>
+            <div class="own">the game draws its own outcome here</div>
+          </div>
+          <div class="bar"><div class="btn">Details</div><div class="btn">Verify</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">Bet info</div>
+    <p class="why">One bet, as the server sent it — and one block left empty, because what a bet
+    <em>meant</em> is the only part of this a template cannot write.</p>
+    <pre><code>var info = BetInfoWindow.Create(canvas);
+info.Show(betId);</code></pre>
   </div>
 
   <div class="specimen">
@@ -325,6 +409,10 @@ stats.Window.Open();</code></pre>
   <tr><td>Show Close Button</td><td></td></tr>
   <tr><td>Start Closed</td><td>Hide at Awake and wait for <code>Open</code>. Off leaves the window exactly as the scene saved it.</td></tr>
   <tr><td>Destroy On Close</td><td>For a window built for one message — it takes itself down with it.</td></tr>
+  <tr><td>Fit Content Height</td><td>Ask the content how tall it wants to be on every open, and be that tall. Needs something under <code>Content</code> that reports a height — see <a href="#size">How tall it may be</a>.</td></tr>
+  <tr><td>Max Height</td><td>The tallest the window may be, in its own units. Zero means the parent it is drawn in — the screen, for a full-screen canvas — less Screen Margin.</td></tr>
+  <tr><td>Screen Margin</td><td>Room left above and below a window that has grown as far as it may.</td></tr>
+  <tr><td>Scroll</td><td><code>Never</code>, <code>WhenTooTall</code> (the default) or <code>Always</code>.</td></tr>
   <tr><td>Draggable / Drag Anywhere</td><td>By the caption, or by any part of the window. Anywhere catches drags on everything inside it that does not handle its own.</td></tr>
   <tr><td>Clamp To Parent</td><td>Keep the window inside its parent, per axis — see <a href="#notes">Worth knowing</a>.</td></tr>
   <tr><td>Keep Visible</td><td>How much of a window too big for its parent has to stay inside it.</td></tr>
@@ -357,6 +445,11 @@ stats.Window.Open();</code></pre>
   <tr><td>Close Icon Color / Thickness / Scale</td><td></td></tr>
   <tr><td>Close Icon</td><td>A sprite in place of the drawn cross. Its colour still comes from the style.</td></tr>
   <tr><td>Content Padding Left / Top / Right / Bottom</td><td>Inset of the content area. Top is measured from the bottom of the caption, not the top of the panel. Four floats rather than a <code>RectOffset</code>: that type is a handle onto a native object and cannot be built in a field initialiser.</td></tr>
+  <tr><td>Show Scrollbar</td><td>The bar down the right of the body. Off leaves the wheel and the drag, and no hint that there is more below.</td></tr>
+  <tr><td>Scrollbar Width / Inset / Corner Radius</td><td>Inset is measured from the right edge of the body inwards; the content is moved over by the width and the inset together, so the two never overlap. A negative radius rounds the bar fully.</td></tr>
+  <tr><td>Scrollbar Track / Handle Color</td><td></td></tr>
+  <tr><td>Scroll Sensitivity</td><td>Canvas units per notch of the wheel.</td></tr>
+  <tr><td>Scroll Inertia / Deceleration</td><td>Whether a flick carries on after the finger has left, and how quickly it runs out. On by default — a touch screen expects it, and WebGL on a phone is a touch screen.</td></tr>
   <tr><td>Backdrop Color</td><td></td></tr>
   <tr><td>Open Scale</td><td>What a window grows from, and shrinks back to.</td></tr>
 </table>
@@ -427,6 +520,96 @@ UiWindowBuilder.For(window)
 Instantiate(rulesPrefab, window.Content, false);
 window.Open();</code></pre>
 
+<h2 id="size">How tall it may be</h2>
+
+<p>The inside of a window is a <code>UiGrid</code> of one column and two rows — the caption at the height the
+style says, the body taking the rest:</p>
+
+<pre><code>Window            RoundedBox · UiGrid · CanvasGroup
+├ Caption         cell "caption"        row 0, Fixed(Caption Height)
+│  └ Title
+├ Viewport        cell "body"           row 1, Flexible · RectMask2D · ScrollRect
+│  ├ Content      ← whatever the window is for
+│  └ Scrollbar    Track → Sliding Area → Handle
+└ Close           an overlay: ignored by the grid entirely</code></pre>
+
+<div class="note">
+  <p>Two things follow from that. <strong><code>Content</code> is a grandchild now</strong>, inside
+  <code>Viewport</code> — a window saved before this moves its own <code>Content</code> in on the next build,
+  children and all, so nothing is lost and nothing needs doing by hand.</p>
+  <p>And the caption is shown and hidden <strong>by the grid's layout</strong> rather than by
+  <code>SetActive</code>, because a grid takes its layout as the whole truth about which of its children are
+  showing and re-asserts it whenever it is enabled. The close button sits outside all of that: it carries an
+  ignored <code>LayoutElement</code>, so the grid neither places it nor has an opinion about whether it is
+  visible.</p>
+</div>
+
+<h3 id="fitting">Fitting</h3>
+
+<table>
+  <tr><th>Call</th><th>Does</th></tr>
+  <tr><td><code>Fit()</code></td><td>Measures the content, makes the window that tall, clamps, and scrolls the rest.</td></tr>
+  <tr><td><code>FitTo(height)</code></td><td>The same from a height the caller worked out itself.</td></tr>
+  <tr><td><code>ScrollToTop()</code></td><td>Back to the top of the body.</td></tr>
+  <tr><td><code>IsScrolling</code> · <code>Scroller</code> · <code>Viewport</code> · <code>Grid</code></td><td>What it ended up doing, and the parts that do it.</td></tr>
+</table>
+
+<p><code>Fit()</code> asks the content: <code>LayoutUtility.GetPreferredHeight(Content)</code> after an immediate
+rebuild. That needs something under <code>Content</code> that <strong>reports a height</strong> — a layout group
+(<code>UiGrid</code> included), a label, a <code>LayoutElement</code>. A window whose content is placed by hand
+reports nothing and must work its own number out and call <code>FitTo</code> instead, which is exactly what the
+two windows in this folder do: <code>BetInfoWindow</code> lays its card out with a grid and calls
+<code>Fit()</code>, <code>StatisticsWindow</code> adds its rows up and calls <code>FitTo()</code>.</p>
+
+<div class="note">
+  <p>Every route ends at the same clamp, so <strong>the height a window asks for and the height it gets are two
+  different numbers</strong> and the window remembers both. Reopening does not mistake a clamped height for the
+  author's wish, and a height set by hand between opens is noticed and taken as the new wish.</p>
+</div>
+
+<h3 id="scrolling">Scrolling</h3>
+
+<p>Once the wanted height is past what is allowed, <strong>Scroll</strong> decides what happens:</p>
+
+<ul>
+  <li><code>Never</code> — the window stays too tall, as it did before any of this existed.</li>
+  <li><code>WhenTooTall</code> — the body scrolls, and only then. The default.</li>
+  <li><code>Always</code> — the bar and the room it takes are there whatever the content does, so the layout
+  never shifts.</li>
+</ul>
+
+<p>The limit is <strong>Max Height</strong>, or the parent's height less <strong>Screen Margin</strong> at both
+ends when that is zero. It is measured in the window's own units: a window at half scale is allowed twice as much
+of itself, the same reasoning the drag clamp uses. A phone that turns or a player window that is dragged wider
+changes that limit without anything asking, so it is checked once a frame per open window — a float compare — and
+the clamp is worked out again when it moves.</p>
+
+<p>While scrolling, <code>Content</code> is as tall as it asked to be and anchored to the top of
+<code>Viewport</code>, which is the shape a <code>ScrollRect</code> moves; the mask clips at the viewport, and the
+content's right padding grows by the bar's width so the two never overlap. While not, <code>Content</code> fills
+the viewport exactly as it filled the window before, and both the mask and the scroller are switched off —
+nothing is moving, so nothing needs clipping.</p>
+
+<div class="note">
+  <p><strong>Touch and the wheel both need something to land on.</strong> A <code>ScrollRect</code> is only offered
+  a drag or a scroll if the pointer hits a raycast target that is the scroller itself or something under it — and
+  every graphic a window puts in its body is deliberately <em>not</em> one, because a card or a rule that swallowed
+  clicks would break the buttons under it. So the viewport wears an invisible <code>Image</code> of its own, over
+  the whole body and behind everything in it: that is what makes a finger drag work, and it is switched off along
+  with the scrolling so a window that is not scrolling neither draws it nor catches anything with it. Buttons
+  inside the content still win, being deeper.</p>
+  <p>One thing to know if a scrollbar ever looks wrong: <strong>UGUI's <code>Scrollbar</code> moves its handle by
+  writing the anchors and nothing else</strong>, so the handle's own size and position have to be zero for it to
+  sit in the band it is given. Left at the 100 by 100 a new rect comes with, it draws a hundred units past the
+  track on every side — which reads as an enormous bar and a Scrollbar Width that does nothing at all.</p>
+</div>
+
+<pre><code>// A rules dialog that is as tall as its text and no taller than the screen
+window.FitContentHeight = true;
+window.MaxHeight = 0f;        // the parent, less Screen Margin
+window.Scroll = EWindowScroll.WhenTooTall;
+window.Open();                // fitted, clamped and scrolling on the way in</code></pre>
+
 <h2 id="statistics">Statistics</h2>
 
 <p><strong>GameObject → UI (Canvas) → Statistics Window</strong>, or Add Component → UI → Statistics Window
@@ -450,7 +633,7 @@ together, so switching tabs asks the server for nothing.</p>
   <tr><td>Reset On Current Only</td><td>Hide the button on the Overall tab. On by default: there is no such thing as resetting the overall figures, and a button that does nothing is worse than no button.</td></tr>
   <tr><td>Reserve Reset Room</td><td>Keep the rows clear of the button. Off lets it sit over the bottom of the column, which is tighter.</td></tr>
   <tr><td>Follow State</td><td>Redraw when the server sends new statistics.</td></tr>
-  <tr><td>Fit Window Height</td><td>Resize the window to exactly the rows it is showing.</td></tr>
+  <tr><td>Fit Window Height</td><td>Resize the window to exactly the rows it is showing. The number is handed to the window rather than written onto its rect, so a column of rows taller than the screen scrolls instead of overflowing.</td></tr>
 </table>
 
 <h3 id="rows">Rows</h3>
@@ -520,6 +703,135 @@ sample; a real game must never show invented numbers.</p>
 <pre><code>stats.OnResetRequested.AddListener(PlayClearSound);
 stats.OnTabChanged.AddListener(tab =&gt; Debug.Log(tab));</code></pre>
 
+<h2 id="betinfo">Bet info</h2>
+
+<p><strong>GameObject → UI (Canvas) → Bet Info Window</strong>, or Add Component → UI → Bet Info Window on a
+<code>UiWindow</code>, or the whole thing in one line:</p>
+
+<pre><code>var info = BetInfoWindow.Create(canvas);
+info.Show(betId);</code></pre>
+
+<p>One bet: what it cost, what it paid, who made it, in which game, and the seeds it was rolled from.
+<code>Show(id)</code> emits <code>BET_INFO</code> through <code>Emitter</code> and opens the window on a row of
+pulsing dots; the answer arrives as <code>ON_BET_INFO_ID</code>, which the socket puts in
+<code>MainState.BetInfoById</code> and announces as <code>OnBetInfoById</code>, and the window fills itself in
+from that. Nothing is polled, and nothing is shown that the server has not sent.</p>
+
+<p>Most games never call <code>Show</code> themselves: a <strong>history strip</strong>
+(<code>../History/</code>) opens this dialog on whichever bet was clicked, finding one in the scene if it was
+not given one.</p>
+
+<table>
+  <tr><th>Call</th><th>Does</th></tr>
+  <tr><td><code>Show(id)</code></td><td>Asks for that bet and opens on the loader. Uses <code>MainState.BetInfoById</code> at once if it already holds this id, so looking at the same bet twice asks once.</td></tr>
+  <tr><td><code>Show(transaction)</code></td><td>Opens on a <code>TransactionPublic</code> the game already has. Nothing is asked.</td></tr>
+  <tr><td><code>Show()</code></td><td>Opens on whatever the state last received — for a window driven by the game's own <code>Emitter.OnBetInfo</code>.</td></tr>
+  <tr><td><code>Request(id)</code></td><td>Asks without opening anything.</td></tr>
+  <tr><td><code>Clear()</code></td><td>Back to the loader, for a window about to be pointed at another bet.</td></tr>
+  <tr><td><code>ToggleDetails()</code> · <code>DetailsOpen</code></td><td>The seeds half.</td></tr>
+  <tr><td><code>Verify()</code></td><td>Opens the verifier in a browser — the same thing the button does.</td></tr>
+  <tr><td><code>Refresh()</code> · <code>Layout()</code> · <code>Rebuild()</code></td><td>Fill in again, lay out again, build again.</td></tr>
+</table>
+
+<table>
+  <tr><th>Field</th><th>What it does</th></tr>
+  <tr><td>Style</td><td>The card and its fields. The panel around them is the window's own style.</td></tr>
+  <tr><td>Labels</td><td>Every caption on the dialog, <em>Profit</em> to <em>Server SHA-512</em>. Nothing here is translated.</td></tr>
+  <tr><td>Show Profit / Bet Payout / Player / Game</td><td>The blocks, each a row of the card. The pairs share a row: bet with payout, player with the bet's id, game with the time.</td></tr>
+  <tr><td>Show Details</td><td>The Details button and the seeds it opens.</td></tr>
+  <tr><td>Show Verify</td><td>The Verify button. It appears only on a transaction the server sent a <code>VerifyUrl</code> with.</td></tr>
+  <tr><td>Outcome Height</td><td>Height of the block the game's own view is given. Zero measures what is in it — see below.</td></tr>
+  <tr><td>Follow State</td><td>Fill in when the server sends a transaction.</td></tr>
+  <tr><td>Request On Show</td><td>Ask the server when <code>Show</code> is given an id. Off leaves the asking to the game.</td></tr>
+  <tr><td>Match Requested Id</td><td>Ignore an answer whose id is not the one asked for. On by default: every open window hears every answer, and a window opened on one bet must not show another.</td></tr>
+  <tr><td>Load Images</td><td>Fetch the currency, game and avatar pictures the server sends as urls. Off leaves the drawn stand-ins showing.</td></tr>
+  <tr><td>Fit Window Height</td><td>Resize the window to exactly the blocks it is showing.</td></tr>
+  <tr><td>Collapse Details On Close</td><td>Close the seeds when the window closes, so a dialog reopened on another bet starts the way it first opened. On by default: the seeds one bet needed are not the height the next one's do.</td></tr>
+</table>
+
+<p><code>OnTransaction</code>, <code>OnRequested</code>, <code>OnVerify</code> and
+<code>OnDetailsToggled</code> are UnityEvents.</p>
+
+<div class="note">
+  <p>The window is fitted <strong>twice over, and again on the next two frames</strong>. A label reports the
+  height it needs at the width it has, and its width is what the first pass settles — so on the way into a
+  window that has just been activated a wrapped hash measures as one line, and a card fitted to that leaves the
+  seeds hanging below the panel. Anything else the canvas settles late — a font finishing loading, a picture
+  arriving — is caught by the frames after.</p>
+</div>
+
+<h3 id="own">The game's own half</h3>
+
+<p>What a bet <em>meant</em> is the one thing the template cannot know: a dice game draws the roll, a crash
+game the multiplier it stopped at, a plinko game the slot the ball fell into. So the fields stop at what every
+transaction carries, and <strong><code>Outcome</code> is a full-width block under them that the game fills
+in</strong>.</p>
+
+<pre><code>info.OnTransaction.AddListener(data =&gt;
+{
+    // data.Outcome and data.Custom are the server's own payloads for this bet
+    var view = Instantiate(rollPrefab, info.Outcome, false);
+    view.Draw(data.Outcome);
+});</code></pre>
+
+<div class="note">
+  <p><code>Outcome</code> is a one-column grid with an auto row each, so several things stacked into it come
+  out in hierarchy order. Auto means <em>as tall as what is in it says it needs to be</em> — a label or a
+  layout group answers that, <strong>a plain panel or an image does not</strong> and comes out at nothing.
+  Give that a <code>LayoutElement</code>, or set <strong>Outcome Height</strong> and the block is that tall
+  whatever is in it.</p>
+  <p><code>Outcome</code> is the only way in, and the card is not: which blocks the card is showing is said to
+  the grid as a <strong>layout</strong> — a picture of the grid naming one area per cell — and <em>a grid hides
+  every child its layout does not name</em>. A panel parented straight into the card would be switched off the
+  next time the layout was set. Inside <code>Outcome</code> nothing is named, so everything shows; the flip side
+  is that a game which hides one of its own views in there with <code>SetActive</code> will find it switched
+  back on, since a grid with no layout takes every child as showing. Keep a view you mean to hide out of the
+  grid, or hide what is inside it.</p>
+</div>
+
+<h3 id="amounts">Values</h3>
+
+<p>Money arrives as <strong>strings</strong> and is parsed only to be printed: truncated to the transaction's
+own <code>DecimalPoints</code> and trimmed of trailing zeroes, which is the order the web front does it in — so
+the same bet reads the same in both, <code>0</code> as <code>0.0</code> and a satoshi as
+<code>0.00000001</code>. <code>Decimals</code> overrides the transaction's count; <code>Payout Decimals</code>
+is separate, because a multiplier is not money.</p>
+
+<table>
+  <tr><th>Field</th><th>What it does</th></tr>
+  <tr><td>Decimals</td><td>Below zero uses the transaction's <code>DecimalPoints</code>, or 8 where the server did not fill it in.</td></tr>
+  <tr><td>Payout Decimals</td><td>Four, as the design draws it.</td></tr>
+  <tr><td>Trim Zeros</td><td>Drop trailing zeroes, keeping one after the point.</td></tr>
+  <tr><td>Day / Time Format, Local Time</td><td><code>CreatedAt</code> is milliseconds; a seconds feed is read as seconds rather than as 1970. The day is drawn bold and the time beside it.</td></tr>
+</table>
+
+<p>The banner is green from a <strong>payout of one</strong> and red below it — not from the win amount, which
+says nothing on its own about whether the bet came back.</p>
+
+<h3 id="seeds">Details and verify</h3>
+
+<p>Details opens the seeds: the nonce, the seed the player contributed, the seed the server kept, and the hash
+it published before the roll. The nonce and the client seed are a single-player idea, so on a
+<code>SHARED</code> or <code>MULTI</code> transaction the nonce row is dropped and the seed is captioned as the
+block hash instead. A server seed still in play arrives empty and is printed as <strong>Hidden</strong> rather
+than as a blank.</p>
+
+<p>Verify sends the browser to <code>VerifyUrl</code> with both seeds base64'd into the query, the nonce, and
+the house edge the roll was made under — byte for byte the string the web front builds, so a bet checked from
+the game and a bet checked from the site are checked the same way.</p>
+
+<h3 id="pictures">Pictures</h3>
+
+<p>The currency icon, the game thumbnail and the avatar are urls, not assets. Each is drawn as a plate with the
+first letter on it and the picture laid over the top when it arrives, so a window with no network still reads
+as a window. <code>UiRemoteImage</code> fetches them once per session and hands the same sprite to everything
+that asks: it hangs the download on <code>UnityWebRequest</code>'s own completion rather than on a coroutine,
+so closing the dialog does not abandon the fetch, and the picture is already there next time it opens.</p>
+
+<p>With no socket at all — a scene with no <code>StateManager</code> — the window shows a sample bet, the same
+way the statistics window shows sample figures. A <code>StateManager</code> that is running but has not been
+sent a transaction shows the loader; a real game never sees invented numbers.</p>
+
 <h2 id="ontop">Drawing over the game</h2>
 
 <p>A window that comes out behind the game is not a hierarchy problem, and moving it down the hierarchy will
@@ -551,10 +863,24 @@ against each other by exactly that number, so 100 clears anything the game draws
 <h2 id="notes">Worth knowing</h2>
 
 <ul>
-  <li><strong>The close cross and the reset arrow are drawn, not fetched.</strong> Two rotated boxes, and a
-  ring with a notch in it, which costs no atlas entry and stays sharp at any size. The notch is
-  <em>painted in the button's own colour</em>, not cut, so it only disappears against a flat button — give
-  the style a <code>ResetIcon</code> sprite if the button is ever a gradient.</li>
+  <li><strong>The close cross, the reset arrow, the tick and the clock are drawn, not fetched.</strong> Rotated
+  boxes, a ring with a notch in it, and two bars between three points, which costs no atlas entry and stays
+  sharp at any size. The reset notch is <em>painted in the button's own colour</em>, not cut, so it only
+  disappears against a flat button — give the style a <code>ResetIcon</code> sprite if the button is ever a
+  gradient. <code>TickIcon</code> and <code>ClockIcon</code> do the same for the bet info dialog.</li>
+  <li><strong>The bet info dialog is laid out by <code>UiGrid</code>, not by arithmetic.</strong> Two columns,
+  one auto row per block, and a nested grid per field. That is what lets a bet id wrap to three lines and a
+  game's own outcome view be any height without anything measuring them: widths are settled before heights are
+  read, so every label reports the height it needs at the width the grid just gave it, and the window is then
+  sized from the grid's own answer. The cost is that <strong>an auto row is only as tall as its items claim to
+  be</strong> — a plain panel claims nothing. Anything square in a cell (a coin, a thumbnail, a button) is
+  centred and carries a <code>LayoutElement</code> for exactly that reason.</li>
+  <li><strong>Which blocks are showing is said as a layout, not with <code>SetActive</code>.</strong> A grid
+  takes its layout as the whole truth about which children are showing, and re-asserts it every time it is
+  enabled and every time its child list changes — and a grid with <em>no</em> layout takes <strong>every</strong>
+  child as showing and re-asserts that. So a cell hidden behind the grid's back comes back the next time the
+  window opens: the loader over the profit banner, the seeds under a card that was never sized for them. Every
+  cell here has a one-word area name and every pass draws the picture that names the ones it wants.</li>
   <li><strong>Scaling the rect is a fair way to size a whole window down.</strong> The panel is generated
   geometry and the text is SDF, so neither softens the way a sprite would. The transition measures its
   scaling against whatever the window rests at rather than against 1, so opening does not throw that scale
@@ -602,14 +928,18 @@ against each other by exactly that number, so 100 clears anything the game draws
   <tr><td><code>UiWindowBuilder.cs</code></td><td>The fluent API.</td></tr>
   <tr><td><code>UiWindowStyle.cs</code></td><td>Everything a window looks like.</td></tr>
   <tr><td><code>UiWindowDragHandle.cs</code></td><td>The grab. Usable on its own, for a custom header.</td></tr>
-  <tr><td><code>UiWindowParts.cs</code></td><td>Making and finding children. Internal.</td></tr>
-  <tr><td><code>EWindowTransition.cs</code></td><td></td></tr>
+  <tr><td><code>UiWindowParts.cs</code></td><td>Making and finding children, and naming them for a grid. Internal.</td></tr>
+  <tr><td><code>EWindowTransition.cs</code>, <code>EWindowScroll.cs</code></td><td></td></tr>
   <tr><td><code>StatisticsWindow.cs</code></td><td>The statistics panel.</td></tr>
   <tr><td><code>StatisticsWindowStyle.cs</code>, <code>StatisticsRow.cs</code></td><td>What it looks like, and what it shows.</td></tr>
   <tr><td><code>EStatsTab.cs</code>, <code>EStatField.cs</code>, <code>EStatTint.cs</code></td><td></td></tr>
-  <tr><td><code>UiWindowExample.cs</code></td><td>Three windows built from code. Drop it on an empty RectTransform in a canvas.</td></tr>
-  <tr><td><code>Editor/Window/UiWindowMenu.cs</code></td><td>The two GameObject → UI entries.</td></tr>
+  <tr><td><code>BetInfoWindow.cs</code></td><td>The bet info dialog.</td></tr>
+  <tr><td><code>BetInfoWindowStyle.cs</code></td><td>What it looks like.</td></tr>
+  <tr><td><code>UiRemoteImage.cs</code></td><td>Sprites from urls, cached for the session. Internal.</td></tr>
+  <tr><td><code>UiWindowExample.cs</code></td><td>Four windows built from code, including a game's own outcome block. Drop it on an empty RectTransform in a canvas.</td></tr>
+  <tr><td><code>Editor/Window/UiWindowMenu.cs</code></td><td>The three GameObject → UI entries.</td></tr>
   <tr><td><code>../RoundedBox/</code></td><td>Every panel here is one.</td></tr>
+  <tr><td><code>../Grid/</code></td><td>What lays the bet info card out.</td></tr>
 </table>
 
 </main>

@@ -4,7 +4,8 @@ using UnityEngine.UI;
 
 namespace FlappyTemplate.Editor
 {
-    // Puts Window and Statistics Window in GameObject > UI, next to Panel, and makes them behave like it: a
+    // Puts Window, Statistics Window and Bet Info Window in GameObject > UI, next to Panel, and makes them
+    // behave like it: a
     // canvas and an EventSystem appear if the scene has none, the object lands under whatever was
     // right-clicked, and one undo takes the whole lot back out.
     //
@@ -22,6 +23,7 @@ namespace FlappyTemplate.Editor
 
         private static readonly Vector2 DefaultSize = new Vector2(420f, 320f);
         private static readonly Vector2 StatisticsSize = new Vector2(300f, 560f);
+        private static readonly Vector2 BetInfoSize = new Vector2(560f, 620f);
 
         [MenuItem("GameObject/UI (Canvas)/Window", false, MenuPriority)]
         private static void CreateWindow(MenuCommand command)
@@ -44,6 +46,21 @@ namespace FlappyTemplate.Editor
             created.GetComponent<StatisticsWindow>().Rebuild();
 
             Undo.SetCurrentGroupName("Create Statistics Window");
+            Selection.activeGameObject = created;
+        }
+
+        [MenuItem("GameObject/UI (Canvas)/Bet Info Window", false, MenuPriority + 2)]
+        private static void CreateBetInfoWindow(MenuCommand command)
+        {
+            var created = Create("Bet Info", BetInfoSize, command, out var window, typeof(BetInfoWindow));
+            window.Title = "Bet info";
+
+            // Builds the card, the fields and the buttons, and fills them in from the sample transaction - a
+            // window created from this menu has to look like the dialog rather than like a row of dots waiting
+            // for a server that is not running.
+            created.GetComponent<BetInfoWindow>().Rebuild();
+
+            Undo.SetCurrentGroupName("Create Bet Info Window");
             Selection.activeGameObject = created;
         }
 

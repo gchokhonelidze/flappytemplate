@@ -96,6 +96,34 @@ namespace FlappyTemplate
 
         public float ContentPaddingBottom = 20f;
 
+        [Header("Scrolling")]
+        [Tooltip("Draw a bar down the right of the body while it is scrolling. Off leaves the wheel and the drag, and no hint that there is more below.")]
+        public bool ShowScrollbar = true;
+
+        [Min(1f)]
+        public float ScrollbarWidth = 8f;
+
+        [Tooltip("From the right edge of the body, inwards. The content is moved over by the bar's width and this together, so the two never overlap.")]
+        public float ScrollbarInset = 4f;
+
+        public Color ScrollbarTrackColor = new Color(0f, 0f, 0f, 0.22f);
+
+        public Color ScrollbarHandleColor = new Color(1f, 1f, 1f, 0.5f);
+
+        [Tooltip("Negative rounds the bar fully, whatever its width - which is what makes it read as a bar rather than as a strip.")]
+        public float ScrollbarCornerRadius = -1f;
+
+        [Tooltip("Canvas units per notch of the wheel.")]
+        [Min(1f)]
+        public float ScrollSensitivity = 28f;
+
+        [Tooltip("Let a flick carry on after the finger has left. What a touch screen expects, and WebGL on a phone is a touch screen.")]
+        public bool ScrollInertia = true;
+
+        [Tooltip("How quickly a flick runs out. Lower stops sooner; 0.135 is UGUI's own.")]
+        [Range(0.01f, 0.99f)]
+        public float ScrollDeceleration = 0.135f;
+
         [Header("Backdrop")]
         public Color BackdropColor = new Color(0f, 0f, 0f, 0.55f);
 
