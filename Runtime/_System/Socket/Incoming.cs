@@ -229,7 +229,9 @@ namespace FlappyTemplate
                             return;
                         foreach (var historyDto in arr)
                         {
-                            historyDto._Outcome = historyDto.Outcome?.ToGeneric();
+                            historyDto._Outcome =
+                                historyDto.Outcome?.ToGeneric()
+                                ?? new GenericDictionary<string, string>();
                             stateManager.MainState.History.Add(historyDto);
                             stateManager.Events.OnHistory?.Invoke(historyDto);
                             if (stateManager.MainState.History.Count > 15)
