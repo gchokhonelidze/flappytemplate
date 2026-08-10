@@ -80,6 +80,13 @@ namespace FlappyTemplate
 			Socket.Inst.Send(nameof(EPlayerEvent.RANDOMIZE_CLIENTSALT_ONLY), new { ClientSalt });
 		}
 
+		/// <summary>Asks for the current seed pair. The answer arrives as ON_SEED, the same way a pair that
+		/// has just been changed does.</summary>
+		public void OnSeedInfo()
+		{
+			Socket.Inst.Send(nameof(EPlayerEvent.SEED_INFO), new { });
+		}
+
 		public void OnGameHistoryInfo(string Id)
 		{
 			Socket.Inst.Send(nameof(EPlayerEvent.GAME_HISTORY_INFO), new { Id });

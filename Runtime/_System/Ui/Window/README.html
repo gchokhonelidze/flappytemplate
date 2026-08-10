@@ -239,6 +239,41 @@
   .dots { display: flex; gap: 8px; justify-content: center; padding: 22px 0; }
   .dots i { width: 9px; height: 9px; border-radius: 999px; background: rgba(255, 255, 255, .85); }
   .dots i:nth-child(2) { transform: scale(1.35); }
+
+  /* ---- the fairness dialog, same idea ---- */
+
+  .win.fair { width: 268px; }
+  .fair .lab { font-weight: 700; font-size: 12px; margin-bottom: 5px; }
+  .seedrow { display: flex; align-items: center; gap: 7px; }
+  .padlock { flex: none; font-size: 14px; line-height: 1; }
+  .field {
+    flex: 1;
+    min-width: 0;
+    background: rgba(255, 255, 255, .18);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, .92);
+  }
+  .sq { width: 32px; height: 32px; border-radius: 8px; background: #90e39a; color: #1c1a4a; display: grid; place-items: center; font-size: 15px; font-weight: 800; flex: none; }
+  .roll {
+    margin-top: 10px;
+    background: #90e39a;
+    color: #1c1a4a;
+    border-radius: 10px;
+    padding: 8px;
+    font-weight: 800;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+  }
+  .roll.off { background: rgba(144, 227, 154, .35); }
+  .pair { margin-top: 13px; }
+  .pair .h { font-weight: 800; font-size: 14.5px; margin-bottom: 5px; }
+  .pair .k { font-weight: 700; font-size: 11.5px; }
+  .pair .b { font-weight: 700; font-size: 10.5px; word-break: break-all; margin-bottom: 6px; line-height: 1.35; }
 </style>
 </head>
 <body>
@@ -263,6 +298,11 @@
   <a class="sub" href="#amounts">Values</a>
   <a class="sub" href="#seeds">Details and verify</a>
   <a class="sub" href="#pictures">Pictures</a>
+  <a href="#fairness">Fairness</a>
+  <a class="sub" href="#locking">Locking</a>
+  <a class="sub" href="#shared">Shared and multiplayer</a>
+  <a class="sub" href="#previous">The previous pair</a>
+  <a class="sub" href="#box">The box</a>
   <a href="#ontop">Drawing over the game</a>
   <a href="#notes">Worth knowing</a>
   <a href="#files">Files</a>
@@ -277,10 +317,14 @@
   from code the first time it is needed, so there is no hierarchy to keep in step with the palette and
   nothing to rebuild when a game decides its dialogs have square corners after all. Inside, the caption and the
   body are two rows of a UiGrid, and the body scrolls once the content is taller than the screen has room for.</p>
-  <p class="stamp">Describes package 1.0.58. Update this file with the code — and README.md beside it.</p>
-  <p><strong>GameObject → UI (Canvas) → Window</strong>, which makes a canvas if the scene has none, drops
-  the window under whatever was right-clicked, and builds the whole thing on the spot so it arrives looking
-  like a window rather than as an empty rect waiting for play mode.</p>
+  <p class="stamp">Describes package 1.0.60. Update this file with the code — and README.md beside it.</p>
+  <p><strong>GameObject → UI (Canvas) → FlappyBet → Window</strong>, which makes a canvas if the scene has
+  none, drops the window under whatever was right-clicked, and builds the whole thing on the spot so it
+  arrives looking like a window rather than as an empty rect waiting for play mode. <strong>Statistics
+  Window</strong>, <strong>Bet Info Window</strong> and <strong>Fairness Window</strong> sit beside it in that
+  same group, along with everything else this template adds — Rounded Box, Grid and History. Each of the three
+  keeps its own files in a folder of its own: <code>Statistics/</code>, <code>BetInfo/</code>,
+  <code>Fairness/</code>.</p>
   <p>Adding the component by hand instead, it belongs on an <strong>empty RectTransform</strong>, not a UI
   Panel: the window draws its own panel, so a Panel's Image leaves two backgrounds stacked, and anything
   already inside that Panel ends up beside the caption rather than under <code>Content</code>. Or one chain
@@ -356,6 +400,42 @@ stats.Window.Open();</code></pre>
     <em>meant</em> is the only part of this a template cannot write.</p>
     <pre><code>var info = BetInfoWindow.Create(canvas);
 info.Show(betId);</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage wide">
+      <div class="win fair">
+        <div class="x">✕</div>
+        <div class="cap">Fairness</div>
+        <div class="body">
+          <div class="lab">New client seed</div>
+          <div class="seedrow">
+            <span class="padlock">🔒</span>
+            <div class="field">2af1853b</div>
+            <div class="sq">↻</div>
+          </div>
+          <div class="roll"><span>↻</span><span>Randomize</span></div>
+          <div class="pair">
+            <div class="h">Current seed pair</div>
+            <div class="k">Nonce</div><div class="b">2</div>
+            <div class="k">Client seed</div><div class="b">2af1853b</div>
+            <div class="k">Server seed's SHA512 hash</div>
+            <div class="b">2d7da949d826aa4f2eda18cc41421cce37d67d76431009d6b396a96dcd64e3a6fb17db3c42bd181db8eef8daa723afc3f21464c6d5beb7cfb05c6f67c9102a10</div>
+          </div>
+          <div class="pair">
+            <div class="h">Previous seed pair</div>
+            <div class="k">Client seed</div><div class="b">2af1853b</div>
+            <div class="k">Server seed</div><div class="b">bd57aa1bebbc456a928448df3d94a017</div>
+            <div class="k">Bets made with pair</div><div class="b">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">Fairness</div>
+    <p class="why">The pair the game is rolling from, and the two ways to change it: a whole new pair, or only
+    the half the player owns.</p>
+    <pre><code>var fairness = FairnessWindow.Create(canvas);
+fairness.Show();</code></pre>
   </div>
 
   <div class="specimen">
@@ -612,7 +692,7 @@ window.Open();                // fitted, clamped and scrolling on the way in</co
 
 <h2 id="statistics">Statistics</h2>
 
-<p><strong>GameObject → UI (Canvas) → Statistics Window</strong>, or Add Component → UI → Statistics Window
+<p><strong>GameObject → UI (Canvas) → FlappyBet → Statistics Window</strong>, or Add Component → UI → Statistics Window
 on a <code>UiWindow</code>, or the whole thing in one line:</p>
 
 <pre><code>var stats = StatisticsWindow.Create(canvas);
@@ -705,7 +785,7 @@ stats.OnTabChanged.AddListener(tab =&gt; Debug.Log(tab));</code></pre>
 
 <h2 id="betinfo">Bet info</h2>
 
-<p><strong>GameObject → UI (Canvas) → Bet Info Window</strong>, or Add Component → UI → Bet Info Window on a
+<p><strong>GameObject → UI (Canvas) → FlappyBet → Bet Info Window</strong>, or Add Component → UI → Bet Info Window on a
 <code>UiWindow</code>, or the whole thing in one line:</p>
 
 <pre><code>var info = BetInfoWindow.Create(canvas);
@@ -832,6 +912,128 @@ so closing the dialog does not abandon the fetch, and the picture is already the
 way the statistics window shows sample figures. A <code>StateManager</code> that is running but has not been
 sent a transaction shows the loader; a real game never sees invented numbers.</p>
 
+<h2 id="fairness">Fairness</h2>
+
+<p><strong>GameObject → UI (Canvas) → FlappyBet → Fairness Window</strong>, or Add Component → UI → Fairness
+Window on a <code>UiWindow</code>, or the whole thing in one line:</p>
+
+<pre><code>var fairness = FairnessWindow.Create(canvas);
+fairness.Show();</code></pre>
+
+<p>The seed pair the game is rolling from, the pair before it, and the two ways a player may change them.
+Everything comes from <code>MainState.Seeds</code>, which the server fills in and refreshes as
+<code>ON_SEED</code>; the window redraws when <code>OnSeed</code> fires and sits still the rest of the time.</p>
+
+<p><strong>Opening the window emits <code>SEED_INFO</code></strong>, and the answer arrives as an ordinary
+<code>ON_SEED</code>. That is not belt and braces: a pair arrives with the session, but the <strong>nonce moves
+with every bet</strong>, so by the time a player opens this the pair on hand is several bets out of date. The
+request is made from <code>OnEnable</code> — a <code>UiWindow</code> switches its object on to open and off
+again to close, so being enabled <em>is</em> being opened, and a window opened straight through
+<code>Window.Open()</code> asks just the same as one opened through <code>Show()</code>. It does not lock the
+controls or raise the loader: what is on screen is already a pair the server sent, and there is no reason to stop
+reading it while a newer one is on its way.</p>
+
+<p><strong>The two buttons are not the same button twice.</strong> That is the whole point of the dialog:</p>
+
+<table>
+  <tr><th>Button</th><th>Emits</th><th>Does</th></tr>
+  <tr>
+    <td><strong>Randomize</strong></td>
+    <td><code>RANDOMIZE</code></td>
+    <td>Asks for a <em>whole new pair</em> — a new server seed as well as a new client seed. The one that makes
+    the next rolls unknowable to everyone, the house included.</td>
+  </tr>
+  <tr>
+    <td>The small one beside the box</td>
+    <td><code>RANDOMIZE_CLIENTSALT_ONLY</code></td>
+    <td>Keeps the server's seed and replaces only the half the player owns, with whatever was typed.</td>
+  </tr>
+</table>
+
+<div class="note">
+  <p>Randomize deliberately does <strong>not</strong> send what is in the box — the server picks both halves,
+  which is what makes that button worth pressing. Type a seed and press the small one to choose your own half.
+  Both come back as an ordinary <code>ON_SEED</code> broadcast, so the window is never showing a pair the server
+  has not confirmed.</p>
+</div>
+
+<table>
+  <tr><th>Call</th><th>Does</th></tr>
+  <tr><td><code>Show()</code></td><td>Opens on whatever pair the state holds, and asks for a fresh one.</td></tr>
+  <tr><td><code>Request()</code></td><td>Emits <code>SEED_INFO</code> without opening anything. For a game that keeps the dialog alive rather than switching it off.</td></tr>
+  <tr><td><code>Randomize()</code></td><td>The Randomize button, from code. Refused while the controls are locked.</td></tr>
+  <tr><td><code>RenewClientSeed()</code></td><td>The renew button, from code. Sends <code>ClientSeed</code>.</td></tr>
+  <tr><td><code>ClientSeed</code></td><td>What is in the box, read or written. Writing it sends nothing.</td></tr>
+  <tr><td><code>Refresh()</code> · <code>Layout()</code> · <code>Rebuild()</code></td><td>Fill in again, lay out again, build again.</td></tr>
+  <tr><td><code>IsLocked</code> · <code>IsPending</code></td><td>Whether the controls are locked, and whether a request is out and unanswered.</td></tr>
+  <tr><td><code>Input</code> · <code>RandomizeButton</code> · <code>RenewButton</code></td><td>The parts, for a game that would rather drive them itself.</td></tr>
+</table>
+
+<table>
+  <tr><th>Field</th><th>What it does</th></tr>
+  <tr><td>Style</td><td>The box, the buttons and the rows. The panel around them is the window's own style.</td></tr>
+  <tr><td>Labels</td><td>Every caption on the dialog, <em>New client seed</em> to <em>Bets made with pair</em>. Nothing here is translated.</td></tr>
+  <tr><td>Show Client Seed Box / Randomize</td><td>The two controls. Both are dropped on a shared or multiplayer game whatever these say — see below.</td></tr>
+  <tr><td>Show Current / Previous Pair</td><td>The two sections. The previous one is dropped anyway until there has been one — see below.</td></tr>
+  <tr><td>Client Seed Length</td><td>Longest client seed the box will take. Sixteen, which is what the web front allows.</td></tr>
+  <tr><td>Follow State</td><td>Redraw when the server sends a new pair, and when the round starts or ends.</td></tr>
+  <tr><td>Request On Open</td><td>Emit <code>SEED_INFO</code> when the window opens.</td></tr>
+  <tr><td>Lock While Running</td><td>Lock the controls while a round is in play. On, and it should stay on — see below.</td></tr>
+  <tr><td>Fit Window Height</td><td>Resize the window to exactly the blocks it is showing.</td></tr>
+</table>
+
+<p><code>OnSeeds</code>, <code>OnRandomizeRequested</code> and <code>OnClientSeedRequested</code> are
+UnityEvents.</p>
+
+<h3 id="locking">Locking</h3>
+
+<p>The controls lock themselves while <strong>a round is in play</strong>, while <strong>there is no pair
+yet</strong>, and while <strong>a request is out and unanswered</strong>. The first is the server's rule rather
+than this window's: a seed pair changed under a bet would make that bet uncheckable, so the request would be
+refused anyway — and a button that sends something to be refused is worse than one that says it cannot be
+pressed. The third is what stops a second press going out against a pair that is already being replaced.</p>
+
+<p>A locked control is <strong>painted and made uninteractable, not taken out of the arrangement</strong>: the
+box still shows the current client seed, which is a thing worth reading. That is the one part of this dialog
+that is not said as a layout.</p>
+
+<p>Running is read from <code>MainState.SystemState</code>, so a <code>StateManager</code> that has not been
+sent a system state yet counts as running — there is no word either way, and that is the same thing as far as
+sending a seed change goes.</p>
+
+<h3 id="shared">Shared and multiplayer games</h3>
+
+<p>A single-player roll is seeded from a client salt and counted by a nonce. A <code>SHARED</code> or
+<code>MULTI</code> round is seeded from a <strong>block hash</strong> nobody can have known in advance, where a
+nonce per player would mean nothing and nothing a player typed would reach the roll. So on those the box and the
+Randomize button are dropped, the nonce and the bets-made rows go with them, and the two seed rows are captioned
+as the block hash instead. <code>GameType</code> arrives on the system state, and a change to it redraws the
+dialog.</p>
+
+<h3 id="previous">The previous pair</h3>
+
+<p>The first pair of a session has nothing before it, and the server says so by sending
+<code>PrevClientSalt</code> and <code>PrevServerSeed</code> as <code>null</code>. Three rows of <em>N/A</em> and
+a bet count of zero is not information, so <strong>the whole previous section goes until there is a pair to put
+in it</strong> — heading included. A half-filled one, where the server sent a client seed but is still holding
+the server seed, keeps its rows and prints <code>N/A</code> in the gap.</p>
+
+<h3 id="box">The box</h3>
+
+<p>The box follows the pair, and only the pair: a broadcast that left the client seed alone does not throw away
+what the player was half way through typing. It is refilled when the pair's client seed is a different string
+from the one it was last filled from — which is what makes a randomize show up in it, and an unrelated broadcast
+not.</p>
+
+<p>With no socket at all — a scene with no <code>StateManager</code> — the window shows a sample pair and
+<strong>both buttons roll that sample over locally</strong>, so the dialog can be pressed and read in the
+editor. A real game never sees this: the moment there is an <code>Emitter</code>, the buttons only ever
+send.</p>
+
+<p>Like the bet info dialog, the window is fitted <strong>twice over, and again on the next two frames</strong>
+— a SHA-512 wraps to three lines, and a label only reports the height it needs at the width the first pass gave
+it.</p>
+
 <h2 id="ontop">Drawing over the game</h2>
 
 <p>A window that comes out behind the game is not a hierarchy problem, and moving it down the hierarchy will
@@ -863,11 +1065,14 @@ against each other by exactly that number, so 100 clears anything the game draws
 <h2 id="notes">Worth knowing</h2>
 
 <ul>
-  <li><strong>The close cross, the reset arrow, the tick and the clock are drawn, not fetched.</strong> Rotated
-  boxes, a ring with a notch in it, and two bars between three points, which costs no atlas entry and stays
-  sharp at any size. The reset notch is <em>painted in the button's own colour</em>, not cut, so it only
-  disappears against a flat button — give the style a <code>ResetIcon</code> sprite if the button is ever a
-  gradient. <code>TickIcon</code> and <code>ClockIcon</code> do the same for the bet info dialog.</li>
+  <li><strong>The close cross, the reset arrow, the tick, the clock, the padlock and the circular arrows are
+  drawn, not fetched.</strong> Rotated boxes, a ring with a notch in it, and two bars between three points,
+  which costs no atlas entry and stays sharp at any size. The reset notch is <em>painted in the button's own
+  colour</em>, not cut, so it only disappears against a flat button — give the style a <code>ResetIcon</code>
+  sprite if the button is ever a gradient, and note that the fairness arrows follow their button being dimmed
+  for exactly that reason. <code>TickIcon</code>, <code>ClockIcon</code>, <code>LockIcon</code> and
+  <code>ArrowIcon</code> take a sprite instead. The padlock is the same trick once more: a ring with the body
+  drawn over its lower half, which is all an arch needs.</li>
   <li><strong>The bet info dialog is laid out by <code>UiGrid</code>, not by arithmetic.</strong> Two columns,
   one auto row per block, and a nested grid per field. That is what lets a bet id wrap to three lines and a
   game's own outcome view be any height without anything measuring them: widths are settled before heights are
@@ -940,16 +1145,19 @@ against each other by exactly that number, so 100 clears anything the game draws
   <tr><td><code>UiWindowDragHandle.cs</code></td><td>The grab. Usable on its own, for a custom header.</td></tr>
   <tr><td><code>UiWindowParts.cs</code></td><td>Making and finding children, and naming them for a grid. Internal.</td></tr>
   <tr><td><code>EWindowTransition.cs</code>, <code>EWindowScroll.cs</code></td><td></td></tr>
-  <tr><td><code>StatisticsWindow.cs</code></td><td>The statistics panel.</td></tr>
-  <tr><td><code>StatisticsWindowStyle.cs</code>, <code>StatisticsRow.cs</code></td><td>What it looks like, and what it shows.</td></tr>
-  <tr><td><code>EStatsTab.cs</code>, <code>EStatField.cs</code>, <code>EStatTint.cs</code></td><td></td></tr>
-  <tr><td><code>BetInfoWindow.cs</code></td><td>The bet info dialog.</td></tr>
-  <tr><td><code>BetInfoWindowStyle.cs</code></td><td>What it looks like.</td></tr>
-  <tr><td><code>UiRemoteImage.cs</code></td><td>Sprites from urls, cached for the session. Internal.</td></tr>
-  <tr><td><code>UiWindowExample.cs</code></td><td>Four windows built from code, including a game's own outcome block. Drop it on an empty RectTransform in a canvas.</td></tr>
-  <tr><td><code>Editor/Window/UiWindowMenu.cs</code></td><td>The three GameObject → UI entries.</td></tr>
+  <tr><td><code>UiWindowExample.cs</code></td><td>Five windows built from code, including a game's own outcome block. Drop it on an empty RectTransform in a canvas.</td></tr>
+  <tr><td><code>Statistics/StatisticsWindow.cs</code></td><td>The statistics panel.</td></tr>
+  <tr><td><code>Statistics/StatisticsWindowStyle.cs</code>, <code>Statistics/StatisticsRow.cs</code></td><td>What it looks like, and what it shows.</td></tr>
+  <tr><td><code>Statistics/EStatsTab.cs</code>, <code>Statistics/EStatField.cs</code>, <code>Statistics/EStatTint.cs</code></td><td></td></tr>
+  <tr><td><code>BetInfo/BetInfoWindow.cs</code></td><td>The bet info dialog.</td></tr>
+  <tr><td><code>BetInfo/BetInfoWindowStyle.cs</code></td><td>What it looks like.</td></tr>
+  <tr><td><code>BetInfo/UiRemoteImage.cs</code></td><td>Sprites from urls, cached for the session. Internal.</td></tr>
+  <tr><td><code>Fairness/FairnessWindow.cs</code></td><td>The fairness dialog.</td></tr>
+  <tr><td><code>Fairness/FairnessWindowStyle.cs</code></td><td>What it looks like.</td></tr>
+  <tr><td><code>Editor/Window/UiWindowMenu.cs</code></td><td>The four GameObject → UI (Canvas) → FlappyBet entries.</td></tr>
+  <tr><td><code>Editor/FlappyBetMenu.cs</code></td><td>The one group they all go in, path and priority. Internal.</td></tr>
   <tr><td><code>../RoundedBox/</code></td><td>Every panel here is one.</td></tr>
-  <tr><td><code>../Grid/</code></td><td>What lays the bet info card out.</td></tr>
+  <tr><td><code>../Grid/</code></td><td>What lays the bet info card and the fairness rows out.</td></tr>
 </table>
 
 </main>

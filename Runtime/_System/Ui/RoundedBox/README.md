@@ -6,10 +6,10 @@ image per variant — a card, a highlighted card and a warning card differ only 
 and here that is a few fields instead of three more atlas entries. The corners are geometry, not pixels, so
 they stay clean at any size the layout ends up at.
 
-*Describes package 1.0.44. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.59. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the shapes drawn rather than described.*
 
-**GameObject → UI (Canvas) → Rounded Box**, or Add Component → UI → Rounded Box.
+**GameObject → UI (Canvas) → FlappyBet → Rounded Box**, or Add Component → UI → Rounded Box.
 
 ## The inspector
 

@@ -4,10 +4,9 @@ using UnityEngine.UI;
 
 namespace FlappyTemplate.Editor
 {
-    // Puts Window, Statistics Window and Bet Info Window in GameObject > UI, next to Panel, and makes them
-    // behave like it: a
-    // canvas and an EventSystem appear if the scene has none, the object lands under whatever was
-    // right-clicked, and one undo takes the whole lot back out.
+    // Puts Window, Statistics Window, Bet Info Window and Fairness Window in GameObject > UI (Canvas) >
+    // FlappyBet, and makes them behave like Panel: a canvas and an EventSystem appear if the scene has none,
+    // the object lands under whatever was right-clicked, and one undo takes the whole lot back out.
     //
     // The canvas-finding and reparenting are RoundedBoxMenu's - the same three steps UGUI's own menu runs,
     // and there is no reason for a second copy of them.
@@ -17,15 +16,15 @@ namespace FlappyTemplate.Editor
     // and only became a dialog on pressing play would be read as broken.
     public static class UiWindowMenu
     {
-        // Panel sits at 2020. Landing just after it puts these in its group rather than off in a section of
-        // their own - a window is the same kind of thing, one rung up.
-        private const int MenuPriority = 2021;
+        // Inside the group RoundedBoxMenu opens, after the two boxes and the two grids.
+        private const int MenuPriority = FlappyBetMenu.Priority + 20;
 
         private static readonly Vector2 DefaultSize = new Vector2(420f, 320f);
         private static readonly Vector2 StatisticsSize = new Vector2(300f, 560f);
         private static readonly Vector2 BetInfoSize = new Vector2(560f, 620f);
+        private static readonly Vector2 FairnessSize = new Vector2(480f, 620f);
 
-        [MenuItem("GameObject/UI (Canvas)/Window", false, MenuPriority)]
+        [MenuItem(FlappyBetMenu.Group + "Window", false, MenuPriority)]
         private static void CreateWindow(MenuCommand command)
         {
             var created = Create("Window", DefaultSize, command, out var window);
@@ -35,7 +34,7 @@ namespace FlappyTemplate.Editor
             Selection.activeGameObject = created;
         }
 
-        [MenuItem("GameObject/UI (Canvas)/Statistics Window", false, MenuPriority + 1)]
+        [MenuItem(FlappyBetMenu.Group + "Statistics Window", false, MenuPriority + 1)]
         private static void CreateStatisticsWindow(MenuCommand command)
         {
             var created = Create("Statistics", StatisticsSize, command, out var window, typeof(StatisticsWindow));
@@ -49,7 +48,7 @@ namespace FlappyTemplate.Editor
             Selection.activeGameObject = created;
         }
 
-        [MenuItem("GameObject/UI (Canvas)/Bet Info Window", false, MenuPriority + 2)]
+        [MenuItem(FlappyBetMenu.Group + "Bet Info Window", false, MenuPriority + 2)]
         private static void CreateBetInfoWindow(MenuCommand command)
         {
             var created = Create("Bet Info", BetInfoSize, command, out var window, typeof(BetInfoWindow));
@@ -61,6 +60,20 @@ namespace FlappyTemplate.Editor
             created.GetComponent<BetInfoWindow>().Rebuild();
 
             Undo.SetCurrentGroupName("Create Bet Info Window");
+            Selection.activeGameObject = created;
+        }
+
+        [MenuItem(FlappyBetMenu.Group + "Fairness Window", false, MenuPriority + 3)]
+        private static void CreateFairnessWindow(MenuCommand command)
+        {
+            var created = Create("Fairness", FairnessSize, command, out var window, typeof(FairnessWindow));
+            window.Title = "Fairness";
+
+            // The same again: the seed rows and the two buttons, filled in from the sample pair so the dialog
+            // arrives readable rather than as a row of dots.
+            created.GetComponent<FairnessWindow>().Rebuild();
+
+            Undo.SetCurrentGroupName("Create Fairness Window");
             Selection.activeGameObject = created;
         }
 

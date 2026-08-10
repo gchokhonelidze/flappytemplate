@@ -4,14 +4,15 @@ using UnityEngine;
 
 namespace FlappyTemplate
 {
-    // Four windows, built at runtime under whatever this sits on: a plain one, a modal one, the statistics
-    // window and the bet info window. Drop it on an empty RectTransform inside a canvas and press play, or use
-    // Build Now from the component's context menu to see them without leaving the editor.
+    // Five windows, built at runtime under whatever this sits on: a plain one, a modal one, the statistics
+    // window, the bet info window and the fairness window. Drop it on an empty RectTransform inside a canvas
+    // and press play, or use Build Now from the component's context menu to see them without leaving the
+    // editor.
     //
     // It is here to be read as much as run. Each window below is one chain, and between them they cover
     // most of what UiWindowBuilder can say - a caption, a backdrop, a transition, a drag, a close.
     //
-    // The keys are the other half of it: 1 to 4 open the four windows, and Escape closes whatever is open.
+    // The keys are the other half of it: 1 to 5 open the five windows, and Escape closes whatever is open.
     // Opening a window that is already open does nothing, which is why they can be held down.
     [AddComponentMenu("UI/Ui Window Example")]
     [RequireComponent(typeof(RectTransform))]
@@ -24,6 +25,7 @@ namespace FlappyTemplate
         private UiWindow modal;
         private StatisticsWindow statistics;
         private BetInfoWindow betInfo;
+        private FairnessWindow fairness;
 
         void Start()
         {
@@ -47,6 +49,9 @@ namespace FlappyTemplate
             if (Input.GetKeyDown(KeyCode.Alpha4) && betInfo != null)
                 betInfo.Window.Toggle();
 
+            if (Input.GetKeyDown(KeyCode.Alpha5) && fairness != null)
+                fairness.Window.Toggle();
+
             if (!Input.GetKeyDown(KeyCode.Escape))
                 return;
 
@@ -54,6 +59,8 @@ namespace FlappyTemplate
             // underneath and leaving the modal sheet over the top of it.
             if (modal != null && modal.IsOpen)
                 modal.Close();
+            else if (fairness != null && fairness.Window.IsOpen)
+                fairness.Window.Close();
             else if (betInfo != null && betInfo.Window.IsOpen)
                 betInfo.Window.Close();
             else if (statistics != null && statistics.Window.IsOpen)
@@ -104,6 +111,14 @@ namespace FlappyTemplate
             betInfo.Window.Rect.anchoredPosition = new Vector2(-220f, -40f);
             betInfo.OnTransaction.AddListener(ShowRoll);
             ShowRoll(betInfo.Transaction);
+
+            // The fairness window is the one with something to send rather than only something to show: the
+            // two buttons emit RANDOMIZE and RANDOMIZE_CLIENTSALT_ONLY, and it fills itself in from the pair
+            // that comes back. With no socket running the buttons roll the sample over instead, so both can
+            // be pressed here.
+            fairness = FairnessWindow.Create(transform);
+            fairness.Window.Rect.anchoredPosition = new Vector2(240f, -60f);
+            fairness.OnSeeds.AddListener(seeds => Debug.Log("New seed pair, nonce " + seeds.Nonce));
         }
 
         // What no template can write for a game: the block under the fields that says what actually happened.
@@ -150,6 +165,7 @@ namespace FlappyTemplate
             modal = null;
             statistics = null;
             betInfo = null;
+            fairness = null;
         }
     }
 }

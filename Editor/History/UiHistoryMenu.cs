@@ -3,9 +3,9 @@ using UnityEngine;
 
 namespace FlappyTemplate.Editor
 {
-    // Puts History in GameObject > UI, next to Panel, and makes it behave like it: a canvas and an EventSystem
-    // appear if the scene has none, the object lands under whatever was right-clicked, and one undo takes the
-    // whole lot back out.
+    // Puts History in GameObject > UI (Canvas) > FlappyBet with the rest of the template's panels, and makes it
+    // behave like Panel: a canvas and an EventSystem appear if the scene has none, the object lands under
+    // whatever was right-clicked, and one undo takes the whole lot back out.
     //
     // The canvas-finding and reparenting are RoundedBoxMenu's - the same three steps UGUI's own menu runs, and
     // there is no reason for a second copy of them.
@@ -15,12 +15,12 @@ namespace FlappyTemplate.Editor
     // replaced the moment a server is talking.
     public static class UiHistoryMenu
     {
-        // Window sits at 2021 and the two dialogs after it. This is the same kind of thing one rung along.
-        private const int MenuPriority = 2024;
+        // Last in the group, ten past the windows, which is what puts a separator between them and the strip.
+        private const int MenuPriority = FlappyBetMenu.Priority + 30;
 
         private static readonly Vector2 DefaultSize = new Vector2(620f, 64f);
 
-        [MenuItem("GameObject/UI (Canvas)/History", false, MenuPriority)]
+        [MenuItem(FlappyBetMenu.Group + "History", false, MenuPriority)]
         private static void CreateHistory(MenuCommand command)
         {
             var parent = RoundedBoxMenu.ResolveParent(command.context as GameObject);

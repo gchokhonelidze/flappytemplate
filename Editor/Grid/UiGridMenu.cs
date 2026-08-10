@@ -4,19 +4,20 @@ using UnityEngine.UI;
 
 namespace FlappyTemplate.Editor
 {
-    // Puts Grid in GameObject > UI next to the other panels, and holds the one place that knows how a cell
-    // is built - the inspector's cell buttons come back here rather than each making their own.
+    // Puts Grid in GameObject > UI (Canvas) > FlappyBet with the rest of the template's panels, and holds the
+    // one place that knows how a cell is built - the inspector's cell buttons come back here rather than each
+    // making their own.
     public static class UiGridMenu
     {
-        // Rounded Box sits at 2003 and its image variant at 2004, so the grid follows them.
-        private const int MenuPriority = 2005;
+        // Ten past the two boxes, which is what puts a separator between them and the grids.
+        private const int MenuPriority = FlappyBetMenu.Priority + 10;
 
         // Big enough that the default two by two reads as a layout rather than as four buttons, and a
         // round number so the tracks in it come out to whole units.
         private static readonly Vector2 DefaultSize = new Vector2(480f, 320f);
         private const float CellRadius = 12f;
 
-        [MenuItem("GameObject/UI (Canvas)/Grid", false, MenuPriority)]
+        [MenuItem(FlappyBetMenu.Group + "Grid", false, MenuPriority)]
         private static void CreateGrid(MenuCommand command)
         {
             var grid = Create(command.context as GameObject, 2, 2, true);
@@ -25,7 +26,7 @@ namespace FlappyTemplate.Editor
             Selection.activeGameObject = grid.gameObject;
         }
 
-        [MenuItem("GameObject/UI (Canvas)/Grid (Empty)", false, MenuPriority + 1)]
+        [MenuItem(FlappyBetMenu.Group + "Grid (Empty)", false, MenuPriority + 1)]
         private static void CreateEmptyGrid(MenuCommand command)
         {
             var grid = Create(command.context as GameObject, 2, 2, false);

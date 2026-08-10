@@ -8,14 +8,14 @@ hand over from code as a single string.
 Every cell is a **child RectTransform of its own** — a panel you can select, colour, animate and prefab.
 That is the difference from `GridLayoutGroup`, whose cells are all one size and are not objects at all.
 
-*Describes package 1.0.42. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.59. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the layouts drawn rather than described.*
 
 ---
 
 ## Quick start
 
-1. **GameObject ▸ UI (Canvas) ▸ Grid** — a 2×2 grid with four panels. *Grid (Empty)* leaves out the panels.
+1. **GameObject ▸ UI (Canvas) ▸ FlappyBet ▸ Grid** — a 2×2 grid with four panels. *Grid (Empty)* leaves out the panels.
 2. Click an empty cell in the inspector map to add a panel there. Drag a divider to resize a track.
 3. Name the panels (`header`, `body`, `footer`) and press **Read Grid** to get a layout string.
 4. Hand that string to `grid.Layout` from code to switch arrangements.

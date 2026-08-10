@@ -9,16 +9,16 @@ round of your game — is a key in the inspector or a one-line function, with fa
 What a round *looks* like is not its business at all: a game that wants more than a value on a plate gives the
 strip its own element prefab and fills that in.
 
-*Describes package 1.0.58. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.59. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the strips drawn rather than described.*
 
-**GameObject → UI (Canvas) → History**, or Add Component → UI → Ui History.
+**GameObject → UI (Canvas) → FlappyBet → History**, or Add Component → UI → Ui History.
 
 ---
 
 ## Quick start
 
-1. **GameObject ▸ UI (Canvas) ▸ History** — a 620×64 strip, filled with sample bets so you can style it.
+1. **GameObject ▸ UI (Canvas) ▸ FlappyBet ▸ History** — a 620×64 strip, filled with sample bets so you can style it.
 2. Anchor it where it belongs. Stretch it if you want it to grow with the screen; the count of chips follows
    the width.
 3. Drag your bet info window into **Bet Info**. Nothing is searched for — see below.

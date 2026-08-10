@@ -6,18 +6,18 @@ using UnityEngine.UI;
 
 namespace FlappyTemplate.Editor
 {
-    // Puts Rounded Box in GameObject > UI next to Image and Panel, and makes it behave like them: a
+    // Puts Rounded Box in GameObject > UI (Canvas) > FlappyBet, and makes it behave like Image and Panel: a
     // canvas and an EventSystem appear if the scene has none, the object lands under whatever was
     // right-clicked, and one undo takes the whole lot back out.
     //
     // The steps below are the ones UGUI's own menu runs, rewritten here because its MenuOptions class is
     // internal. Anything that skips them - a plain new GameObject with the component added - leaves the
-    // object unparented, at the wrong layer, and outside the undo group.
+    // object unparented, at the wrong layer, and outside the undo group. Every other menu in this folder
+    // calls them rather than keeping a second copy.
     public static class RoundedBoxMenu
     {
-        // Image and Raw Image sit at 2001 and 2002, Panel at 2020. Landing in the gap puts this in their
-        // group rather than off in a section of its own.
-        private const int MenuPriority = 2003;
+        // First in the group, since a box is what everything else here is built out of.
+        private const int MenuPriority = FlappyBetMenu.Priority;
 
         private const string UiLayerName = "UI";
 
@@ -27,7 +27,7 @@ namespace FlappyTemplate.Editor
         private static readonly Vector2 DefaultSize = new Vector2(200f, 120f);
         private const float DefaultRadius = 16f;
 
-        [MenuItem("GameObject/UI (Canvas)/Rounded Box", false, MenuPriority)]
+        [MenuItem(FlappyBetMenu.Group + "Rounded Box", false, MenuPriority)]
         private static void CreateRoundedBox(MenuCommand command)
         {
             var box = CreateBox(command);
@@ -38,7 +38,7 @@ namespace FlappyTemplate.Editor
             Selection.activeGameObject = box;
         }
 
-        [MenuItem("GameObject/UI (Canvas)/Rounded Box with Image", false, MenuPriority + 1)]
+        [MenuItem(FlappyBetMenu.Group + "Rounded Box with Image", false, MenuPriority + 1)]
         private static void CreateRoundedBoxWithImage(MenuCommand command)
         {
             var box = CreateBox(command);

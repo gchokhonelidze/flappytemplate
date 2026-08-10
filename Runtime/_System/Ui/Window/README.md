@@ -9,16 +9,19 @@ Inside, the caption and the body are two rows of a [`UiGrid`](../Grid/), and the
 content is taller than the screen has room for — so a dialog is bounded by what it is drawn on rather than by
 what its author guessed.
 
-`StatisticsWindow` and `BetInfoWindow` beside it are two worked examples of filling a window in: the two-tab
-statistics panel reading `MainState.Statistics`, and the bet info dialog that asks the server for one bet and
-lays out what came back.
+Three windows built on it live in folders of their own beside it, and are worked examples of filling one in:
+`Statistics/` — the two-tab panel reading `MainState.Statistics`; `BetInfo/` — the dialog that asks the server
+for one bet and lays out what came back; and `Fairness/` — the seed pair the game is rolling from, and the two
+ways a player may change it.
 
-*Describes package 1.0.58. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.60. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the windows drawn rather than described.*
 
-**GameObject → UI (Canvas) → Window**, and **Statistics Window** and **Bet Info Window** beside it. Each
-makes a canvas if the scene has none, drops the window under whatever was right-clicked, and builds the whole
-thing on the spot so it arrives looking like a window rather than as an empty rect waiting for play mode.
+**GameObject → UI (Canvas) → FlappyBet → Window**, and **Statistics Window**, **Bet Info Window** and
+**Fairness Window** beside it. Each makes a canvas if the scene has none, drops the window under whatever was
+right-clicked, and builds the whole thing on the spot so it arrives looking like a window rather than as an
+empty rect waiting for play mode. Everything else this template adds is in that same **FlappyBet** group —
+Rounded Box, Grid and History.
 
 Adding the component by hand instead, it belongs on an **empty RectTransform**, not a UI Panel: the window
 draws its own panel, so a Panel's Image leaves two backgrounds stacked, and anything already inside that
@@ -233,8 +236,8 @@ window.Open();                // fitted, clamped and scrolling on the way in
 
 ## Statistics
 
-**GameObject → UI (Canvas) → Statistics Window**, or Add Component → UI → Statistics Window on a `UiWindow`,
-or the whole thing in one line:
+**GameObject → UI (Canvas) → FlappyBet → Statistics Window**, or Add Component → UI → Statistics Window on a
+`UiWindow`, or the whole thing in one line:
 
 ```csharp
 var stats = StatisticsWindow.Create(canvas);
@@ -328,8 +331,8 @@ stats.OnTabChanged.AddListener(tab => Debug.Log(tab));
 
 ## Bet info
 
-**GameObject → UI (Canvas) → Bet Info Window**, or Add Component → UI → Bet Info Window on a `UiWindow`, or
-the whole thing in one line:
+**GameObject → UI (Canvas) → FlappyBet → Bet Info Window**, or Add Component → UI → Bet Info Window on a
+`UiWindow`, or the whole thing in one line:
 
 ```csharp
 var info = BetInfoWindow.Create(canvas);
@@ -445,6 +448,109 @@ With no socket at all — a scene with no `StateManager` — the window shows a 
 statistics window shows sample figures. A `StateManager` that is running but has not been sent a transaction
 shows the loader; a real game never sees invented numbers.
 
+## Fairness
+
+**GameObject → UI (Canvas) → FlappyBet → Fairness Window**, or Add Component → UI → Fairness Window on a
+`UiWindow`, or the whole thing in one line:
+
+```csharp
+var fairness = FairnessWindow.Create(canvas);
+fairness.Show();
+```
+
+The seed pair the game is rolling from, the pair before it, and the two ways a player may change them.
+Everything comes from `MainState.Seeds`, which the server fills in and refreshes as `ON_SEED`; the window
+redraws when `OnSeed` fires and sits still the rest of the time.
+
+**Opening the window emits `SEED_INFO`**, and the answer arrives as an ordinary `ON_SEED`. That is not
+belt and braces: a pair arrives with the session, but the **nonce moves with every bet**, so by the time a
+player opens this the pair on hand is several bets out of date. The request is made from `OnEnable` — a
+`UiWindow` switches its object on to open and off again to close, so being enabled *is* being opened, and a
+window opened straight through `Window.Open()` asks just the same as one opened through `Show()`. It does not
+lock the controls or raise the loader: what is on screen is already a pair the server sent, and there is no
+reason to stop reading it while a newer one is on its way.
+
+**The two buttons are not the same button twice.** That is the whole point of the dialog:
+
+| Button | Emits | Does |
+| --- | --- | --- |
+| **Randomize** | `RANDOMIZE` | Asks for a *whole new pair* — a new server seed as well as a new client seed. The one that makes the next rolls unknowable to everyone, the house included. |
+| The small one beside the box | `RANDOMIZE_CLIENTSALT_ONLY` | Keeps the server's seed and replaces only the half the player owns, with whatever was typed. |
+
+Randomize deliberately does **not** send what is in the box — the server picks both halves, which is what makes
+that button worth pressing. Type a seed and press the small one to choose your own half. Both come back as an
+ordinary `ON_SEED` broadcast, so the window is never showing a pair the server has not confirmed.
+
+| Call | Does |
+| --- | --- |
+| `Show()` | Opens on whatever pair the state holds, and asks for a fresh one. |
+| `Request()` | Emits `SEED_INFO` without opening anything. For a game that keeps the dialog alive rather than switching it off. |
+| `Randomize()` | The Randomize button, from code. Refused while the controls are locked. |
+| `RenewClientSeed()` | The renew button, from code. Sends `ClientSeed`. |
+| `ClientSeed` | What is in the box, read or written. Writing it sends nothing. |
+| `Refresh()` · `Layout()` · `Rebuild()` | Fill in again, lay out again, build again. |
+| `IsLocked` · `IsPending` | Whether the controls are locked, and whether a request is out and unanswered. |
+| `Input` · `RandomizeButton` · `RenewButton` | The parts, for a game that would rather drive them itself. |
+
+| Field | What it does |
+| --- | --- |
+| Style | The box, the buttons and the rows. The panel around them is the window's own style. |
+| Labels | Every caption on the dialog, `New client seed` to `Bets made with pair`. Nothing here is translated. |
+| Show Client Seed Box / Randomize | The two controls. Both are dropped on a shared or multiplayer game whatever these say — see below. |
+| Show Current / Previous Pair | The two sections. The previous one is dropped anyway until there has been one — see below. |
+| Client Seed Length | Longest client seed the box will take. Sixteen, which is what the web front allows. |
+| Follow State | Redraw when the server sends a new pair, and when the round starts or ends. |
+| Request On Open | Emit `SEED_INFO` when the window opens. |
+| Lock While Running | Lock the controls while a round is in play. On, and it should stay on — see below. |
+| Fit Window Height | Resize the window to exactly the blocks it is showing. |
+
+`OnSeeds`, `OnRandomizeRequested` and `OnClientSeedRequested` are UnityEvents.
+
+### Locking
+
+The controls lock themselves while **a round is in play**, while **there is no pair yet**, and while **a
+request is out and unanswered**. The first is the server's rule rather than this window's: a seed pair changed
+under a bet would make that bet uncheckable, so the request would be refused anyway — and a button that sends
+something to be refused is worse than one that says it cannot be pressed. The third is what stops a second
+press going out against a pair that is already being replaced.
+
+A locked control is **painted and made uninteractable, not taken out of the arrangement**: the box still shows
+the current client seed, which is a thing worth reading. That is the one part of this dialog that is not said
+as a layout.
+
+Running is read from `MainState.SystemState`, so a `StateManager` that has not been sent a system state yet
+counts as running — there is no word either way, and that is the same thing as far as sending a seed change
+goes.
+
+### Shared and multiplayer games
+
+A single-player roll is seeded from a client salt and counted by a nonce. A `SHARED` or `MULTI` round is seeded
+from a **block hash** nobody can have known in advance, where a nonce per player would mean nothing and nothing
+a player typed would reach the roll. So on those the box and the Randomize button are dropped, the nonce and
+the bets-made rows go with them, and the two seed rows are captioned as the block hash instead. `GameType`
+arrives on the system state, and a change to it redraws the dialog.
+
+### The previous pair
+
+The first pair of a session has nothing before it, and the server says so by sending `PrevClientSalt` and
+`PrevServerSeed` as `null`. Three rows of *N/A* and a bet count of zero is not information, so **the whole
+previous section goes until there is a pair to put in it** — heading included. A half-filled one, where the
+server sent a client seed but is still holding the server seed, keeps its rows and prints `N/A` in the gap.
+
+### The box
+
+The box follows the pair, and only the pair: a broadcast that left the client seed alone does not throw away
+what the player was half way through typing. It is refilled when the pair's client seed is a different string
+from the one it was last filled from — which is what makes a randomize show up in it, and an unrelated
+broadcast not.
+
+With no socket at all — a scene with no `StateManager` — the window shows a sample pair and **both buttons roll
+that sample over locally**, so the dialog can be pressed and read in the editor. A real game never sees this:
+the moment there is an `Emitter`, the buttons only ever send.
+
+Like the bet info dialog, the window is fitted **twice over, and again on the next two frames** — a SHA-512
+wraps to three lines, and a label only reports the height it needs at the width the first pass gave it.
+
 ## Drawing over the game
 
 A window that comes out behind the game is not a hierarchy problem, and moving it down the hierarchy will
@@ -468,11 +574,13 @@ Two cases it does not cover on its own:
 
 ## Worth knowing
 
-- **The close cross, the reset arrow, the tick and the clock are drawn, not fetched.** Rotated boxes, a ring
-  with a notch in it, and two bars between three points, which costs no atlas entry and stays sharp at any
-  size. The reset notch is *painted in the button's own colour*, not cut, so it only disappears against a flat
-  button — give the style a `ResetIcon` sprite if the button is ever a gradient. `TickIcon` and `ClockIcon` do
-  the same for the bet info dialog.
+- **The close cross, the reset arrow, the tick, the clock, the padlock and the circular arrows are drawn, not
+  fetched.** Rotated boxes, a ring with a notch in it, and two bars between three points, which costs no atlas
+  entry and stays sharp at any size. The reset notch is *painted in the button's own colour*, not cut, so it
+  only disappears against a flat button — give the style a `ResetIcon` sprite if the button is ever a gradient,
+  and note that the fairness arrows follow their button being dimmed for exactly that reason. `TickIcon`,
+  `ClockIcon`, `LockIcon` and `ArrowIcon` take a sprite instead. The padlock is the same trick once more: a
+  ring with the body drawn over its lower half, which is all an arch needs.
 - **The bet info dialog is laid out by `UiGrid`, not by arithmetic.** Two columns, one auto row per block, and
   a nested grid per field. That is what lets a bet id wrap to three lines and a game's own outcome view be any
   height without anything measuring them: widths are settled before heights are read, so every label reports
@@ -532,6 +640,9 @@ Two cases it does not cover on its own:
 
 ## Files
 
+Each window built on `UiWindow` keeps its own files in its own folder; what is loose in this one is the window
+itself.
+
 | File | |
 | --- | --- |
 | `UiWindow.cs` | The window: parts, style, drag, transition. |
@@ -540,13 +651,16 @@ Two cases it does not cover on its own:
 | `UiWindowDragHandle.cs` | The grab. Usable on its own, for a custom header. |
 | `UiWindowParts.cs` | Making and finding children, and naming them for a grid. Internal. |
 | `EWindowTransition.cs`, `EWindowScroll.cs` | |
-| `StatisticsWindow.cs` | The statistics panel. |
-| `StatisticsWindowStyle.cs`, `StatisticsRow.cs` | What it looks like, and what it shows. |
-| `EStatsTab.cs`, `EStatField.cs`, `EStatTint.cs` | |
-| `BetInfoWindow.cs` | The bet info dialog. |
-| `BetInfoWindowStyle.cs` | What it looks like. |
-| `UiRemoteImage.cs` | Sprites from urls, cached for the session. Internal. |
-| `UiWindowExample.cs` | Four windows built from code, including a game's own outcome block. Drop it on an empty RectTransform in a canvas. |
-| `Editor/Window/UiWindowMenu.cs` | The three GameObject → UI entries. |
+| `UiWindowExample.cs` | Five windows built from code, including a game's own outcome block. Drop it on an empty RectTransform in a canvas. |
+| `Statistics/StatisticsWindow.cs` | The statistics panel. |
+| `Statistics/StatisticsWindowStyle.cs`, `Statistics/StatisticsRow.cs` | What it looks like, and what it shows. |
+| `Statistics/EStatsTab.cs`, `Statistics/EStatField.cs`, `Statistics/EStatTint.cs` | |
+| `BetInfo/BetInfoWindow.cs` | The bet info dialog. |
+| `BetInfo/BetInfoWindowStyle.cs` | What it looks like. |
+| `BetInfo/UiRemoteImage.cs` | Sprites from urls, cached for the session. Internal. |
+| `Fairness/FairnessWindow.cs` | The fairness dialog. |
+| `Fairness/FairnessWindowStyle.cs` | What it looks like. |
+| `Editor/Window/UiWindowMenu.cs` | The four GameObject → UI (Canvas) → FlappyBet entries. |
+| `Editor/FlappyBetMenu.cs` | The one group they all go in, path and priority. Internal. |
 | `../RoundedBox/` | Every panel here is one. |
 | `../Grid/` | What lays the bet info card out. |
