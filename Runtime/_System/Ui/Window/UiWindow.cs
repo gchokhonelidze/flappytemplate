@@ -626,8 +626,27 @@ namespace FlappyTemplate
         {
             // Not while the closing sequence is delivering its own OnComplete - that is what deactivated the
             // object in the first place, and killing a tween from inside its own callback is asking for it.
-            if (!finishing)
-                KillTransition();
+            if (finishing)
+                return;
+
+            bool interrupted = transitionTween != null && transitionTween.IsActive();
+            KillTransition();
+
+            if (!interrupted)
+                return;
+
+            // The window was taken off screen part-way through an animation: a parent switched off, a panel
+            // hidden by hand, a scene unloaded. The tween has to go, and the transform has to come back with
+            // it - a rect left at nine tenths of its scale is exactly what the next Open reads as the window's
+            // resting scale, and a dialog that loses a tenth of itself per interrupted animation ends up too
+            // small to see. Which looks, from the outside, like a window that stopped opening at all.
+            ResetTransform();
+
+            if (group != null)
+            {
+                group.alpha = IsOpen ? 1f : 0f;
+                group.blocksRaycasts = IsOpen;
+            }
         }
 
         // A phone that turned, a player window that was dragged wider: the room the window is allowed changes
@@ -1197,7 +1216,14 @@ namespace FlappyTemplate
             ApplyStyle();
 
             if (IsOpen && gameObject.activeSelf && transitionTween == null)
+            {
+                // Already open and settled - but said to the transform rather than taken on trust. This is the
+                // way out of a window that is open as far as this class knows and invisible on screen: whatever
+                // left it part-scaled or transparent, the press that asks for it again puts it right instead of
+                // returning to a dialog nobody can see.
+                ResetTransform();
                 return;
+            }
 
             // Between transitions the rect is at its resting scale, so whatever is on it now is what the
             // author last set - including a scale changed since the window was built. Mid-transition it is a

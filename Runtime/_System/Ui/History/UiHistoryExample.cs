@@ -6,8 +6,8 @@ namespace FlappyTemplate
     // out of the game's own outcome, and a scrolling column down the side.
     //
     // It is here to be read as much as run. Between them the three cover everything a game has to decide - which
-    // way the strip runs, which end the newest bet lands on, what a chip says, what counts as a win, and what
-    // happens when there are more bets than room.
+    // way the strip runs, which end the newest bet lands on, what a chip says, and what happens when there are
+    // more bets than room.
     //
     // The keys are the other half of it: Space adds a bet to all three, Backspace clears them, and 1 pushes a
     // run of bets in one go so the arrival animation can be seen against a strip that is already full.
@@ -54,8 +54,8 @@ namespace FlappyTemplate
             Clear();
 
             // The plain case: a row along the top, newest arriving at the right, as many as fit and the oldest
-            // dropped. Nothing is configured, because there is nothing it has to be told - it prints the nonce,
-            // it colours a win green and a loss red, and it opens the bet info dialog when a chip is clicked.
+            // dropped. Nothing is configured, because there is nothing it has to be told - it prints the nonce and
+            // it opens the bet info dialog when a chip is clicked.
             plain = UiHistory.Create(transform, "Plain History", 620f, 64f);
             plain.Rect.anchoredPosition = new Vector2(0f, 180f);
             Detach(plain);
@@ -73,10 +73,6 @@ namespace FlappyTemplate
             multipliers.TextDecimals = 2;
             multipliers.TextPad = 2;
 
-            // What a game does when a key in the outcome cannot answer the question: hand over a function. Both
-            // of these are the strip's two seams - what a chip says, and which case it is.
-            multipliers.Classify = data => Payout(data) >= 2m ? "win" : "loss";
-
             // A scrolling column, keeping everything rather than dropping the oldest, newest at the top. Drag it
             // or roll the wheel over it; a flick carries.
             column = UiHistory.Create(transform, "Side History", 120f, 320f);
@@ -87,6 +83,19 @@ namespace FlappyTemplate
             column.Overflow = EHistoryOverflow.Scroll;
             column.Capacity = 0;
             column.Style.ElementSize = new Vector2(0f, 48f);
+
+            // What a game does when a key in the outcome cannot answer the question: hand over a function. The
+            // whole HistoryDto goes in, so anything the server sent can come out - here the multiplier, coloured
+            // by how the round went. A game wanting more than coloured text than that draws its own element and
+            // puts the colours where it likes; the strip has no opinion about what a win looks like.
+            column.Text = data =>
+            {
+                decimal payout = Payout(data);
+                string tint = payout >= 1m ? "#63ff94" : "#ff6363";
+                string value = payout.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+
+                return "<color=" + tint + ">" + value + "x</color>";
+            };
         }
 
         // Every strip here is fed by hand, so none of them should be listening for a server or filling itself

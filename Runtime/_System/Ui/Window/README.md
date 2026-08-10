@@ -492,6 +492,14 @@ Two cases it does not cover on its own:
   and `SetScale(uniform)` set the same thing from code, and take effect on a window already on screen. The
   drag clamp and the slide distance both take the scale into account, so a scaled window is bounded by what
   it draws rather than by what its rect says.
+- **An animation cut short puts the transform back.** Something that switches a window off part-way through
+  an opening or a closing — a parent panel hidden, a `SetActive` by hand, a scene unloading — kills the tween,
+  and the rect is returned to its resting scale and its alpha as it goes. That is not tidiness: the resting
+  scale is read from the rect, so a window left at nine tenths of the way through an opening would have taken
+  *that* for its resting scale next time, and a dialog that loses a tenth of itself per interrupted animation
+  ends up too small to see — which looks, from the outside, like a window that has stopped opening. For the
+  same reason `Open` on a window it considers already open **re-asserts** the scale and the alpha rather than
+  returning early: whatever left one invisible, the press that asks for it again puts it right.
 - **Slides are measured against the parent**, not the window, so a window leaves the screen rather than
   moving its own width and stopping where it can still be seen. That assumes a window roughly centred in its
   parent, which is what `Create` leaves.

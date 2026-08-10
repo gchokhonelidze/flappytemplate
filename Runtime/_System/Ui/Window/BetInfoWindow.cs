@@ -466,7 +466,7 @@ namespace FlappyTemplate
             }
 
             EnsureBuilt();
-            Refresh();
+            Fill();
             Window.Open();
         }
 
@@ -1252,10 +1252,26 @@ namespace FlappyTemplate
             stamp++;
 
             EnsureBuilt();
-            Refresh();
+            Fill();
 
             if (value != null)
                 OnTransaction.Invoke(value);
+        }
+
+        // Refresh, with whatever it throws kept out of the way of the window opening. A field that could not be
+        // written - a payload shaped in a way this did not expect, a game's own listener throwing - is a dialog
+        // with a gap in it, and a dialog with a gap in it beats a press that did nothing: the player pressed a
+        // bet and something has to appear. The exception still goes to the console, where it belongs.
+        private void Fill()
+        {
+            try
+            {
+                Refresh();
+            }
+            catch (Exception error)
+            {
+                Debug.LogException(error, this);
+            }
         }
 
         private void Listen(bool on)

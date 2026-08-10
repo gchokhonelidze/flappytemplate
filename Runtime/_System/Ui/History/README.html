@@ -138,19 +138,6 @@
     color: #fff;
     flex: 0 0 auto;
   }
-  .chip.win { color: #63ff94; }
-  .chip.loss { color: #ff6363; }
-  .chip.push { color: #ccccdb; }
-  .chip.mine::after {
-    content: "";
-    position: absolute;
-    left: 10px;
-    right: 10px;
-    bottom: -2px;
-    height: 4px;
-    border-radius: 2px;
-    background: #ffd93e;
-  }
   .chip.fresh { animation: pop 1.8s ease-out infinite; }
   @keyframes pop {
     0%   { transform: scale(0.7); opacity: 0; }
@@ -178,8 +165,6 @@
   <strong>Contents</strong>
   <a href="#start">Quick start</a>
   <a href="#says">What a chip says</a>
-  <a href="#case">Which case a bet is</a>
-  <a class="sub" href="#accent">The accent bar</a>
   <a href="#shape">Shape and direction</a>
   <a class="sub" href="#clamping">Clamping</a>
   <a class="sub" href="#scrolling">Scrolling</a>
@@ -187,6 +172,7 @@
   <a href="#arrivals">Arrivals</a>
   <a href="#clicking">Clicking</a>
   <a href="#feeding">Feeding it yourself</a>
+  <a class="sub" href="#order">Which end is new</a>
   <a href="#code">From code</a>
   <a href="#inspector">The inspector</a>
   <a href="#notes">Worth knowing</a>
@@ -199,26 +185,27 @@
   <h1>Ui History</h1>
   <p class="lede">The strip of recent bets: the last few rounds as a row of chips over the game, or a column of
   them down the side. It feeds itself from the socket, animates each arrival, drops the oldest when it runs out
-  of room — or scrolls instead — and opens the bet info dialog on whichever chip is clicked. What it cannot
-  know — what a chip should <em>say</em> about a round of your game, and what counts as a win in it — is a key
-  in the inspector or a one-line function, and both have fallbacks that work without either.</p>
+  of room — or scrolls instead — and opens the bet info dialog on whichever chip is clicked. What a chip
+  should <em>say</em> about a round of your game is a key in the inspector or a one-line function, with fallbacks
+  that work without either. What a round <em>looks</em> like is not its business at all: a game that wants more
+  than a value on a plate gives the strip its own element prefab and fills that in.</p>
   <p class="stamp">Describes package 1.0.58. Update this file with the code — and README.md beside it.</p>
   <p><strong>GameObject → UI (Canvas) → History</strong>, or Add Component → UI → Ui History.</p>
 </header>
 
 <div class="stage">
-  <p class="why">The default strip: nonce or the tail of the bet id, green above the stake and red below it, the
-  player's own bets underlined, newest arriving at the right.</p>
+  <p class="why">The built-in chip: the nonce, or the tail of the bet id. One plate, one colour, newest arriving
+  at the right — and a game that wants the value coloured by how the round went draws its own element.</p>
   <div class="strip end">
-    <div class="chip loss">02.83</div>
-    <div class="chip win">71.73</div>
-    <div class="chip win mine">83.19</div>
-    <div class="chip loss">05.01</div>
-    <div class="chip push">59.36</div>
-    <div class="chip win mine">87.89</div>
-    <div class="chip loss">07.25</div>
-    <div class="chip win">97.05</div>
-    <div class="chip loss fresh">04.30</div>
+    <div class="chip">02.83</div>
+    <div class="chip">71.73</div>
+    <div class="chip">83.19</div>
+    <div class="chip">05.01</div>
+    <div class="chip">59.36</div>
+    <div class="chip">87.89</div>
+    <div class="chip">07.25</div>
+    <div class="chip">97.05</div>
+    <div class="chip fresh">04.30</div>
   </div>
 </div>
 
@@ -229,9 +216,10 @@
   style it.</li>
   <li>Anchor it where it belongs. Stretch it if you want it to grow with the screen; the count of chips follows
   the width.</li>
+  <li>Drag your bet info window into <strong>Bet Info</strong>. Nothing is searched for — see below.</li>
   <li>Press play. The samples are replaced by <code>MainState.History</code>, and every <code>ON_HISTORY</code>
   after that arrives with a pop.</li>
-  <li>Click a chip. The bet info window in the scene opens on that bet.</li>
+  <li>Click a chip. The dialog opens on that bet.</li>
 </ol>
 
 <p>Nothing above needed a line of code. From here on it is a matter of what your game's round looks like:</p>
@@ -240,7 +228,7 @@
 strip.TextKey = "multiplier";                       // what a chip says
 strip.TextFormat = "{0}x";
 strip.TextDecimals = 2;
-strip.Classify = data =&gt; Payout(data) &gt;= 2m ? "win" : "loss";</code></pre>
+strip.Text = data =&gt; Multiplier(data) + "x";        // or from code, for anything a key cannot say</code></pre>
 
 <h2 id="says">What a chip says</h2>
 
@@ -274,40 +262,6 @@ three fields shape it:</p>
   number that never happened.</p>
 </div>
 
-<h2 id="case">Which case a bet is</h2>
-
-<p>Every element is painted from a <strong>scenario</strong>: a name and four colours on the style. Which
-scenario a bet gets is asked in the same shape as its text:</p>
-
-<table>
-  <tr><th>#</th><th>Source</th><th>Set it</th></tr>
-  <tr><td>1</td><td><code>Classify</code></td><td>code: <code>strip.Classify = data =&gt; "win"</code></td></tr>
-  <tr><td>2</td><td><strong>Scenario Key</strong></td><td>inspector — a key in the outcome whose <em>value</em> is the scenario name</td></tr>
-  <tr><td>3</td><td>The amounts</td><td>nothing to set</td></tr>
-</table>
-
-<p>The amounts give <code>win</code> when more came back than was staked, <code>push</code> when something did,
-<code>loss</code> when nothing did — and the style ships with one scenario of each name. A game with three
-kinds of round adds a third entry to the list and returns its name from <code>Classify</code>; nothing has to
-be widened for it, because a scenario is a string rather than an enum.</p>
-
-<p>A scenario carries <strong>Fill</strong>, <strong>Border Colour</strong>, <strong>Border Size</strong>
-(negative for the strip's own) and <strong>Text Colour</strong>. Shape — the corner radius, the font, the size
-of a chip — is one look for the whole strip and lives on the style, because a win that is a different
-<em>shape</em> from a loss reads as two components rather than one.</p>
-
-<h3 id="accent">The accent bar</h3>
-
-<p>Each scenario also has an <strong>Accent Colour</strong> and <strong>Accent Size</strong>: a bar under the
-element, drawn only on the bets <code>Mark</code> picks out. Unset, <code>Mark</code> picks out <strong>the
-player's own bets</strong> — it compares <code>IPlayerId</code> against <code>SystemState.Me</code> — which is
-what a shared history strip is really for.</p>
-
-<pre><code>strip.Mark = data =&gt; data.N &gt; 100;        // the accent means whatever you want it to</code></pre>
-
-<p>Set a scenario's <strong>Accent Size</strong> to zero and that case never shows one, however the bet was
-marked.</p>
-
 <h2 id="shape">Shape and direction</h2>
 
 <table>
@@ -324,14 +278,14 @@ marked.</p>
   <p class="why">Align: Start — a strip filling from the left. The same three bets, Align: End, arrive against
   the right edge and push leftwards: the crash-game look.</p>
   <div class="strip">
-    <div class="chip win">1.94</div>
-    <div class="chip loss">0.00</div>
-    <div class="chip win mine">3.02</div>
+    <div class="chip">1.94</div>
+    <div class="chip">0.00</div>
+    <div class="chip">3.02</div>
   </div>
   <div class="strip end">
-    <div class="chip win">1.94</div>
-    <div class="chip loss">0.00</div>
-    <div class="chip win mine">3.02</div>
+    <div class="chip">1.94</div>
+    <div class="chip">0.00</div>
+    <div class="chip">3.02</div>
   </div>
 </div>
 
@@ -355,10 +309,10 @@ arrives; <strong>Scroll Sensitivity</strong>, <strong>Scroll Inertia</strong> an
 <div class="stage">
   <p class="why">A scrolling column, newest first, keeping everything.</p>
   <div class="strip column">
-    <div class="chip win mine">4.11</div>
-    <div class="chip loss">0.00</div>
-    <div class="chip win">2.65</div>
-    <div class="chip push">1.00</div>
+    <div class="chip">4.11</div>
+    <div class="chip">0.00</div>
+    <div class="chip">2.65</div>
+    <div class="chip">1.00</div>
   </div>
 </div>
 
@@ -372,13 +326,13 @@ are the whole interaction, and <code>ScrollToNewest()</code> is there for the re
 only thing the strip needs from it. Three ways in, in the order they cost:</p>
 
 <p><strong>The component alone, fields empty.</strong> No script of your own: the first TextMeshPro label
-inside the prefab gets the value, the background gets the scenario's colours, a child called
-<code>Accent</code> becomes the accent bar, and a <code>Button</code> is wired to open the bet info window. The
+inside the prefab gets the value, the background it finds becomes the hit area, and a <code>Button</code> is
+wired to open the bet info window. Nothing is recoloured — the prefab looks exactly as it was drawn. The
 cheapest custom element is a prefab with a label in it and <em>Add Component ▸ UI ▸ Ui History Element</em> on
 the root.</p>
 
-<p><strong>The component with <code>Label</code>, <code>Plate</code> and <code>Accent</code> pointed at by
-hand</strong> — for a prefab whose first label is not the one the value belongs in.</p>
+<p><strong>The component with <code>Label</code> and <code>Plate</code> pointed at by hand</strong> — for a
+prefab whose first label is not the one the value belongs in.</p>
 
 <p><strong>Your own component derived from it</strong>, which is where a game ends up:</p>
 
@@ -386,30 +340,26 @@ hand</strong> — for a prefab whose first label is not the one the value belong
 {
     [SerializeField] private Image face;
     [SerializeField] private TextMeshProUGUI amount;
+    [SerializeField] private Color won, lost;
 
     public override void Write(HistoryDto data)
     {
         base.Write(data);                       // the label the strip decided on
         face.sprite = faces[int.Parse(Outcome("roll"))];
         amount.text = data.WinAmount;
-    }
-
-    public override void Paint(UiHistoryScenario look)
-    {
-        base.Paint(look);                       // or nothing at all, and keep your own colours
-        amount.color = look.TextColor;
+        amount.color = decimal.Parse(data.WinAmount) &gt; 0m ? won : lost;
     }
 
     public override void Appear() { … }         // arrive your own way
 }</code></pre>
 
-<p><code>Data</code> is the whole <code>HistoryDto</code>, <code>Text</code> is what the strip decided this
-element should say, <code>Scenario</code> is the name it was put in, <code>Marked</code> says whether
-<code>Mark</code> picked it out, and <code>Outcome("key")</code> reaches the game's own payload.</p>
+<p><strong>This is where a game says what a win looks like.</strong> The strip has no opinion about it and no
+settings for it: it hands over the whole <code>HistoryDto</code> and a serialized field of your own beats any
+list of cases it could have offered. <code>Data</code> is that bet, <code>Text</code> is what the strip decided
+this element should say, and <code>Outcome("key")</code> reaches the game's own payload.</p>
 
 <div class="note">
-  <p>Two settings for prefabs: <strong>Paint Elements</strong> off leaves your colours exactly as drawn, and
-  <strong>Element Size</strong> at zero on an axis leaves that side of the element to itself — to its own
+  <p><strong>Element Size</strong> at zero on an axis leaves that side of the element to itself — to its own
   <code>LayoutElement</code>, or to the width its text asks for.</p>
   <p>An element with no opinion about its size in an auto track measures as nothing, so give it one or set
   <strong>Element Size</strong>.</p>
@@ -432,9 +382,23 @@ is not animated: the elements are placed by a grid, and a tween fighting a layou
 <code>Show(id)</code>, so the dialog asks the server for the whole transaction with its seeds rather than making
 do with the summary the history payload is.</p>
 
-<p>Which dialog: <strong>Bet Info</strong> if it is set, otherwise one found in the scene, including a closed
-one — which every dialog is until it is opened. <strong>Open Bet Info</strong> off leaves the click to
-<code>OnPicked</code> alone.</p>
+<p>Which dialog: the one in <strong>Bet Info</strong>, and only that one. <strong>Nothing is searched
+for</strong>, and that is a decision rather than an omission — a scene holds as many bet info windows as somebody
+put in it, a game's own plus whatever an example or a test built for itself, and a strip that guessed would open
+one of them off screen about half the time. So it is a reference you set, once, and then it is certain.</p>
+
+<p>Leave it empty and a click raises <code>OnPicked</code> and nothing else, which is exactly what a game that
+drives its own dialog wants:</p>
+
+<pre><code>strip.OnPicked.AddListener(data =&gt; myOwnDialog.Show(data.Id));</code></pre>
+
+<div class="note">
+  <p>The strip says so in the console the first time a chip is clicked with no dialog assigned — once, not once a
+  click, because a strip wired to <code>OnPicked</code> alone is an ordinary thing to build. A bet with no id is
+  logged too.</p>
+  <p>If a click seems to do nothing and there is no log at all, the dialog <em>is</em> being opened: check that
+  its canvas does not sort under something that covers it.</p>
+</div>
 
 <h2 id="feeding">Feeding it yourself</h2>
 
@@ -452,6 +416,17 @@ every <code>ON_HISTORY</code> after that. Off hands the feeding over:</p>
 
 <p><code>Add</code> on a bet whose id is already in the strip replaces it where it is rather than adding a
 second chip (<strong>Dedupe</strong>), which is what a payout arriving after its round should do.</p>
+
+<h3 id="order">Which end is new</h3>
+
+<p><code>ON_HISTORY</code> arrives as an <em>array</em>, and the server builds it <strong>newest first</strong> —
+while the bets that follow it arrive one at a time, newest last. The socket appends both to
+<code>MainState.History</code>, so that list is not in any one order and a strip that trusted it would show the
+seeded bets the opposite way round from the arrivals after them.</p>
+
+<p><strong>Sort By Time</strong> — on by default — puts them in the order the server stamped them, so
+<code>Order</code> means the same thing whichever feed a bet came from. Turn it off only on a feed with no
+<code>CreatedAt</code> to sort by, and then hand the strip its bets in the order you want them.</p>
 
 <h2 id="code">From code</h2>
 
@@ -486,14 +461,16 @@ inspector rather than from a prefab script.</p>
 
 <table>
   <tr><th>Group</th><th>Fields</th></tr>
-  <tr><td><strong>Style</strong></td><td>Strip: element size, gap, padding. Element: radius, softness, border, font, text size and style, alignment, inset, shrink. Accent: inset, offset. Scenarios: the default one and the list. Arrival: duration, scale, fade, ease, unscaled. Scrolling: sensitivity, inertia, deceleration</td></tr>
-  <tr><td><strong>Element</strong></td><td>Element Prefab, Paint Elements</td></tr>
+  <tr><td><strong>Style</strong></td><td>Strip: element size, gap, padding. Chip: fill, border colour and size, radius, softness. Text: colour, font, size and style, alignment, inset, shrink. Arrival: duration, scale, fade, ease, unscaled. Scrolling: sensitivity, inertia, deceleration</td></tr>
+  <tr><td><strong>Element</strong></td><td>Element Prefab</td></tr>
   <tr><td><strong>Strip</strong></td><td>Flow, Order, Align, Overflow, Capacity, Clip, Follow Newest</td></tr>
   <tr><td><strong>Value</strong></td><td>Text Key, Text Format, Text Decimals, Text Pad, Id Length, Id From End</td></tr>
-  <tr><td><strong>Scenario</strong></td><td>Scenario Key</td></tr>
-  <tr><td><strong>Behaviour</strong></td><td>Follow State, Dedupe, Animate Arrivals, Open Bet Info, Bet Info, Find Bet Info, Preview, Sample Count</td></tr>
+  <tr><td><strong>Behaviour</strong></td><td>Follow State, Dedupe, Sort By Time, Animate Arrivals, Bet Info, Preview, Sample Count</td></tr>
   <tr><td><strong>Events</strong></td><td>On Picked, On Element</td></tr>
 </table>
+
+<p>Everything under <strong>Chip</strong> and <strong>Text</strong> describes the built-in element and is
+ignored once an Element Prefab is given — a prefab is its own look.</p>
 
 <p><strong>Preview</strong> is what fills a strip with sample bets when there is no socket running, so the
 component looks like a history strip in the editor rather than like an empty rect. A real session replaces them
@@ -537,9 +514,26 @@ on enable.</p>
   once, at the end of it. <code>Layout()</code> is the immediate version, for a game that wants to read
   <code>Elements</code> in the same breath.</li>
 
-  <li><strong>Clipping cuts the accent bar</strong> if the elements fill the strip's height exactly.
-  <strong>Accent Offset</strong> hangs the bar below the chip by default, so leave a couple of units of slack
-  across the flow, or set the offset to zero.</li>
+  <li><strong>The element's label is taken off the raycast</strong>, and its plate is put on it. A label is
+  routinely laid out larger than the element it sits in — a 200-wide caption inside a 60-wide chip is an ordinary
+  thing to build — and a raycast target that overhangs its neighbours means hovering one chip lights up the one
+  beside it. The plate is the hit area, and the plate is exactly the size of the element. A label that overhangs
+  still <em>draws</em> outside its chip, so stretch it to the element if the value can be long.</li>
+
+  <li><strong>A clicked chip is deselected as the click lands.</strong> UGUI leaves a clicked <code>Button</code>
+  selected and a selected <code>Selectable</code> goes on drawing its highlighted colour, which on a strip reads
+  as some other bet being hovered. Buttons the strip adds also get <code>Navigation.None</code>, so fifteen chips
+  do not swallow the arrow keys.</li>
+
+  <li><strong>In the editor, a style change repaints.</strong> Every element is written again on
+  <code>ApplyStyle</code>, not only the ones whose bet changed — otherwise a setting edited in the inspector
+  would rearrange the strip and rewrite nothing. Nothing here is serialized, neither the parts nor the bets, so a
+  script reload re-seeds the strip: in a scene with no socket that means the sample bets come back rather than
+  the strip emptying itself.</li>
+
+  <li><strong>Clipping cuts anything that reaches past the strip</strong>, including a part of an element that
+  was meant to hang outside it — a badge over a corner, a bar under the chip. Leave a little slack across the
+  flow, or turn <strong>Clip</strong> off on a strip that is not scrolling.</li>
 
   <li><strong>Every tween is built with <code>DOTween.To</code></strong> rather than the
   <code>DOScale</code>/<code>DOFade</code> shortcuts. Those live in DOTween's UI module, which is compiled into
@@ -552,8 +546,7 @@ on enable.</p>
   <tr><th>File</th><th>What it is</th></tr>
   <tr><td><code>UiHistory.cs</code></td><td>The component: the feed, the binding, the layout, the clicking</td></tr>
   <tr><td><code>UiHistoryElement.cs</code></td><td>One bet on screen. What a prefab derives from</td></tr>
-  <tr><td><code>UiHistoryStyle.cs</code></td><td>Shape, spacing, arrival and scrolling, plus the scenarios</td></tr>
-  <tr><td><code>UiHistoryScenario.cs</code></td><td>One named look — what a win looks like</td></tr>
+  <tr><td><code>UiHistoryStyle.cs</code></td><td>The built-in chip, the spacing, the arrival and the scrolling</td></tr>
   <tr><td><code>EHistoryFlow.cs</code><br><code>EHistoryOrder.cs</code><br><code>EHistoryAlign.cs</code><br><code>EHistoryOverflow.cs</code></td><td>Direction, which end is newest, where a part-full strip sits, and what happens when it fills</td></tr>
   <tr><td><code>UiHistoryExample.cs</code></td><td>Three strips built from code: plain, multipliers, and a scrolling column</td></tr>
   <tr><td><code>Editor/History/UiHistoryMenu.cs</code></td><td>The GameObject menu entry</td></tr>

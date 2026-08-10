@@ -1,18 +1,17 @@
 using System;
-using System.Collections.Generic;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
 namespace FlappyTemplate
 {
-    // What a history strip looks like: how big one element is, how far apart they sit, what the built-in chip
-    // is made of, and one entry per case the game can tell apart.
+    // What a history strip looks like: how big one element is, how far apart they sit, what the built-in chip is
+    // made of, and how a new one arrives.
     //
-    // Split the way the rest of this package splits: shape and spacing here, because they are one look for the
-    // whole strip, and colours in the scenarios, because they are what says which bet went which way. A game
-    // handing the same style to two strips gets two strips that match; a game that wants one of them in its own
-    // palette calls Clone first.
+    // Deliberately thin on colour. What a bet *means* - a win, a loss, a round that ended some third way - is
+    // the game's business, and a game that cares says so by drawing its own element: the strip hands it the whole
+    // HistoryDto and stays out of it. So there is one colour per part here rather than one per outcome, and the
+    // chip these fields describe is the fallback for a strip that has not been given a prefab.
     [Serializable]
     public class UiHistoryStyle
     {
@@ -36,8 +35,15 @@ namespace FlappyTemplate
 
         public float PaddingBottom = 0f;
 
-        [Header("Element")]
-        [Tooltip("Corners of the built-in chip. Ignored when a prefab is given - a prefab is its own shape.")]
+        [Header("Chip")]
+        [Tooltip("The built-in element. Every field under this heading is ignored once an Element Prefab is given - a prefab is its own look.")]
+        public Color Fill = new Color(0.149f, 0.137f, 0.263f);
+
+        public Color BorderColor = new Color(1f, 1f, 1f, 0.08f);
+
+        [Min(0f)]
+        public float BorderSize = 1.5f;
+
         [Min(0f)]
         public float CornerRadius = 8f;
 
@@ -45,9 +51,8 @@ namespace FlappyTemplate
         [Min(0f)]
         public float EdgeSoftness = 1.25f;
 
-        [Tooltip("Border of the chip, for every scenario that does not ask for its own.")]
-        [Min(0f)]
-        public float BorderSize = 1.5f;
+        [Header("Text")]
+        public Color TextColor = Color.white;
 
         public TMP_FontAsset Font;
 
@@ -58,48 +63,12 @@ namespace FlappyTemplate
 
         public TextAlignmentOptions TextAlignment = TextAlignmentOptions.Center;
 
-        [Tooltip("Inset of the text from the edges of the chip. Enough that a long value wraps rather than touching the border.")]
+        [Tooltip("Inset of the text from the edges of the chip. Enough that a long value does not touch the border.")]
         [Min(0f)]
         public float TextInset = 6f;
 
-        [Tooltip("Shrink the text on an element it does not fit rather than letting it wrap or spill. Off keeps every element's text the same size, which reads better on a strip of short values.")]
+        [Tooltip("Shrink the text on an element it does not fit rather than letting it spill. Off keeps every element's text the same size, which reads better on a strip of short values.")]
         public bool ShrinkText = true;
-
-        [Header("Accent")]
-        [Tooltip("How far the accent bar is held off the sides of the element.")]
-        [Min(0f)]
-        public float AccentInset = 10f;
-
-        [Tooltip("How far up from the bottom edge it sits. Negative hangs it below the element.")]
-        public float AccentOffset = -2f;
-
-        [Header("Scenarios")]
-        [Tooltip("The look of an element whose scenario is not in the list below - and of every element, on a game that never classifies anything.")]
-        public UiHistoryScenario Default = new UiHistoryScenario
-        {
-            Name = "default",
-            TextColor = Color.white,
-        };
-
-        [Tooltip("One entry per case the game can tell apart. The names are matched against what Classify, Scenario Key or the amounts say.")]
-        public List<UiHistoryScenario> Scenarios = new List<UiHistoryScenario>
-        {
-            new UiHistoryScenario
-            {
-                Name = "win",
-                TextColor = new Color(0.388f, 1f, 0.58f),
-            },
-            new UiHistoryScenario
-            {
-                Name = "push",
-                TextColor = new Color(0.8f, 0.8f, 0.86f),
-            },
-            new UiHistoryScenario
-            {
-                Name = "loss",
-                TextColor = new Color(1f, 0.388f, 0.388f),
-            },
-        };
 
         [Header("Arrival")]
         [Tooltip("How long a new element takes to arrive. Zero puts it there with no animation at all.")]
@@ -133,41 +102,9 @@ namespace FlappyTemplate
         [Range(0.01f, 0.99f)]
         public float ScrollDeceleration = 0.135f;
 
-        /// <summary>The scenario of that name, or <see cref="Default"/> when there is none.</summary>
-        // Never returns null, and that is worth relying on: an element painted from a scenario that turned out
-        // not to exist would be an element with no colours at all, which looks like a broken atlas rather than
-        // like a missing entry in a list.
-        public UiHistoryScenario Find(string name)
-        {
-            if (string.IsNullOrEmpty(name) || Scenarios == null)
-                return Default ?? new UiHistoryScenario();
-
-            for (int i = 0; i < Scenarios.Count; i++)
-            {
-                var scenario = Scenarios[i];
-                if (scenario != null && string.Equals(scenario.Name, name, StringComparison.OrdinalIgnoreCase))
-                    return scenario;
-            }
-
-            return Default ?? new UiHistoryScenario();
-        }
-
-        /// <summary>A copy, for a strip that wants its own colours without editing the shared style.</summary>
-        // The scenarios are copied rather than shared, unlike everything else here: they are the part a game
-        // reaches for when it wants one strip to differ, and a shallow copy would have it editing both.
-        public UiHistoryStyle Clone()
-        {
-            var copy = (UiHistoryStyle)MemberwiseClone();
-            copy.Default = Default?.Clone();
-
-            if (Scenarios == null)
-                return copy;
-
-            copy.Scenarios = new List<UiHistoryScenario>(Scenarios.Count);
-            for (int i = 0; i < Scenarios.Count; i++)
-                copy.Scenarios.Add(Scenarios[i]?.Clone());
-
-            return copy;
-        }
+        /// <summary>A copy, for a strip that wants its own look without editing the shared style.</summary>
+        // Every field here is a value or a reference to something the style does not own - a font - so a shallow
+        // copy is a whole copy. Anything added later that is neither has to be copied by hand.
+        public UiHistoryStyle Clone() => (UiHistoryStyle)MemberwiseClone();
     }
 }

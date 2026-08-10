@@ -16,20 +16,24 @@ namespace FlappyTemplate
     //
     // That is the whole of the usual case. With no other setting touched it seeds itself from
     // MainState.History, listens for OnHistory, animates each arrival, shows as many bets as fit and drops the
-    // oldest, prints the nonce - or the tail of the bet id where there is no nonce - and opens the bet info
-    // dialog it finds in the scene when one is clicked.
+    // oldest, and prints the nonce - or the tail of the bet id where there is no nonce.
+    //
+    // The one thing it will not do for itself is find a dialog to open. Point Bet Info at the window a click
+    // should open and it opens that one; leave it empty and a click raises OnPicked and nothing else. Nothing is
+    // searched for, and that is a decision rather than an omission: a scene holds as many bet info windows as
+    // somebody put in it - a game's own, plus whatever an example or a test built for itself - and a strip that
+    // guessed would open one of them off screen about half the time.
     //
     // What a game is expected to change, in the order it usually wants to:
     //
     //     strip.Style.ElementSize = new Vector2(120f, 60f);    // shape
     //     Text Key = "multiplier", Text Decimals = 2           // what a chip says, from the inspector
     //     strip.Text = data => Multiplier(data) + "x";         // or from code, for anything a key cannot say
-    //     strip.Classify = data => data.WinAmount != "0" ? "win" : "loss";
     //     Element Prefab                                       // a chip of the game's own instead of ours
     //
-    // Nothing here knows what a round of any particular game means, which is why the two questions it cannot
-    // answer - what a chip says and which case it is - are a serialized key each and a delegate each. Neither
-    // has to be answered: the fallbacks are the nonce and the amounts.
+    // Nothing here knows what a round of any particular game means, and it does not try to: what a chip says is a
+    // key or a function, and what a win *looks* like is the element's business. A game that colours a chip by how
+    // the round went derives from UiHistoryElement, gives itself the fields it wants, and reads Data.
     //
     // The layout is a UiGrid with one track per element, and every element the strip is not currently showing
     // is a spare kept in the same grid under a name the layout does not mention. That is not an implementation
@@ -42,14 +46,9 @@ namespace FlappyTemplate
         private const string ContentName = "Content";
         private const string ElementName = "Element";
         private const string LabelName = "Value";
-        private const string AccentName = "Accent";
 
         // The name a spare answers to. The layout never mentions it, which is what keeps it hidden.
         private const string SpareArea = "";
-
-        // Stands in for the player's own id while there is no server to say what it is, so an editor preview can
-        // still show what a marked bet looks like.
-        private const string SampleMe = "me";
 
         [SerializeField]
         private UiHistoryStyle style = new UiHistoryStyle();
@@ -58,10 +57,6 @@ namespace FlappyTemplate
         [Tooltip("The game's own element: a prefab with a UiHistoryElement on its root - the component itself for anything the base behaviour already does, or your own class derived from it. Empty draws the built-in chip.")]
         [SerializeField]
         private UiHistoryElement elementPrefab;
-
-        [Tooltip("Write the scenario's colours onto each element. Off leaves a prefab exactly as it was drawn, which is what a prefab that already knows what a win looks like wants.")]
-        [SerializeField]
-        private bool paintElements = true;
 
         [Header("Strip")]
         [SerializeField]
@@ -117,11 +112,6 @@ namespace FlappyTemplate
         [SerializeField]
         private bool idFromEnd = true;
 
-        [Header("Scenario")]
-        [Tooltip("A key in the outcome payload whose value names the scenario - for a game whose server already says \"won\" or \"lost\". Empty compares the amounts: more back than staked is win, some back is push, nothing back is loss.")]
-        [SerializeField]
-        private string scenarioKey = string.Empty;
-
         [Header("Behaviour")]
         [Tooltip("Seed from MainState.History and fill in as ON_HISTORY arrives. Off leaves the feeding to the game, through Add and Set.")]
         [SerializeField]
@@ -131,20 +121,17 @@ namespace FlappyTemplate
         [SerializeField]
         private bool dedupe = true;
 
+        [Tooltip("Put the bets in the order the server says they happened rather than the order they were handed over. The history array is not sorted, so without this a seeded strip can come out the opposite way round from the arrivals that follow it. Off only makes sense on a feed with no Created At.")]
+        [SerializeField]
+        private bool sortByTime = true;
+
         [Tooltip("Animate arrivals. Off puts each new element straight where it belongs.")]
         [SerializeField]
         private bool animateArrivals = true;
 
-        [Tooltip("Open the bet info dialog when an element is clicked.")]
-        [SerializeField]
-        private bool openBetInfo = true;
-
-        [Tooltip("Which dialog to open. Empty finds one in the scene, including a closed one.")]
+        [Tooltip("The dialog a clicked element opens. Nothing is found for you: a scene has as many bet info windows in it as somebody put there, and a strip that guessed would sometimes open one parked off screen. Leave it empty and a click only raises On Picked.")]
         [SerializeField]
         private BetInfoWindow betInfo;
-
-        [SerializeField]
-        private bool findBetInfo = true;
 
         [Tooltip("Fill the strip with made-up bets when there is no socket running, so it looks like a history strip in the editor rather than like an empty rect.")]
         [SerializeField]
@@ -164,13 +151,6 @@ namespace FlappyTemplate
         /// <summary>What a chip says, for anything a key in the outcome cannot answer. Return null to fall back
         /// to the ordinary rules.</summary>
         public Func<HistoryDto, string> Text;
-
-        /// <summary>Which scenario a bet is - the name of one of the style's scenarios. Return null to fall
-        /// back to Scenario Key, and then to the amounts.</summary>
-        public Func<HistoryDto, string> Classify;
-
-        /// <summary>Whether a bet gets the accent bar. Unset, the player's own bets do.</summary>
-        public Func<HistoryDto, bool> Mark;
 
         // Parts and the flag saying they exist are deliberately not serialized, the same as the windows next
         // door: everything is found by name before it is made, so a rebuild after a script reload finds the
@@ -194,6 +174,7 @@ namespace FlappyTemplate
         private readonly List<string> cells = new List<string>();
 
         private HistoryDto arrival;
+        private bool warned;
         private int held = -1;
         private bool dirty;
         private Vector2 measured;
@@ -388,28 +369,10 @@ namespace FlappyTemplate
             }
         }
 
-        /// <summary>A key in the outcome payload whose value names the scenario. Empty compares the
-        /// amounts.</summary>
-        public string ScenarioKey
-        {
-            get => scenarioKey;
-            set
-            {
-                scenarioKey = value ?? string.Empty;
-                Refresh();
-            }
-        }
-
         public bool AnimateArrivals
         {
             get => animateArrivals;
             set => animateArrivals = value;
-        }
-
-        public bool OpenBetInfo
-        {
-            get => openBetInfo;
-            set => openBetInfo = value;
         }
 
         /// <summary>How many bets are kept at most. Zero keeps all of them.</summary>
@@ -424,18 +387,11 @@ namespace FlappyTemplate
             }
         }
 
-        /// <summary>The dialog a clicked element opens. Left empty, one is found in the scene - including a
-        /// closed one, which every dialog is until it is opened.</summary>
+        /// <summary>The dialog a clicked element opens. Null opens nothing - a click still raises
+        /// <see cref="OnPicked"/>, which is all a game driving its own dialog needs.</summary>
         public BetInfoWindow BetInfo
         {
-            get
-            {
-                if (betInfo != null || !findBetInfo)
-                    return betInfo;
-
-                betInfo = FindAnyObjectByType<BetInfoWindow>(FindObjectsInactive.Include);
-                return betInfo;
-            }
+            get => betInfo;
             set => betInfo = value;
         }
 
@@ -509,6 +465,12 @@ namespace FlappyTemplate
             built = true;
 
             ApplyStyle();
+
+            // Nothing here is serialized - not the parts, not the bets - so a script reload leaves a strip in the
+            // editor with its elements still in the hierarchy and nothing to put in them. Seeding again is what
+            // it would have done on enable, and it is why a strip in the editor goes on looking like a strip
+            // across a recompile rather than emptying itself.
+            Seed();
         }
 
         /// <summary>Writes every colour, gap and scroll setting, then lays the strip out.</summary>
@@ -540,6 +502,17 @@ namespace FlappyTemplate
             scroller.inertia = style.ScrollInertia;
             scroller.decelerationRate = style.ScrollDeceleration;
             scroller.movementType = ScrollRect.MovementType.Clamped;
+
+            // Every element written again, not only the ones whose bet changed. A setting edited in the inspector
+            // is the whole reason this is being called, and Arrange on its own only fills in an element that has
+            // been handed a different bet - so without this, changing how a value is printed would move things
+            // about and rewrite nothing.
+            for (int i = 0; i < live.Count; i++)
+            {
+                var element = live[i];
+                if (element != null && element.Data != null)
+                    Fill(element, element.Data);
+            }
 
             grid.Rebuild();
             Layout();
@@ -598,6 +571,10 @@ namespace FlappyTemplate
             }
 
             items.Add(data);
+
+            // Sorted before trimming, or the bet dropped for being oldest would be whichever happened to be at
+            // the front of the list rather than the one that actually is.
+            Sort();
             Trim();
 
             arrival = animateArrivals ? data : null;
@@ -635,6 +612,7 @@ namespace FlappyTemplate
                 }
             }
 
+            Sort();
             Trim();
             arrival = null;
             Touch();
@@ -705,7 +683,7 @@ namespace FlappyTemplate
                     BetAmount = "1",
                     WinAmount = win ? multiplier.ToString(CultureInfo.InvariantCulture) : "0",
                     Currency = "USD",
-                    IPlayerId = i % 4 == 0 ? SampleMe : "other-" + i.ToString(CultureInfo.InvariantCulture),
+                    IPlayerId = "player-" + i.ToString(CultureInfo.InvariantCulture),
                     IPlayerName = "Player " + i.ToString(CultureInfo.InvariantCulture),
                     N = i + 1,
                     CreatedAt = 1700000000000L + i * 60000L,
@@ -735,16 +713,34 @@ namespace FlappyTemplate
 
             OnPicked.Invoke(data);
 
-            if (!openBetInfo)
-                return;
+            if (betInfo == null)
+            {
+                // Said once rather than once a click: a strip wired to OnPicked and nothing else is a perfectly
+                // ordinary thing to build, and a log line per press would be noise. Said at all because the
+                // other reading - a Bet Info field somebody meant to fill in - looks exactly the same from here.
+                if (!warned)
+                {
+                    warned = true;
+                    Debug.LogWarning(
+                        $"{name}: no bet info window to open - point Bet Info at one. A click still raises OnPicked, so ignore this if the game opens its own.",
+                        this
+                    );
+                }
 
-            var window = BetInfo;
-            if (window == null || string.IsNullOrEmpty(data.Id))
                 return;
+            }
+
+            if (string.IsNullOrEmpty(data.Id))
+            {
+                // A press that does nothing and says nothing is the worst kind of bug to be handed: it looks
+                // like the click was missed.
+                Debug.LogWarning($"{name}: that bet has no id, so there is nothing to open the bet info window on.", this);
+                return;
+            }
 
             // Show asks the server for the bet and opens on a loader, which is the right thing here: the
             // history payload is a summary, and the dialog wants the whole transaction with its seeds.
-            window.Show(data.Id);
+            betInfo.Show(data.Id);
         }
 
         /// <summary>Slides a scrolling strip to the end the newest bet is at.</summary>
@@ -889,8 +885,9 @@ namespace FlappyTemplate
             return element;
         }
 
-        // The built-in chip: a rounded plate, a label in the middle of it, and a bar along the bottom for the
-        // bets that are the player's own.
+        // The built-in chip: a rounded plate with a label in the middle of it. The fallback for a strip that has
+        // not been given a prefab, and nothing more than that - a game that wants a chip to say something about
+        // how the round went draws its own.
         private UiHistoryElement Chip()
         {
             var created = new GameObject(ElementName, typeof(RectTransform), typeof(CanvasRenderer), typeof(RoundedBox));
@@ -907,19 +904,12 @@ namespace FlappyTemplate
             label.raycastTarget = false;
             element.Label = label;
 
-            var accent = UiWindowParts.Box(rect, AccentName);
-            accent.raycastTarget = false;
-            element.Accent = accent;
-
-            // Off until something marks the bet. A fresh rect is a hundred units square in the middle of its
-            // parent, so an accent nobody has painted yet would be a box across the whole chip.
-            accent.gameObject.SetActive(false);
-
             return element;
         }
 
-        // Shape and text metrics, which are one look for the whole strip - as against the scenario's colours,
-        // which are what tells one bet from another and are written in Fill.
+        // The whole look of a built-in chip, written on the elements the strip drew itself and on no others: a
+        // prefab arrives looking the way the game drew it, and having its colours overwritten is the last thing
+        // it wants.
         private void Dress(UiHistoryElement element)
         {
             if (element == null || !element.Native)
@@ -927,6 +917,9 @@ namespace FlappyTemplate
 
             if (element.Plate is RoundedBox box)
             {
+                box.FillColor = style.Fill;
+                box.SetBorderColor(style.BorderColor);
+                box.SetBorderSize(style.BorderSize);
                 box.SetCornerRadius(style.CornerRadius);
                 box.EdgeSoftness = style.EdgeSoftness;
             }
@@ -934,6 +927,8 @@ namespace FlappyTemplate
             var label = element.Label;
             if (label == null)
                 return;
+
+            label.color = style.TextColor;
 
             UiWindowParts.Stretch(label.rectTransform, style.TextInset, style.TextInset, style.TextInset, style.TextInset);
 
@@ -1247,13 +1242,7 @@ namespace FlappyTemplate
 
         private void Fill(UiHistoryElement element, HistoryDto data)
         {
-            string scenario = Kind(data);
-
-            element.Bind(data, Value(data), scenario, Marked(data));
-
-            if (paintElements)
-                element.Paint(style.Find(scenario));
-
+            element.Bind(data, Value(data));
             OnElement.Invoke(element);
         }
 
@@ -1402,57 +1391,6 @@ namespace FlappyTemplate
             return idFromEnd ? id.Substring(id.Length - length, length) : id.Substring(0, length);
         }
 
-        // Which case a bet is: the game's own answer, then the key it named in the outcome, then the amounts.
-        private string Kind(HistoryDto data)
-        {
-            if (data == null)
-                return string.Empty;
-
-            if (Classify != null)
-            {
-                string own = Classify(data);
-                if (own != null)
-                    return own;
-            }
-
-            string named = Read(data, scenarioKey);
-            if (!string.IsNullOrEmpty(named))
-                return named;
-
-            decimal bet = Number(data.BetAmount);
-            decimal win = Number(data.WinAmount);
-
-            if (win > bet)
-                return "win";
-
-            return win > 0m ? "push" : "loss";
-        }
-
-        // Whether a bet gets the accent bar. The player's own, by default - which is the one thing a shared
-        // history strip is really for.
-        private bool Marked(HistoryDto data)
-        {
-            if (data == null)
-                return false;
-
-            if (Mark != null)
-                return Mark(data);
-
-            var system = StateManager.Inst != null && StateManager.Inst.MainState != null
-                ? StateManager.Inst.MainState.SystemState
-                : null;
-
-            if (system != null && !string.IsNullOrEmpty(system.Me))
-                return data.IPlayerId == system.Me;
-
-            // No server to say who the player is, so this is an editor preview and the sample's own id stands
-            // in for one. In a running game with no Me yet, nothing is marked, which is right.
-            return StateManager.Inst == null && data.IPlayerId == SampleMe;
-        }
-
-        private static decimal Number(string raw) =>
-            decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var value) ? value : 0m;
-
         // ------------------------------------------------------------------ the feed
 
         private void Listen(bool on)
@@ -1500,6 +1438,34 @@ namespace FlappyTemplate
             }
 
             return -1;
+        }
+
+        // Oldest first, by the time the server stamped each bet with. ON_HISTORY arrives as an array in whatever
+        // order the server built it - newest first, as it happens, which is the opposite of the order arrivals
+        // come in one at a time. Sorting is the only thing that makes a seeded strip and the bets that follow it
+        // agree about which end is new.
+        //
+        // Insertion sort, and deliberately: the list is fifteen long, it is very nearly sorted already, and it
+        // has to be stable so that bets sharing a timestamp - or a feed with no timestamps at all - keep the
+        // order they arrived in.
+        private void Sort()
+        {
+            if (!sortByTime)
+                return;
+
+            for (int i = 1; i < items.Count; i++)
+            {
+                var data = items[i];
+                int at = i - 1;
+
+                while (at >= 0 && items[at] != null && data != null && items[at].CreatedAt > data.CreatedAt)
+                {
+                    items[at + 1] = items[at];
+                    at--;
+                }
+
+                items[at + 1] = data;
+            }
         }
 
         private void Trim()
@@ -1554,24 +1520,26 @@ namespace FlappyTemplate
             idLength = Mathf.Max(1, idLength);
             sampleCount = Mathf.Max(1, sampleCount);
 
-            if (!built)
-                return;
-
-            if (Application.isPlaying)
+            if (built && Application.isPlaying)
             {
                 ApplyStyle();
                 return;
             }
 
-            // OnValidate is not allowed to activate or destroy anything, and setting a grid's layout does the
-            // first of those. Deferring by a frame puts it back on ordinary editor time, where it is.
+            // OnValidate is not allowed to activate, create or destroy anything, and both building the strip and
+            // setting a grid's layout do some of that. Deferring by a frame puts it back on ordinary editor time,
+            // where all of it is allowed.
+            //
+            // EnsureBuilt rather than a check on the flag: the flag is not serialized, so the first inspector
+            // edit after a script reload finds a strip that is built on screen and not built as far as this class
+            // knows. Bailing out there is what would make a colour edited in the editor appear to do nothing.
             UnityEditor.EditorApplication.delayCall += () =>
             {
                 if (this == null)
                     return;
 
-                if (built)
-                    ApplyStyle();
+                EnsureBuilt();
+                ApplyStyle();
             };
         }
 #endif
