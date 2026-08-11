@@ -8,19 +8,19 @@ namespace FlappyTemplate
 {
     // One bet in a history strip, and the seam a game builds its own through.
     //
-    // Three things are worth knowing before writing a prefab against this:
+    // The strip draws nothing of its own: an element is a prefab of the game's, and everything about how a round
+    // looks is decided here rather than in a setting on the strip. Which means two things are worth knowing
+    // before writing one:
     //
-    //  - It is often all a prefab needs. Put this component on the root, leave the fields empty, and the base
-    //    behaviour finds a label inside and writes the value into it. So the cheapest possible custom element is
-    //    a prefab with a TextMeshPro label in it and this on the root - no script of your own.
-    //
-    //  - Derive from it and override Write for anything more than that - an icon, a multiplier, a coin, a colour
-    //    that depends on how the round went. Data is the whole HistoryDto, Text is what the strip decided this
-    //    element should say, and Outcome(key) reaches the game's own payload. This is where a game says what a
-    //    win looks like: the strip has no opinion about it, and a serialized field of your own beats any set of
-    //    settings here.
+    //  - Derive from it and override Write. Data is the whole HistoryDto and Outcome(key) reaches the game's own
+    //    payload, so a chip that says what happened - a multiplier, a colour, an icon, a coin - is a serialized
+    //    field of yours and two lines in Write. The base does nothing: there is no value the strip could have
+    //    worked out that the game would not rather decide for itself.
     //
     //  - Override Appear for a prefab that wants to arrive its own way.
+    //
+    // The size of an element is the prefab's too - its own Layout Element, or the rect it was drawn at. The strip
+    // measures the prefab and makes a track that size.
     //
     // Clicking is wired up here rather than in the prefab: a Button is added if there is none, and it opens the
     // bet info window on this bet. A prefab that brings its own Button keeps it - only the listener is added.
@@ -28,23 +28,18 @@ namespace FlappyTemplate
     [RequireComponent(typeof(RectTransform))]
     public class UiHistoryElement : MonoBehaviour
     {
-        [Tooltip("Where the value is printed. Left empty, the first TextMeshPro label anywhere inside is used.")]
-        [SerializeField]
-        private TextMeshProUGUI label;
-
-        [Tooltip("The background, and what the pointer lands on. Left empty: a child called Plate, else a graphic on this object, else the first one inside that is not the label.")]
+        [Tooltip("The background, and what the pointer lands on. Left empty: a child called Plate, else a graphic on this object, else the first one inside that is not text.")]
         [SerializeField]
         private Graphic plate;
 
-        // Set on the elements the strip builds itself, and the reason it exists is a prefab's dignity: colours and
-        // text metrics are written onto a chip this package drew, and left alone on one a game drew.
+        // Which prefab this was made from. The strip throws away anything left over from another one rather than
+        // trying to reuse it: a prefab is not a chip with different colours.
         [HideInInspector]
         [SerializeField]
-        private bool native;
+        private UiHistoryElement source;
 
         private UiHistory owner;
         private HistoryDto data;
-        private string text = string.Empty;
         private bool found;
         private bool wired;
 
@@ -56,20 +51,10 @@ namespace FlappyTemplate
         /// <summary>The bet this element is showing, or null while it is spare.</summary>
         public HistoryDto Data => data;
 
-        /// <summary>What the strip worked out this element should say - the outcome value, the nonce, or the tail
-        /// of the id. Write puts it in the label; a game that wants something else has it here.</summary>
-        public string Text => text;
-
         /// <summary>The strip this belongs to. Null on an element that was never handed to one.</summary>
         public UiHistory History => owner;
 
         public RectTransform Rect => (RectTransform)transform;
-
-        public TextMeshProUGUI Label
-        {
-            get => label;
-            set => label = value;
-        }
 
         public Graphic Plate
         {
@@ -77,10 +62,10 @@ namespace FlappyTemplate
             set => plate = value;
         }
 
-        internal bool Native
+        internal UiHistoryElement Source
         {
-            get => native;
-            set => native = value;
+            get => source;
+            set => source = value;
         }
 
         /// <summary>A value out of the game's own payload for this bet, or empty.</summary>
@@ -100,14 +85,10 @@ namespace FlappyTemplate
                 owner.Pick(this);
         }
 
-        /// <summary>Puts the bet in the element. Override to fill in more than a label.</summary>
-        // Base behaviour on purpose: whatever label was found gets Text. It is what makes a prefab with no script
-        // of its own work, and what an override calls through to when it only wants to add to it.
-        public virtual void Write(HistoryDto value)
-        {
-            if (label != null)
-                label.text = text;
-        }
+        /// <summary>Puts the bet in the element. Override it - this is what a prefab is for.</summary>
+        // Empty on purpose. The strip knows a bet arrived and nothing about what it means, so anything written
+        // here would be a guess at a game it cannot see.
+        public virtual void Write(HistoryDto value) { }
 
         /// <summary>The arrival animation. Override for a prefab that wants to arrive its own way.</summary>
         // Built with DOTween.To rather than DOScale or DOFade: the shortcuts live in DOTween's UI module, which
@@ -176,10 +157,9 @@ namespace FlappyTemplate
             Wire();
         }
 
-        internal void Bind(HistoryDto value, string valueText)
+        internal void Bind(HistoryDto value)
         {
             data = value;
-            text = valueText ?? string.Empty;
 
             Parts();
             Write(value);
@@ -191,7 +171,6 @@ namespace FlappyTemplate
             Rest();
 
             data = null;
-            text = string.Empty;
         }
 
         // Only ever looked for once, and only for what was not filled in on the prefab. GetComponentInChildren
@@ -202,9 +181,6 @@ namespace FlappyTemplate
                 return;
 
             found = true;
-
-            if (label == null)
-                label = GetComponentInChildren<TextMeshProUGUI>(true);
 
             if (plate == null)
                 plate = FindPlate();
@@ -224,10 +200,13 @@ namespace FlappyTemplate
             if (own != null)
                 return own;
 
+            // Text last, and only if there is nothing else. A label is routinely laid out larger than the element
+            // it sits in, and a hit area that overhangs its neighbours means pressing one chip opens the bet
+            // beside it.
             var all = GetComponentsInChildren<Graphic>(true);
             for (int i = 0; i < all.Length; i++)
             {
-                if (all[i] != label)
+                if (all[i] != null && !(all[i] is TMP_Text))
                     return all[i];
             }
 
@@ -264,12 +243,16 @@ namespace FlappyTemplate
                     button.targetGraphic = plate;
             }
 
-            // The label is not. A label is usually laid out larger than the element it sits in - a 200 wide
-            // caption in a 60 wide chip is an ordinary thing to build - and a raycast target that overhangs its
-            // neighbours means hovering one chip lights up the one beside it. The plate is the hit area, and the
-            // plate is exactly the size of the element.
-            if (label != null)
-                label.raycastTarget = false;
+            // Text is never the hit area. A label is routinely laid out larger than the element it sits in - a
+            // 200 wide caption in a 60 wide chip is an ordinary thing to build - and a raycast target that
+            // overhangs its neighbours means the pointer over one chip lands on the one beside it. The plate is
+            // what gets pressed, and the plate is exactly the size of the element.
+            var texts = GetComponentsInChildren<TMP_Text>(true);
+            for (int i = 0; i < texts.Length; i++)
+            {
+                if (texts[i] != null && texts[i] != plate)
+                    texts[i].raycastTarget = false;
+            }
 
             button.onClick.AddListener(Pick);
             wired = true;

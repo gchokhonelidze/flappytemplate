@@ -1,74 +1,26 @@
 using System;
 using DG.Tweening;
-using TMPro;
 using UnityEngine;
 
 namespace FlappyTemplate
 {
-    // What a history strip looks like: how big one element is, how far apart they sit, what the built-in chip is
-    // made of, and how a new one arrives.
+    // What is left of a history strip's look once the elements own theirs: the gap between one and the next, how
+    // a new one arrives, and how the strip scrolls.
     //
-    // Deliberately thin on colour. What a bet *means* - a win, a loss, a round that ended some third way - is
-    // the game's business, and a game that cares says so by drawing its own element: the strip hands it the whole
-    // HistoryDto and stays out of it. So there is one colour per part here rather than one per outcome, and the
-    // chip these fields describe is the fallback for a strip that has not been given a prefab.
+    // There is nothing here about what an element is made of, and that is the whole design rather than an
+    // omission. A bet's colours, its size and what it says about the round are the element prefab's - the strip
+    // hands it the whole HistoryDto and stays out of it - so a setting here would only be a second opinion about
+    // something the prefab has already answered.
+    //
+    // No padding either. The elements sit in the middle of the strip, and a strip is anchored where it belongs
+    // rather than inset from inside itself.
     [Serializable]
     public class UiHistoryStyle
     {
         [Header("Strip")]
-        [Tooltip("One element, in canvas units. Zero on an axis leaves that side to the element itself - to a prefab's own Layout Element, or to the width its text asks for. Clamp needs this set along the flow: it is what the room is divided by.")]
-        public Vector2 ElementSize = new Vector2(96f, 56f);
-
-        [Tooltip("Between one element and the next.")]
+        [Tooltip("Between one element and the next. How big an element is comes from the prefab, so this is the whole of the spacing.")]
         [Min(0f)]
         public float Gap = 8f;
-
-        // Four floats rather than a RectOffset, for the reason UiWindowStyle gives at the same place: a
-        // RectOffset is a handle onto a native object, so building one in a field initialiser throws before the
-        // component exists, and it is a class, so a copied style would go on sharing it.
-        [Tooltip("Inset of the elements from the left of the strip.")]
-        public float PaddingLeft = 0f;
-
-        public float PaddingTop = 0f;
-
-        public float PaddingRight = 0f;
-
-        public float PaddingBottom = 0f;
-
-        [Header("Chip")]
-        [Tooltip("The built-in element. Every field under this heading is ignored once an Element Prefab is given - a prefab is its own look.")]
-        public Color Fill = new Color(0.149f, 0.137f, 0.263f);
-
-        public Color BorderColor = new Color(1f, 1f, 1f, 0.08f);
-
-        [Min(0f)]
-        public float BorderSize = 1.5f;
-
-        [Min(0f)]
-        public float CornerRadius = 8f;
-
-        [Tooltip("Width of the fade that smooths the corner arcs. About a pixel is right.")]
-        [Min(0f)]
-        public float EdgeSoftness = 1.25f;
-
-        [Header("Text")]
-        public Color TextColor = Color.white;
-
-        public TMP_FontAsset Font;
-
-        [Min(1f)]
-        public float TextSize = 26f;
-
-        public FontStyles TextStyle = FontStyles.Bold;
-
-        public TextAlignmentOptions TextAlignment = TextAlignmentOptions.Center;
-
-        [Tooltip("Inset of the text from the edges of the chip. Enough that a long value does not touch the border.")]
-        [Min(0f)]
-        public float TextInset = 6f;
-
-        [Tooltip("Shrink the text on an element it does not fit rather than letting it spill. Off keeps every element's text the same size, which reads better on a strip of short values.")]
-        public bool ShrinkText = true;
 
         [Header("Arrival")]
         [Tooltip("How long a new element takes to arrive. Zero puts it there with no animation at all.")]
@@ -102,9 +54,9 @@ namespace FlappyTemplate
         [Range(0.01f, 0.99f)]
         public float ScrollDeceleration = 0.135f;
 
-        /// <summary>A copy, for a strip that wants its own look without editing the shared style.</summary>
-        // Every field here is a value or a reference to something the style does not own - a font - so a shallow
-        // copy is a whole copy. Anything added later that is neither has to be copied by hand.
+        /// <summary>A copy, for a strip that wants its own feel without editing the shared style.</summary>
+        // Every field here is a value, so a shallow copy is a whole copy. Anything added later that is not has to
+        // be copied by hand.
         public UiHistoryStyle Clone() => (UiHistoryStyle)MemberwiseClone();
     }
 }

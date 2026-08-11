@@ -10,9 +10,10 @@ namespace FlappyTemplate.Editor
     // The canvas-finding and reparenting are RoundedBoxMenu's - the same three steps UGUI's own menu runs, and
     // there is no reason for a second copy of them.
     //
-    // The strip is built here rather than left to Awake because Awake does not run in the editor. One created
-    // from this menu has to arrive looking like a history strip: it comes up filled with sample bets, which are
-    // replaced the moment a server is talking.
+    // The strip is built here rather than left to Awake because Awake does not run in the editor. It also
+    // arrives holding sample bets, so that the moment an element prefab is dropped into it there is something to
+    // draw - the strip has no chip of its own, and one with neither a prefab nor a bet would come up as an empty
+    // rect twice over. The samples are replaced the moment a server is talking.
     public static class UiHistoryMenu
     {
         // Last in the group, ten past the windows, which is what puts a separator between them and the strip.
@@ -38,8 +39,8 @@ namespace FlappyTemplate.Editor
             GameObjectUtility.EnsureUniqueNameForSibling(created);
             RoundedBoxMenu.Parent(created, parent);
 
-            // Sampling is what Awake's Seed would have done in play mode. Without it the strip arrives as an
-            // empty rect, which reads as a component that did not work.
+            // Sampling is what Awake's Seed would have done in play mode. Without it the strip would still be
+            // empty once an element prefab was given to it, which reads as a component that did not work.
             history.Sample(11);
 
             Undo.SetCurrentGroupName("Create History");

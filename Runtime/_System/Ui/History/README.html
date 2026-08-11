@@ -145,6 +145,9 @@
     100% { transform: scale(1); opacity: 1; }
   }
   .chip.gap { visibility: hidden; }
+  .chip.won { color: #63ff94; }
+  .chip.lost { color: #ff6363; }
+  .chip.empty { background: transparent; border-style: dashed; color: #6a6390; font-weight: 400; }
 
   .tree {
     background: var(--code-bg);
@@ -164,11 +167,10 @@
 <nav class="toc">
   <strong>Contents</strong>
   <a href="#start">Quick start</a>
-  <a href="#says">What a chip says</a>
+  <a href="#own">Your own element</a>
   <a href="#shape">Shape and direction</a>
   <a class="sub" href="#clamping">Clamping</a>
   <a class="sub" href="#scrolling">Scrolling</a>
-  <a href="#own">Your own element</a>
   <a href="#arrivals">Arrivals</a>
   <a href="#clicking">Clicking</a>
   <a href="#feeding">Feeding it yourself</a>
@@ -185,82 +187,99 @@
   <h1>Ui History</h1>
   <p class="lede">The strip of recent bets: the last few rounds as a row of chips over the game, or a column of
   them down the side. It feeds itself from the socket, animates each arrival, drops the oldest when it runs out
-  of room — or scrolls instead — and opens the bet info dialog on whichever chip is clicked. What a chip
-  should <em>say</em> about a round of your game is a key in the inspector or a one-line function, with fallbacks
-  that work without either. What a round <em>looks</em> like is not its business at all: a game that wants more
-  than a value on a plate gives the strip its own element prefab and fills that in.</p>
-  <p class="stamp">Describes package 1.0.59. Update this file with the code — and README.md beside it.</p>
+  of room — or scrolls instead — and opens the bet info dialog on whichever chip is clicked. It draws nothing of
+  its own: a bet on screen is your element prefab, and what it is made of, how big it is and what it says about
+  the round are all decided there.</p>
+  <p class="stamp">Describes package 1.0.63. Update this file with the code — and README.md beside it.</p>
   <p><strong>GameObject → UI (Canvas) → FlappyBet → History</strong>, or Add Component → UI → Ui History.</p>
 </header>
 
 <div class="stage">
-  <p class="why">The built-in chip: the nonce, or the tail of the bet id. One plate, one colour, newest arriving
-  at the right — and a game that wants the value coloured by how the round went draws its own element.</p>
+  <p class="why">An element of the game's own: the multiplier out of its own payload, green where the round paid
+  and red where it did not, newest arriving at the right. None of that is a setting on the strip — it is four
+  lines in the element's Write.</p>
   <div class="strip end">
-    <div class="chip">02.83</div>
-    <div class="chip">71.73</div>
-    <div class="chip">83.19</div>
-    <div class="chip">05.01</div>
-    <div class="chip">59.36</div>
-    <div class="chip">87.89</div>
-    <div class="chip">07.25</div>
-    <div class="chip">97.05</div>
-    <div class="chip fresh">04.30</div>
+    <div class="chip won">2.83x</div>
+    <div class="chip lost">0.00x</div>
+    <div class="chip won">1.73x</div>
+    <div class="chip won">3.19x</div>
+    <div class="chip lost">0.00x</div>
+    <div class="chip won">5.01x</div>
+    <div class="chip won">1.36x</div>
+    <div class="chip lost">0.00x</div>
+    <div class="chip won fresh">4.30x</div>
   </div>
 </div>
 
 <h2 id="start">Quick start</h2>
 
 <ol>
-  <li><strong>GameObject ▸ UI (Canvas) ▸ FlappyBet ▸ History</strong> — a 620×64 strip, filled with sample bets so you can
-  style it.</li>
-  <li>Anchor it where it belongs. Stretch it if you want it to grow with the screen; the count of chips follows
-  the width.</li>
+  <li><strong>GameObject ▸ UI (Canvas) ▸ FlappyBet ▸ History</strong> — a 620×64 strip, holding sample bets.</li>
+  <li>Drop your element prefab into <strong>Element Prefab</strong>. Until you do, the strip has nothing to draw
+  a bet with and says so once in the console — see <a href="#own">Your own element</a> for the cheapest one that
+  works.</li>
+  <li>Anchor the strip where it belongs. Stretch it if you want it to grow with the screen; the count of chips
+  follows the width.</li>
   <li>Drag your bet info window into <strong>Bet Info</strong>. Nothing is searched for — see below.</li>
   <li>Press play. The samples are replaced by <code>MainState.History</code>, and every <code>ON_HISTORY</code>
   after that arrives with a pop.</li>
   <li>Click a chip. The dialog opens on that bet.</li>
 </ol>
 
-<p>Nothing above needed a line of code. From here on it is a matter of what your game's round looks like:</p>
+<p>The only line of code in that is the one inside your element:</p>
 
-<pre><code>strip.Style.ElementSize = new Vector2(104f, 52f);   // shape
-strip.TextKey = "multiplier";                       // what a chip says
-strip.TextFormat = "{0}x";
-strip.TextDecimals = 2;
-strip.Text = data =&gt; Multiplier(data) + "x";        // or from code, for anything a key cannot say</code></pre>
+<pre><code>public override void Write(HistoryDto data) =&gt; label.text = Outcome("multiplier") + "x";</code></pre>
 
-<h2 id="says">What a chip says</h2>
+<div class="stage">
+  <p class="why">No Element Prefab: the strip holds its bets and draws none of them. One line in the console,
+  and it fills itself in the moment an element is given to it.</p>
+  <div class="strip center">
+    <div class="chip empty">no element</div>
+  </div>
+</div>
 
-<p>Asked in this order, and the first answer that is not empty wins:</p>
+<h2 id="own">Your own element</h2>
+
+<p><strong>Element Prefab</strong> is a prefab with a <code>UiHistoryElement</code> on its <strong>root</strong>
+— which is also the only thing the strip needs from it. Everything else about the prefab is yours, and none of
+it is touched: no colour is overwritten, no size is imposed, no text is written.</p>
+
+<p>Derive from <code>UiHistoryElement</code> and override <code>Write</code>. That is the whole seam:</p>
+
+<pre><code>public class DiceHistoryChip : UiHistoryElement
+{
+    [SerializeField] private Image face;
+    [SerializeField] private TextMeshProUGUI amount;
+    [SerializeField] private Color won, lost;
+
+    public override void Write(HistoryDto data)
+    {
+        face.sprite = faces[int.Parse(Outcome("roll"))];
+        amount.text = data.WinAmount;
+        amount.color = decimal.Parse(data.WinAmount) &gt; 0m ? won : lost;
+    }
+
+    public override void Appear() { … }         // arrive your own way
+}</code></pre>
 
 <table>
-  <tr><th>#</th><th>Source</th><th>Set it</th><th>Use it for</th></tr>
-  <tr><td>1</td><td><code>Text</code></td><td>code: <code>strip.Text = data =&gt; …</code></td><td>Anything a key cannot answer — two values, a symbol, a word</td></tr>
-  <tr><td>2</td><td><strong>Text Key</strong></td><td>inspector or <code>strip.TextKey</code></td><td>A value the server already sends in the bet's outcome</td></tr>
-  <tr><td>3</td><td>Nonce</td><td>—</td><td>The default where the game has one</td></tr>
-  <tr><td>4</td><td>Tail of the bet id</td><td><strong>Id Length</strong>, <strong>Id From End</strong></td><td>The last resort, and the reason a chip is never blank</td></tr>
-</table>
-
-<p><code>Text</code> returning <code>null</code> falls through to the rest, so a game that only wants to
-override <em>some</em> bets can.</p>
-
-<p><strong>Text Key</strong> reads the bet's own <code>Outcome</code> payload — both shapes of it, the flat
-<code>_Outcome</code> the socket fills in and the raw JSON it arrived as. Whatever comes out is a string, so
-three fields shape it:</p>
-
-<table>
-  <tr><th>Field</th><th>Does</th><th>Example</th></tr>
-  <tr><td><strong>Text Decimals</strong></td><td>Cuts a number to that many decimals. Negative leaves it exactly as sent</td><td><code>2.839</code> → <code>2.83</code></td></tr>
-  <tr><td><strong>Text Pad</strong></td><td>Pads the whole part with zeros so a strip of numbers lines up</td><td><code>2.83</code> → <code>02.83</code></td></tr>
-  <tr><td><strong>Text Format</strong></td><td>A <code>string.Format</code> pattern for the result</td><td><code>{0}x</code> → <code>02.83x</code></td></tr>
+  <tr><th>Member</th><th>Is</th></tr>
+  <tr><td><code>Write(data)</code></td><td>Called with each bet the element is given. The base does nothing — there is no value the strip could work out that your game would not rather decide</td></tr>
+  <tr><td><code>Data</code></td><td>The bet the element is showing, or null while it is spare</td></tr>
+  <tr><td><code>Outcome("key")</code></td><td>A value out of that bet's own outcome payload. Both shapes are read — the flat <code>_Outcome</code> the socket fills in and the raw JSON it arrived as</td></tr>
+  <tr><td><code>Appear()</code></td><td>The arrival animation. Override for a prefab that arrives its own way</td></tr>
+  <tr><td><code>Pick()</code></td><td>Opens the bet info window on this bet, the same as a click. Public, so your own control can call it</td></tr>
+  <tr><td><code>Plate</code></td><td>The background, and the hit area. Found by itself: a child called <code>Plate</code>, else a graphic on the root, else the first one inside that is not text</td></tr>
 </table>
 
 <div class="note">
-  <p>Numbers are <strong>truncated, not rounded</strong> — the same as everywhere else in this package. A
-  multiplier the server called <code>2.839</code> was <code>2.83</code>; rounding it up would show the player a
-  number that never happened.</p>
+  <p><strong>The size of an element is the prefab's.</strong> The strip measures it — its own
+  <code>LayoutElement</code> if it has one, the rect it was drawn at if not — and makes a track that size.</p>
+  <p>Nothing in the inspector overrides that, and nothing needs to: a chip that should be 40 wide is drawn 40
+  wide.</p>
 </div>
+
+<p><code>UiHistoryExampleElement.cs</code> beside this file is a working one, in about ten lines.</p>
 
 <h2 id="shape">Shape and direction</h2>
 
@@ -268,32 +287,33 @@ three fields shape it:</p>
   <tr><th>Field</th><th>Means</th></tr>
   <tr><td><strong>Flow</strong></td><td><code>Horizontal</code> — a row. <code>Vertical</code> — a column</td></tr>
   <tr><td><strong>Order</strong></td><td>Which end the newest bet lands on: <code>NewestFirst</code> (left, or top) or <code>NewestLast</code></td></tr>
-  <tr><td><strong>Align</strong></td><td>Where the elements sit while there are too few to fill the strip: <code>Start</code>, <code>Center</code>, <code>End</code></td></tr>
+  <tr><td><strong>Align</strong></td><td>Where the elements sit while there are too few to fill the strip: <code>Start</code>, <code>Center</code> (the default), <code>End</code></td></tr>
   <tr><td><strong>Overflow</strong></td><td><code>Clamp</code> — show as many as fit and drop the oldest. <code>Scroll</code> — keep them all and let it be dragged</td></tr>
   <tr><td><strong>Capacity</strong></td><td>How many bets are <em>kept</em>, whatever is shown. Zero keeps everything. The socket itself keeps 15</td></tr>
   <tr><td><strong>Clip</strong></td><td>Cut anything reaching past the strip's rect. Always on while scrolling</td></tr>
 </table>
 
 <div class="stage">
-  <p class="why">Align: Start — a strip filling from the left. The same three bets, Align: End, arrive against
-  the right edge and push leftwards: the crash-game look.</p>
-  <div class="strip">
-    <div class="chip">1.94</div>
-    <div class="chip">0.00</div>
-    <div class="chip">3.02</div>
+  <p class="why">Align: Center — the default, and what a part-full strip over a game usually wants. The same
+  three bets, Align: End, arrive against the right edge and push leftwards: the crash-game look. There is no
+  padding to set either way.</p>
+  <div class="strip center">
+    <div class="chip won">1.94x</div>
+    <div class="chip lost">0.00x</div>
+    <div class="chip won">3.02x</div>
   </div>
   <div class="strip end">
-    <div class="chip">1.94</div>
-    <div class="chip">0.00</div>
-    <div class="chip">3.02</div>
+    <div class="chip won">1.94x</div>
+    <div class="chip lost">0.00x</div>
+    <div class="chip won">3.02x</div>
   </div>
 </div>
 
 <h3 id="clamping">Clamping</h3>
 
-<p>How many fit is the strip's own width divided by <strong>Element Size</strong> along the flow, gaps taken
-out. So clamping needs that size set — with it at zero there is nothing to count with, everything is shown, and
-anything past the edge is clipped rather than dropped.</p>
+<p>How many fit is the strip's own width divided by the prefab's size along the flow, gaps taken out. An element
+that measures as nothing on that axis leaves nothing to count with, so everything is shown and anything past the
+edge is clipped rather than dropped.</p>
 
 <p>The count follows the strip: an anchored strip resized by its parent, by the canvas scaler or by the window
 it sits in re-counts the frame after. Nothing announces a rect change, so the strip watches its own size.</p>
@@ -309,68 +329,22 @@ arrives; <strong>Scroll Sensitivity</strong>, <strong>Scroll Inertia</strong> an
 <div class="stage">
   <p class="why">A scrolling column, newest first, keeping everything.</p>
   <div class="strip column">
-    <div class="chip">4.11</div>
-    <div class="chip">0.00</div>
-    <div class="chip">2.65</div>
-    <div class="chip">1.00</div>
+    <div class="chip won">4.11x</div>
+    <div class="chip lost">0.00x</div>
+    <div class="chip won">2.65x</div>
+    <div class="chip won">1.00x</div>
   </div>
 </div>
 
 <p>There is no scrollbar. A strip of a dozen chips with a bar under it reads as a list; the drag and the wheel
 are the whole interaction, and <code>ScrollToNewest()</code> is there for the rest.</p>
 
-<h2 id="own">Your own element</h2>
-
-<p><strong>Element Prefab</strong> replaces the built-in chip with a prefab of your own. The field is typed
-<code>UiHistoryElement</code>, so the component goes on the prefab's <strong>root</strong> — which is also the
-only thing the strip needs from it. Three ways in, in the order they cost:</p>
-
-<p><strong>The component alone, fields empty.</strong> No script of your own: the first TextMeshPro label
-inside the prefab gets the value, the background it finds becomes the hit area, and a <code>Button</code> is
-wired to open the bet info window. Nothing is recoloured — the prefab looks exactly as it was drawn. The
-cheapest custom element is a prefab with a label in it and <em>Add Component ▸ UI ▸ Ui History Element</em> on
-the root.</p>
-
-<p><strong>The component with <code>Label</code> and <code>Plate</code> pointed at by hand</strong> — for a
-prefab whose first label is not the one the value belongs in.</p>
-
-<p><strong>Your own component derived from it</strong>, which is where a game ends up:</p>
-
-<pre><code>public class DiceHistoryChip : UiHistoryElement
-{
-    [SerializeField] private Image face;
-    [SerializeField] private TextMeshProUGUI amount;
-    [SerializeField] private Color won, lost;
-
-    public override void Write(HistoryDto data)
-    {
-        base.Write(data);                       // the label the strip decided on
-        face.sprite = faces[int.Parse(Outcome("roll"))];
-        amount.text = data.WinAmount;
-        amount.color = decimal.Parse(data.WinAmount) &gt; 0m ? won : lost;
-    }
-
-    public override void Appear() { … }         // arrive your own way
-}</code></pre>
-
-<p><strong>This is where a game says what a win looks like.</strong> The strip has no opinion about it and no
-settings for it: it hands over the whole <code>HistoryDto</code> and a serialized field of your own beats any
-list of cases it could have offered. <code>Data</code> is that bet, <code>Text</code> is what the strip decided
-this element should say, and <code>Outcome("key")</code> reaches the game's own payload.</p>
-
-<div class="note">
-  <p><strong>Element Size</strong> at zero on an axis leaves that side of the element to itself — to its own
-  <code>LayoutElement</code>, or to the width its text asks for.</p>
-  <p>An element with no opinion about its size in an auto track measures as nothing, so give it one or set
-  <strong>Element Size</strong>.</p>
-</div>
-
 <h2 id="arrivals">Arrivals</h2>
 
 <p>A new element grows and fades in, from <strong>Appear Scale</strong> over <strong>Appear Duration</strong> on
 <strong>Appear Ease</strong>, on unscaled time so a game that paused itself still animates its strip. Zero
-duration puts it there with no animation; <strong>Animate Arrivals</strong> off does the same for every
-arrival.</p>
+duration puts it there with no animation; <strong>Animate Arrivals</strong> off does the same for every arrival.
+A prefab that wants to arrive its own way overrides <code>Appear</code>.</p>
 
 <p>Elements are kept with the bet they show rather than reassigned by position, so a strip that shifts along
 only writes the one chip that is new — a prefab holding state of its own keeps it as it slides. The shift itself
@@ -400,6 +374,9 @@ drives its own dialog wants:</p>
   its canvas does not sort under something that covers it.</p>
 </div>
 
+<p>A <code>Button</code> is added to the element if the prefab has none, and its plate is made the hit area. A
+prefab that brings its own <code>Button</code> keeps it — only the listener is added.</p>
+
 <h2 id="feeding">Feeding it yourself</h2>
 
 <p><strong>Follow State</strong> on — the default — seeds from <code>MainState.History</code> on enable and adds
@@ -411,7 +388,7 @@ every <code>ON_HISTORY</code> after that. Off hands the feeding over:</p>
   <tr><td><code>AddRange(values)</code></td><td>One after another</td></tr>
   <tr><td><code>Set(values)</code></td><td>Replaces everything, oldest first. Animates nothing</td></tr>
   <tr><td><code>Remove(id)</code>, <code>Clear()</code></td><td>What they say</td></tr>
-  <tr><td><code>Refresh()</code></td><td>Writes every element again from the bet it holds — after changing what a chip should say</td></tr>
+  <tr><td><code>Refresh()</code></td><td>Writes every element again from the bet it holds — after something outside the bet has changed</td></tr>
 </table>
 
 <p><code>Add</code> on a bet whose id is already in the strip replaces it where it is rather than adding a
@@ -431,17 +408,18 @@ seeded bets the opposite way round from the arrivals after them.</p>
 <h2 id="code">From code</h2>
 
 <pre><code>var strip = UiHistory.Create(canvas, "History", 620f, 64f);
+strip.ElementPrefab = myChip;                 // not optional — there is nothing else to draw with
 strip.Flow = EHistoryFlow.Vertical;
 strip.Overflow = EHistoryOverflow.Scroll;
 strip.Capacity = 0;
-strip.Style.ElementSize = new Vector2(0f, 48f);
 strip.OnPicked.AddListener(data =&gt; Debug.Log(data.Id));</code></pre>
 
 <table>
   <tr><th>Member</th><th>Does</th></tr>
-  <tr><td><code>Create(parent, name, width, height)</code></td><td>Builds one, ready to be fed</td></tr>
-  <tr><td><code>Style</code></td><td>The look. Change anything on it and call <code>ApplyStyle()</code></td></tr>
-  <tr><td><code>ApplyStyle()</code></td><td>Writes every colour, gap and scroll setting, then lays out</td></tr>
+  <tr><td><code>Create(parent, name, width, height)</code></td><td>Builds one, ready to be given an element and fed</td></tr>
+  <tr><td><code>ElementPrefab</code></td><td>The element. Setting it rebuilds — elements left over from the last prefab are thrown away</td></tr>
+  <tr><td><code>Style</code></td><td>The gap, the arrival, the scrolling. Change anything on it and call <code>ApplyStyle()</code></td></tr>
+  <tr><td><code>ApplyStyle()</code></td><td>Writes the gap, the flow and the scroll settings, then lays out</td></tr>
   <tr><td><code>Layout()</code></td><td>Binds, names the cells, sets the layout — now, rather than at the end of the frame</td></tr>
   <tr><td><code>Rebuild()</code></td><td>From scratch. After swapping the prefab, or changing the style wholesale</td></tr>
   <tr><td><code>Items</code>, <code>Count</code></td><td>The bets it holds, oldest first</td></tr>
@@ -461,20 +439,21 @@ inspector rather than from a prefab script.</p>
 
 <table>
   <tr><th>Group</th><th>Fields</th></tr>
-  <tr><td><strong>Style</strong></td><td>Strip: element size, gap, padding. Chip: fill, border colour and size, radius, softness. Text: colour, font, size and style, alignment, inset, shrink. Arrival: duration, scale, fade, ease, unscaled. Scrolling: sensitivity, inertia, deceleration</td></tr>
+  <tr><td><strong>Style</strong></td><td>Strip: gap. Arrival: duration, scale, fade, ease, unscaled, follow duration. Scrolling: sensitivity, inertia, deceleration</td></tr>
   <tr><td><strong>Element</strong></td><td>Element Prefab</td></tr>
   <tr><td><strong>Strip</strong></td><td>Flow, Order, Align, Overflow, Capacity, Clip, Follow Newest</td></tr>
-  <tr><td><strong>Value</strong></td><td>Text Key, Text Format, Text Decimals, Text Pad, Id Length, Id From End</td></tr>
   <tr><td><strong>Behaviour</strong></td><td>Follow State, Dedupe, Sort By Time, Animate Arrivals, Bet Info, Preview, Sample Count</td></tr>
   <tr><td><strong>Events</strong></td><td>On Picked, On Element</td></tr>
 </table>
 
-<p>Everything under <strong>Chip</strong> and <strong>Text</strong> describes the built-in element and is
-ignored once an Element Prefab is given — a prefab is its own look.</p>
+<p>That is the whole of it. Everything that used to sit under <em>Chip</em>, <em>Text</em> and <em>Value</em> —
+colours, border, radius, font, size, decimals, format, padding, element size — is the prefab's now.</p>
 
-<p><strong>Preview</strong> is what fills a strip with sample bets when there is no socket running, so the
-component looks like a history strip in the editor rather than like an empty rect. A real session replaces them
-on enable.</p>
+<p><strong>Preview</strong> fills a strip with sample bets when there is no socket running, so the component
+looks like a history strip in the editor rather than like an empty rect. It needs an element prefab like
+anything else does. Sample bets carry a <code>multiplier</code> in their outcome, since that is the key most
+games ask for; an element reading some other key shows whatever it makes of an empty string until a real session
+replaces them.</p>
 
 <h2 id="notes">Worth knowing</h2>
 
@@ -488,6 +467,17 @@ on enable.</p>
    └ Element   no cell name — a spare, hidden by the layout</div>
 
 <ul>
+  <li><strong>No prefab, nothing on screen.</strong> The strip logs it once, keeps holding its bets, and fills
+  itself in the moment an element is given to it. It is one warning rather than one a frame because a strip
+  built from code is configured a line after it is created.</li>
+
+  <li><strong>Elements from another prefab are thrown away, not reused.</strong> Each one remembers which prefab
+  it came from, so changing the field rebuilds the strip out of the new one rather than restyling chips that
+  cannot be restyled.</li>
+
+  <li><strong>A template kept switched off in the scene works as an element prefab.</strong>
+  <code>Instantiate</code> copies that, so the strip switches each copy back on as it makes it.</li>
+
   <li><strong>The elements sit in a <code>UiGrid</code>, one track each.</strong> Every element the strip is not
   showing is a spare kept in the same grid under a name the layout does not mention. That is how it is hidden —
   a grid shows exactly what its layout names and re-asserts that every time it is enabled, so anything switched
@@ -497,13 +487,9 @@ on enable.</p>
   <li><strong>An empty strip still gets a layout</strong> — one empty cell. A grid with <em>no</em> layout shows
   every child it has, which here would be every spare in the pool.</li>
 
-  <li><strong>A size from the style is written as a <code>LayoutElement</code></strong>, not only as a
-  <code>sizeDelta</code>. An auto track is as big as the items in it say they need to be, and a plain rect says
-  nothing at all.</li>
-
-  <li><strong>The cross axis is always one flexible track.</strong> An element with a fixed size across the flow
-  keeps it and is centred in the strip; a fixed <em>track</em> would pin the row to the top edge and leave the
-  rest of the strip empty under it.</li>
+  <li><strong>The cross axis is always one flexible track.</strong> An element with a size across the flow keeps
+  it and is centred in the strip; a fixed <em>track</em> would pin the row to the top edge and leave the rest of
+  the strip empty under it.</li>
 
   <li><strong>Drags reach the scroller through the buttons.</strong> A <code>Button</code> does not handle drag,
   so the event bubbles up to the <code>ScrollRect</code> above it — which is why a chip can be both clicked and
@@ -514,22 +500,22 @@ on enable.</p>
   once, at the end of it. <code>Layout()</code> is the immediate version, for a game that wants to read
   <code>Elements</code> in the same breath.</li>
 
-  <li><strong>The element's label is taken off the raycast</strong>, and its plate is put on it. A label is
+  <li><strong>Text inside an element is taken off the raycast</strong>, and its plate is put on it. A label is
   routinely laid out larger than the element it sits in — a 200-wide caption inside a 60-wide chip is an ordinary
-  thing to build — and a raycast target that overhangs its neighbours means hovering one chip lights up the one
-  beside it. The plate is the hit area, and the plate is exactly the size of the element. A label that overhangs
-  still <em>draws</em> outside its chip, so stretch it to the element if the value can be long.</li>
+  thing to build — and a raycast target that overhangs its neighbours means the pointer over one chip lands on
+  the one beside it. The plate is the hit area, and the plate is exactly the size of the element. A label that
+  overhangs still <em>draws</em> outside its chip, so stretch it to the element if the value can be long.</li>
 
   <li><strong>A clicked chip is deselected as the click lands.</strong> UGUI leaves a clicked <code>Button</code>
   selected and a selected <code>Selectable</code> goes on drawing its highlighted colour, which on a strip reads
   as some other bet being hovered. Buttons the strip adds also get <code>Navigation.None</code>, so fifteen chips
   do not swallow the arrow keys.</li>
 
-  <li><strong>In the editor, a style change repaints.</strong> Every element is written again on
-  <code>ApplyStyle</code>, not only the ones whose bet changed — otherwise a setting edited in the inspector
-  would rearrange the strip and rewrite nothing. Nothing here is serialized, neither the parts nor the bets, so a
-  script reload re-seeds the strip: in a scene with no socket that means the sample bets come back rather than
-  the strip emptying itself.</li>
+  <li><strong>In the editor, a setting change repaints.</strong> Every element is written again on
+  <code>ApplyStyle</code>, not only the ones whose bet changed, so a prefab that reads something outside the bet
+  gets the chance to read it again. Nothing here is serialized, neither the parts nor the bets, so a script
+  reload re-seeds the strip: in a scene with no socket that means the sample bets come back rather than the strip
+  emptying itself.</li>
 
   <li><strong>Clipping cuts anything that reaches past the strip</strong>, including a part of an element that
   was meant to hang outside it — a badge over a corner, a bar under the chip. Leave a little slack across the
@@ -546,12 +532,12 @@ on enable.</p>
   <tr><th>File</th><th>What it is</th></tr>
   <tr><td><code>UiHistory.cs</code></td><td>The component: the feed, the binding, the layout, the clicking</td></tr>
   <tr><td><code>UiHistoryElement.cs</code></td><td>One bet on screen. What a prefab derives from</td></tr>
-  <tr><td><code>UiHistoryStyle.cs</code></td><td>The built-in chip, the spacing, the arrival and the scrolling</td></tr>
+  <tr><td><code>UiHistoryExampleElement.cs</code></td><td>A working element in ten lines — a label, a colour, and a <code>Write</code></td></tr>
+  <tr><td><code>UiHistoryStyle.cs</code></td><td>The gap, the arrival and the scrolling</td></tr>
   <tr><td><code>EHistoryFlow.cs</code><br><code>EHistoryOrder.cs</code><br><code>EHistoryAlign.cs</code><br><code>EHistoryOverflow.cs</code></td><td>Direction, which end is newest, where a part-full strip sits, and what happens when it fills</td></tr>
-  <tr><td><code>UiHistoryExample.cs</code></td><td>Three strips built from code: plain, multipliers, and a scrolling column</td></tr>
+  <tr><td><code>UiHistoryExample.cs</code></td><td>Three strips built from code, elements and all</td></tr>
   <tr><td><code>Editor/History/UiHistoryMenu.cs</code></td><td>The GameObject menu entry</td></tr>
   <tr><td><code>../Grid/</code></td><td><code>UiGrid</code>, which places the elements</td></tr>
-  <tr><td><code>../RoundedBox/</code></td><td><code>RoundedBox</code>, which draws the built-in chip</td></tr>
   <tr><td><code>../Window/BetInfoWindow.cs</code></td><td>The dialog a click opens</td></tr>
 </table>
 

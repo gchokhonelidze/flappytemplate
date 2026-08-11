@@ -1,13 +1,17 @@
+using TMPro;
 using UnityEngine;
 
 namespace FlappyTemplate
 {
-    // Three history strips built at runtime under whatever this sits on: the plain one, one that reads a value
-    // out of the game's own outcome, and a scrolling column down the side.
+    // Three history strips built at runtime under whatever this sits on: a plain row, a row of coloured
+    // multipliers, and a scrolling column down the side.
     //
-    // It is here to be read as much as run. Between them the three cover everything a game has to decide - which
-    // way the strip runs, which end the newest bet lands on, what a chip says, and what happens when there are
-    // more bets than room.
+    // It is here to be read as much as run. The first thing it does is the first thing a game does: draw an
+    // element. The strip has no chip of its own and no settings for one - a bet's size, its colours and what it
+    // says are all the element's - so an example that skipped that step would build three empty rects.
+    //
+    // Between them the three cover everything that is left to decide: which way the strip runs, which end the
+    // newest bet lands on, and what happens when there are more bets than room.
     //
     // The keys are the other half of it: Space adds a bet to all three, Backspace clears them, and 1 pushes a
     // run of bets in one go so the arrival animation can be seen against a strip that is already full.
@@ -21,6 +25,9 @@ namespace FlappyTemplate
         private UiHistory plain;
         private UiHistory multipliers;
         private UiHistory column;
+
+        private UiHistoryExampleElement nonceChip;
+        private UiHistoryExampleElement valueChip;
 
         private int nonce;
 
@@ -53,49 +60,73 @@ namespace FlappyTemplate
         {
             Clear();
 
+            // The elements first, because without one a strip has nothing to draw a bet with. A game draws these
+            // as prefabs and drags them into Element Prefab; they are built here because everything in this file
+            // is, and a template kept switched off in the scene works exactly as well as an asset.
+            nonceChip = Chip("Nonce Chip", string.Empty, new Vector2(96f, 52f));
+            valueChip = Chip("Value Chip", "multiplier", new Vector2(104f, 52f));
+
             // The plain case: a row along the top, newest arriving at the right, as many as fit and the oldest
-            // dropped. Nothing is configured, because there is nothing it has to be told - it prints the nonce and
-            // it opens the bet info dialog when a chip is clicked.
+            // dropped. Nothing is configured beyond the element - the strip opens the bet info dialog when a chip
+            // is clicked and looks after the rest itself.
             plain = UiHistory.Create(transform, "Plain History", 620f, 64f);
             plain.Rect.anchoredPosition = new Vector2(0f, 180f);
+            plain.ElementPrefab = nonceChip;
+            plain.Align = EHistoryAlign.End;
             Detach(plain);
 
-            // The same strip reading the game's own outcome: whatever the server put under "multiplier",
-            // truncated to two decimals, zero-padded so a column of numbers lines up, and printed with an x
-            // after it. All four of those are inspector fields - this only has to set them from code because it
-            // is building the strip from code.
+            // The same strip with a different element. Everything that changed between the two - the multiplier
+            // out of the game's own payload, two decimals, an x after it, green or red by how the round went - is
+            // in UiHistoryExampleElement.Write, which is where a game says what a win looks like.
             multipliers = UiHistory.Create(transform, "Multiplier History", 620f, 64f);
             multipliers.Rect.anchoredPosition = new Vector2(0f, 100f);
+            multipliers.ElementPrefab = valueChip;
             Detach(multipliers);
-            multipliers.Style.ElementSize = new Vector2(104f, 52f);
-            multipliers.TextKey = "multiplier";
-            multipliers.TextFormat = "{0}x";
-            multipliers.TextDecimals = 2;
-            multipliers.TextPad = 2;
 
             // A scrolling column, keeping everything rather than dropping the oldest, newest at the top. Drag it
             // or roll the wheel over it; a flick carries.
             column = UiHistory.Create(transform, "Side History", 120f, 320f);
             column.Rect.anchoredPosition = new Vector2(-360f, -40f);
+            column.ElementPrefab = valueChip;
             Detach(column);
             column.Flow = EHistoryFlow.Vertical;
             column.Order = EHistoryOrder.NewestFirst;
             column.Overflow = EHistoryOverflow.Scroll;
             column.Capacity = 0;
-            column.Style.ElementSize = new Vector2(0f, 48f);
+        }
 
-            // What a game does when a key in the outcome cannot answer the question: hand over a function. The
-            // whole HistoryDto goes in, so anything the server sent can come out - here the multiplier, coloured
-            // by how the round went. A game wanting more than coloured text than that draws its own element and
-            // puts the colours where it likes; the strip has no opinion about what a win looks like.
-            column.Text = data =>
-            {
-                decimal payout = Payout(data);
-                string tint = payout >= 1m ? "#63ff94" : "#ff6363";
-                string value = payout.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+        // What a game draws in the editor instead. A plate, a label in the middle of it, and the component that
+        // turns a bet into what the label says - kept switched off, because it is a template rather than a chip
+        // on screen. The strip switches its copies back on as it makes them.
+        private UiHistoryExampleElement Chip(string name, string key, Vector2 size)
+        {
+            var created = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(RoundedBox));
+            var rect = (RectTransform)created.transform;
+            rect.SetParent(transform, false);
+            rect.localScale = Vector3.one;
+            rect.sizeDelta = size;
+            created.layer = gameObject.layer;
 
-                return "<color=" + tint + ">" + value + "x</color>";
-            };
+            var box = created.GetComponent<RoundedBox>();
+            box.FillColor = new Color(0.149f, 0.137f, 0.263f);
+            box.SetBorderColor(new Color(1f, 1f, 1f, 0.08f));
+            box.SetBorderSize(1.5f);
+            box.SetCornerRadius(8f);
+            box.EdgeSoftness = 1.25f;
+
+            var label = UiWindowParts.Label(rect, "Value");
+            label.fontSize = 26f;
+            label.fontStyle = FontStyles.Bold;
+            label.alignment = TextAlignmentOptions.Center;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            UiWindowParts.Stretch(label.rectTransform, 6f, 6f, 6f, 6f);
+
+            var element = created.AddComponent<UiHistoryExampleElement>();
+            element.Label = label;
+            element.Key = key;
+
+            created.SetActive(false);
+            return element;
         }
 
         // Every strip here is fed by hand, so none of them should be listening for a server or filling itself
@@ -113,13 +144,15 @@ namespace FlappyTemplate
             for (int i = transform.childCount - 1; i >= 0; i--)
             {
                 var child = transform.GetChild(i);
-                if (child.GetComponent<UiHistory>() != null)
+                if (child.GetComponent<UiHistory>() != null || child.GetComponent<UiHistoryElement>() != null)
                     UiWindowParts.Discard(child.gameObject);
             }
 
             plain = null;
             multipliers = null;
             column = null;
+            nonceChip = null;
+            valueChip = null;
         }
 
         // What the server would be sending. A game never writes this - the strips fill themselves in from
@@ -174,17 +207,5 @@ namespace FlappyTemplate
                 _Outcome = data._Outcome,
                 CreatedAt = data.CreatedAt,
             };
-
-        private static decimal Payout(HistoryDto data)
-        {
-            decimal.TryParse(
-                UiHistory.Read(data, "multiplier"),
-                System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture,
-                out var value
-            );
-
-            return value;
-        }
     }
 }

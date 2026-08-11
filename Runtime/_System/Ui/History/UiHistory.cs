@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using DG.Tweening;
-using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -13,27 +11,25 @@ namespace FlappyTemplate
     // the side of it. Clicking one opens the bet info window on that bet.
     //
     //     var strip = UiHistory.Create(canvas);       // or drop the component on a rect
+    //     strip.ElementPrefab = myChip;               // and this, which is not optional
     //
-    // That is the whole of the usual case. With no other setting touched it seeds itself from
-    // MainState.History, listens for OnHistory, animates each arrival, shows as many bets as fit and drops the
-    // oldest, and prints the nonce - or the tail of the bet id where there is no nonce.
+    // That is the whole of the usual case. With nothing else touched it seeds itself from MainState.History,
+    // listens for OnHistory, animates each arrival, shows as many bets as fit and drops the oldest.
+    //
+    // The strip draws nothing of its own. What an element is made of, how big it is and what it says about the
+    // round are all the prefab's: the strip hands it the whole HistoryDto through UiHistoryElement.Write and
+    // stays out of it. So there is no chip in here to colour, no size to set and no value to format - a game
+    // that wants a multiplier in green derives from UiHistoryElement, gives itself the fields it wants and reads
+    // Data. Without a prefab there is nothing to show, and the strip says so once.
+    //
+    // What is left to decide is the strip: which way it runs, which end the newest bet lands on, what happens
+    // when it fills up, and the gap between one element and the next.
     //
     // The one thing it will not do for itself is find a dialog to open. Point Bet Info at the window a click
     // should open and it opens that one; leave it empty and a click raises OnPicked and nothing else. Nothing is
     // searched for, and that is a decision rather than an omission: a scene holds as many bet info windows as
     // somebody put in it - a game's own, plus whatever an example or a test built for itself - and a strip that
     // guessed would open one of them off screen about half the time.
-    //
-    // What a game is expected to change, in the order it usually wants to:
-    //
-    //     strip.Style.ElementSize = new Vector2(120f, 60f);    // shape
-    //     Text Key = "multiplier", Text Decimals = 2           // what a chip says, from the inspector
-    //     strip.Text = data => Multiplier(data) + "x";         // or from code, for anything a key cannot say
-    //     Element Prefab                                       // a chip of the game's own instead of ours
-    //
-    // Nothing here knows what a round of any particular game means, and it does not try to: what a chip says is a
-    // key or a function, and what a win *looks* like is the element's business. A game that colours a chip by how
-    // the round went derives from UiHistoryElement, gives itself the fields it wants, and reads Data.
     //
     // The layout is a UiGrid with one track per element, and every element the strip is not currently showing
     // is a spare kept in the same grid under a name the layout does not mention. That is not an implementation
@@ -45,7 +41,10 @@ namespace FlappyTemplate
     {
         private const string ContentName = "Content";
         private const string ElementName = "Element";
-        private const string LabelName = "Value";
+
+        // What Sample writes its made-up multiplier under. A game's own element reads whatever key its server
+        // sends, so the preview can only pick the one most of them use and be plainly wrong about the rest.
+        private const string SampleKey = "multiplier";
 
         // The name a spare answers to. The layout never mentions it, which is what keeps it hidden.
         private const string SpareArea = "";
@@ -54,7 +53,7 @@ namespace FlappyTemplate
         private UiHistoryStyle style = new UiHistoryStyle();
 
         [Header("Element")]
-        [Tooltip("The game's own element: a prefab with a UiHistoryElement on its root - the component itself for anything the base behaviour already does, or your own class derived from it. Empty draws the built-in chip.")]
+        [Tooltip("The game's own element: a prefab with a UiHistoryElement on its root - your own class derived from it, which is where a bet gets its look and its size. Without one the strip has nothing to draw a bet with.")]
         [SerializeField]
         private UiHistoryElement elementPrefab;
 
@@ -67,7 +66,7 @@ namespace FlappyTemplate
 
         [Tooltip("Where the elements sit while there are too few to fill the strip.")]
         [SerializeField]
-        private EHistoryAlign align = EHistoryAlign.End;
+        private EHistoryAlign align = EHistoryAlign.Center;
 
         [SerializeField]
         private EHistoryOverflow overflow = EHistoryOverflow.Clamp;
@@ -84,33 +83,6 @@ namespace FlappyTemplate
         [Tooltip("Slide a scrolling strip back to the newest bet as one arrives.")]
         [SerializeField]
         private bool followNewest = true;
-
-        [Header("Value")]
-        [Tooltip("A key in the bet's own outcome payload to print - \"multiplier\", \"crash\", whatever the game called it. Empty falls back to the nonce, and then to the tail of the bet id.")]
-        [SerializeField]
-        private string textKey = string.Empty;
-
-        [Tooltip("How the value is printed, as a string.Format pattern - \"{0}x\", \"x{0}\", \"{0}%\". Empty prints it as it came.")]
-        [SerializeField]
-        private string textFormat = string.Empty;
-
-        [Tooltip("Decimals to cut a numeric value to. Negative leaves it exactly as the server sent it.")]
-        [SerializeField]
-        private int textDecimals = -1;
-
-        [Tooltip("Pad the whole part with zeros to this many digits, so 2.83 prints as 02.83 and a strip of numbers lines up. Zero pads nothing.")]
-        [Min(0)]
-        [SerializeField]
-        private int textPad = 0;
-
-        [Tooltip("How much of the bet id to print when there is neither a value nor a nonce.")]
-        [Min(1)]
-        [SerializeField]
-        private int idLength = 4;
-
-        [Tooltip("Take those characters from the end of the id. The end of an id varies where the start of one often does not.")]
-        [SerializeField]
-        private bool idFromEnd = true;
 
         [Header("Behaviour")]
         [Tooltip("Seed from MainState.History and fill in as ON_HISTORY arrives. Off leaves the feeding to the game, through Add and Set.")]
@@ -133,7 +105,7 @@ namespace FlappyTemplate
         [SerializeField]
         private BetInfoWindow betInfo;
 
-        [Tooltip("Fill the strip with made-up bets when there is no socket running, so it looks like a history strip in the editor rather than like an empty rect.")]
+        [Tooltip("Fill the strip with made-up bets when there is no socket running, so it looks like a history strip in the editor rather than like an empty rect. Needs an element prefab, the same as a real bet does.")]
         [SerializeField]
         private bool preview = true;
 
@@ -145,12 +117,8 @@ namespace FlappyTemplate
         [Tooltip("An element was clicked. Raised before the bet info window is opened, and whether or not it is.")]
         public UnityEvent<HistoryDto> OnPicked = new UnityEvent<HistoryDto>();
 
-        [Tooltip("An element has been filled in with a bet - the newly arrived one, or an old one being rewritten. Where a game decorates an element the inspector cannot reach.")]
+        [Tooltip("An element has been filled in with a bet - the newly arrived one, or an old one being rewritten. Where a game decorates an element the prefab does not.")]
         public UnityEvent<UiHistoryElement> OnElement = new UnityEvent<UiHistoryElement>();
-
-        /// <summary>What a chip says, for anything a key in the outcome cannot answer. Return null to fall back
-        /// to the ordinary rules.</summary>
-        public Func<HistoryDto, string> Text;
 
         // Parts and the flag saying they exist are deliberately not serialized, the same as the windows next
         // door: everything is found by name before it is made, so a rebuild after a script reload finds the
@@ -175,13 +143,21 @@ namespace FlappyTemplate
 
         private HistoryDto arrival;
         private bool warned;
+        private bool missing;
         private int held = -1;
         private bool dirty;
         private Vector2 measured;
         private bool listening;
         private Tweener follow;
 
-        /// <summary>The look of the strip. Change anything on it and call <see cref="ApplyStyle"/>.</summary>
+        // How big one element is, measured off the prefab once per arrangement: along the flow it is the track,
+        // across it, it is the difference between an element that keeps its own height and one stretched to the
+        // strip.
+        private float stepAlong;
+        private float stepCross;
+
+        /// <summary>The feel of the strip: the gap, the arrival and the scrolling. Change anything on it and
+        /// call <see cref="ApplyStyle"/>.</summary>
         public UiHistoryStyle Style
         {
             get => style ??= new UiHistoryStyle();
@@ -276,8 +252,9 @@ namespace FlappyTemplate
             }
         }
 
-        /// <summary>The game's own element. Setting it rebuilds the strip: the elements of the other kind are
-        /// thrown away rather than restyled, because a prefab is not a chip with different colours.</summary>
+        /// <summary>The game's own element, and the only thing the strip has to draw a bet with. Setting it
+        /// rebuilds: elements left over from the last prefab are thrown away rather than reused, because a
+        /// prefab is not a chip with different colours.</summary>
         public UiHistoryElement ElementPrefab
         {
             get => elementPrefab;
@@ -287,6 +264,7 @@ namespace FlappyTemplate
                     return;
 
                 elementPrefab = value;
+                missing = false;
                 Rebuild();
             }
         }
@@ -323,52 +301,6 @@ namespace FlappyTemplate
             set => preview = value;
         }
 
-        /// <summary>A key in the bet's outcome payload to print. Empty falls back to the nonce, and then to the
-        /// tail of the id.</summary>
-        public string TextKey
-        {
-            get => textKey;
-            set
-            {
-                textKey = value ?? string.Empty;
-                Refresh();
-            }
-        }
-
-        /// <summary>How the value is printed, as a string.Format pattern - "{0}x". Empty prints it as it
-        /// came.</summary>
-        public string TextFormat
-        {
-            get => textFormat;
-            set
-            {
-                textFormat = value ?? string.Empty;
-                Refresh();
-            }
-        }
-
-        /// <summary>Decimals to cut a numeric value to. Negative leaves it as the server sent it.</summary>
-        public int TextDecimals
-        {
-            get => textDecimals;
-            set
-            {
-                textDecimals = value;
-                Refresh();
-            }
-        }
-
-        /// <summary>Zeros to pad the whole part out to, so 2.83 prints as 02.83.</summary>
-        public int TextPad
-        {
-            get => textPad;
-            set
-            {
-                textPad = Mathf.Max(0, value);
-                Refresh();
-            }
-        }
-
         public bool AnimateArrivals
         {
             get => animateArrivals;
@@ -395,7 +327,7 @@ namespace FlappyTemplate
             set => betInfo = value;
         }
 
-        /// <summary>Builds a strip under a parent, ready to be fed.</summary>
+        /// <summary>Builds a strip under a parent, ready to be given an element and fed.</summary>
         public static UiHistory Create(Transform parent, string name = "History", float width = 640f, float height = 64f)
         {
             var created = new GameObject(name, typeof(RectTransform));
@@ -473,40 +405,33 @@ namespace FlappyTemplate
             Seed();
         }
 
-        /// <summary>Writes every colour, gap and scroll setting, then lays the strip out.</summary>
+        /// <summary>Writes the gap, the flow and the scroll settings, then lays the strip out.</summary>
         public void ApplyStyle()
         {
             if (!built)
                 return;
 
+            // No padding, ever. The elements are centred in the strip by the layout, and an inset that only shows
+            // up once the strip is full is one more thing nobody would have guessed at.
             var padding = grid.padding;
-            padding.left = Mathf.RoundToInt(style.PaddingLeft);
-            padding.top = Mathf.RoundToInt(style.PaddingTop);
-            padding.right = Mathf.RoundToInt(style.PaddingRight);
-            padding.bottom = Mathf.RoundToInt(style.PaddingBottom);
+            padding.left = 0;
+            padding.top = 0;
+            padding.right = 0;
+            padding.bottom = 0;
             grid.padding = padding;
 
             grid.ColumnGap = style.Gap;
             grid.RowGap = style.Gap;
             grid.Flow = flow == EHistoryFlow.Horizontal ? EGridFlow.Row : EGridFlow.Column;
 
-            // The elements the strip drew itself follow the style; a game's own prefab does not, and that is the
-            // point of the flag on the element.
-            for (int i = 0; i < live.Count; i++)
-                Dress(live[i]);
-
-            for (int i = 0; i < spare.Count; i++)
-                Dress(spare[i]);
-
             scroller.scrollSensitivity = style.ScrollSensitivity;
             scroller.inertia = style.ScrollInertia;
             scroller.decelerationRate = style.ScrollDeceleration;
             scroller.movementType = ScrollRect.MovementType.Clamped;
 
-            // Every element written again, not only the ones whose bet changed. A setting edited in the inspector
-            // is the whole reason this is being called, and Arrange on its own only fills in an element that has
-            // been handed a different bet - so without this, changing how a value is printed would move things
-            // about and rewrite nothing.
+            // Every element written again, not only the ones whose bet changed: a prefab that reads something
+            // outside the bet - the player's own id, a currency, a setting - has just been given the chance to
+            // read it again, and nothing else would have told it to.
             for (int i = 0; i < live.Count; i++)
             {
                 var element = live[i];
@@ -664,7 +589,7 @@ namespace FlappyTemplate
         }
 
         /// <summary>Fills the strip with made-up bets. What the editor preview and the create menu use, and a
-        /// quick way to see a style without a server.</summary>
+        /// quick way to see an element without a server.</summary>
         public void Sample(int count)
         {
             var made = new List<HistoryDto>(Mathf.Max(0, count));
@@ -689,11 +614,10 @@ namespace FlappyTemplate
                     CreatedAt = 1700000000000L + i * 60000L,
                 };
 
-                if (!string.IsNullOrEmpty(textKey))
+                data._Outcome = new GenericDictionary<string, string>
                 {
-                    data._Outcome = new GenericDictionary<string, string>();
-                    data._Outcome[textKey] = multiplier.ToString("0.00", CultureInfo.InvariantCulture);
-                }
+                    { SampleKey, multiplier.ToString("0.00", CultureInfo.InvariantCulture) },
+                };
 
                 made.Add(data);
             }
@@ -824,8 +748,9 @@ namespace FlappyTemplate
         }
 
         // Everything already under the grid is taken over rather than left there, which is what makes Rebuild
-        // safe to call twice. Elements of the wrong kind - built-in chips on a strip that has since been given
-        // a prefab, or the other way about - are thrown away instead.
+        // safe to call twice. Elements left over from another prefab - the field was changed, or the strip was
+        // built by an older version of the game - are thrown away instead: a prefab is not a chip that can be
+        // restyled into a different one.
         private void Collect()
         {
             live.Clear();
@@ -833,7 +758,6 @@ namespace FlappyTemplate
             shown.Clear();
             next.Clear();
 
-            bool wantNative = elementPrefab == null;
             var found = content.GetComponentsInChildren<UiHistoryElement>(true);
 
             for (int i = 0; i < found.Length; i++)
@@ -842,7 +766,7 @@ namespace FlappyTemplate
                 if (element == null || element.transform.parent != content)
                     continue;
 
-                if (element.Native != wantNative)
+                if (element.Source != elementPrefab)
                 {
                     UiWindowParts.Discard(element.gameObject);
                     continue;
@@ -866,9 +790,8 @@ namespace FlappyTemplate
                     return kept;
             }
 
-            var element = elementPrefab != null ? Spawn() : Chip();
+            var element = Spawn();
             element.Adopt(this);
-            Dress(element);
             return element;
         }
 
@@ -880,77 +803,14 @@ namespace FlappyTemplate
             element.name = ElementName;
             element.gameObject.layer = gameObject.layer;
             element.Rect.localScale = Vector3.one;
-            element.Native = false;
+            element.Source = elementPrefab;
+
+            // A template kept switched off in the scene is an ordinary way to hold an element - and Instantiate
+            // copies that, so a strip built from one would fill up with elements nobody can see.
+            if (!element.gameObject.activeSelf)
+                element.gameObject.SetActive(true);
 
             return element;
-        }
-
-        // The built-in chip: a rounded plate with a label in the middle of it. The fallback for a strip that has
-        // not been given a prefab, and nothing more than that - a game that wants a chip to say something about
-        // how the round went draws its own.
-        private UiHistoryElement Chip()
-        {
-            var created = new GameObject(ElementName, typeof(RectTransform), typeof(CanvasRenderer), typeof(RoundedBox));
-            var rect = (RectTransform)created.transform;
-            rect.SetParent(content, false);
-            rect.localScale = Vector3.one;
-            created.layer = gameObject.layer;
-
-            var element = created.AddComponent<UiHistoryElement>();
-            element.Native = true;
-            element.Plate = created.GetComponent<RoundedBox>();
-
-            var label = UiWindowParts.Label(rect, LabelName);
-            label.raycastTarget = false;
-            element.Label = label;
-
-            return element;
-        }
-
-        // The whole look of a built-in chip, written on the elements the strip drew itself and on no others: a
-        // prefab arrives looking the way the game drew it, and having its colours overwritten is the last thing
-        // it wants.
-        private void Dress(UiHistoryElement element)
-        {
-            if (element == null || !element.Native)
-                return;
-
-            if (element.Plate is RoundedBox box)
-            {
-                box.FillColor = style.Fill;
-                box.SetBorderColor(style.BorderColor);
-                box.SetBorderSize(style.BorderSize);
-                box.SetCornerRadius(style.CornerRadius);
-                box.EdgeSoftness = style.EdgeSoftness;
-            }
-
-            var label = element.Label;
-            if (label == null)
-                return;
-
-            label.color = style.TextColor;
-
-            UiWindowParts.Stretch(label.rectTransform, style.TextInset, style.TextInset, style.TextInset, style.TextInset);
-
-            if (style.Font != null)
-                label.font = style.Font;
-
-            label.fontSize = style.TextSize;
-            label.fontStyle = style.TextStyle;
-            label.alignment = style.TextAlignment;
-            // No wrapping: a chip is one short value, and a multiplier broken over two lines is worse than one
-            // that shrank to fit.
-            label.textWrappingMode = TextWrappingModes.NoWrap;
-            label.overflowMode = TextOverflowModes.Overflow;
-
-            // Autosizing is a floor and a ceiling rather than a size, so the ceiling is the size asked for and a
-            // value too long for the chip shrinks instead of spilling out of it.
-            label.enableAutoSizing = style.ShrinkText;
-            if (!style.ShrinkText)
-                return;
-
-            label.fontSizeMax = style.TextSize;
-            label.fontSizeMin = Mathf.Max(1f, style.TextSize * 0.5f);
         }
 
         // ------------------------------------------------------------------ placing
@@ -959,6 +819,19 @@ namespace FlappyTemplate
         {
             bool horizontal = flow == EHistoryFlow.Horizontal;
             bool scrolling = overflow == EHistoryOverflow.Scroll;
+
+            if (elementPrefab == null)
+            {
+                Blank();
+                return;
+            }
+
+            // Said again if the prefab is taken away again. It is one warning per time there is nothing to draw
+            // with, not one per session.
+            missing = false;
+
+            stepAlong = Step(horizontal);
+            stepCross = Step(!horizontal);
 
             Choose();
 
@@ -1029,6 +902,34 @@ namespace FlappyTemplate
             measured = Rect.rect.size;
         }
 
+        // Nothing to draw a bet with. The elements go back to the pool, the grid gets the one layout that hides
+        // them, and it is said once: an empty rect on a component that looks configured reads as a strip that is
+        // broken rather than as an Element Prefab nobody filled in.
+        private void Blank()
+        {
+            for (int i = 0; i < live.Count; i++)
+                Retire(live[i]);
+
+            live.Clear();
+            display.Clear();
+            shown.Clear();
+            arrival = null;
+            held = 0;
+            measured = Rect.rect.size;
+
+            Nothing();
+            Scroll(flow == EHistoryFlow.Horizontal, false);
+
+            if (missing)
+                return;
+
+            missing = true;
+            Debug.LogWarning(
+                $"{name}: no Element Prefab, so there is nothing to draw a bet with. Point it at a prefab with a UiHistoryElement on its root.",
+                this
+            );
+        }
+
         // Which bets are shown, in the order they are shown in: the newest that fit, oldest first, then turned
         // round if the newest belongs at the start.
         private void Choose()
@@ -1048,23 +949,16 @@ namespace FlappyTemplate
                 display.Reverse();
         }
 
-        // How many elements the strip has room for. Everything, unless it is clamping and there is a size along
-        // the flow to divide the room by - with elements sizing themselves there is nothing to count with, and
-        // guessing would be worse than clipping.
+        // How many elements the strip has room for. Everything, unless it is clamping and the prefab has a size
+        // along the flow to divide the room by - with an element that sizes itself there is nothing to count
+        // with, and guessing would be worse than clipping.
         private int Room()
         {
-            if (overflow != EHistoryOverflow.Clamp)
-                return int.MaxValue;
-
-            bool horizontal = flow == EHistoryFlow.Horizontal;
-            float step = horizontal ? style.ElementSize.x : style.ElementSize.y;
-            if (step <= 0f)
+            if (overflow != EHistoryOverflow.Clamp || stepAlong <= 0f)
                 return int.MaxValue;
 
             var size = Rect.rect.size;
-            float available = horizontal
-                ? size.x - style.PaddingLeft - style.PaddingRight
-                : size.y - style.PaddingTop - style.PaddingBottom;
+            float available = flow == EHistoryFlow.Horizontal ? size.x : size.y;
 
             // No width yet - the first frame of a canvas, or a strip whose parent has not been laid out. Showing
             // everything is the safer answer: LateUpdate arranges again as soon as there is a size, and one
@@ -1072,13 +966,30 @@ namespace FlappyTemplate
             if (available <= 1f)
                 return int.MaxValue;
 
-            int fit = Mathf.FloorToInt((available + style.Gap) / (step + style.Gap));
+            int fit = Mathf.FloorToInt((available + style.Gap) / (stepAlong + style.Gap));
             return Mathf.Max(1, fit);
+        }
+
+        // How big one element is along an axis, and the prefab is the only one that knows: nothing here sizes an
+        // element any more. Its own layout answer first - a Layout Element, or a label wide enough to have asked
+        // for one - and the size it was drawn at where there is none.
+        private float Step(bool horizontal)
+        {
+            if (elementPrefab == null)
+                return 0f;
+
+            var rect = elementPrefab.Rect;
+            float step = horizontal ? LayoutUtility.GetPreferredWidth(rect) : LayoutUtility.GetPreferredHeight(rect);
+
+            if (step <= 0f)
+                step = horizontal ? rect.rect.width : rect.rect.height;
+
+            return Mathf.Max(0f, step);
         }
 
         private void Name(bool horizontal)
         {
-            bool crossFixed = (horizontal ? style.ElementSize.y : style.ElementSize.x) > 0f;
+            bool crossFixed = stepCross > 0f;
 
             for (int i = 0; i < live.Count; i++)
             {
@@ -1098,8 +1009,6 @@ namespace FlappyTemplate
                     item.HorizontalAlign = horizontal ? EGridAlign.Stretch : EGridAlign.Center;
                     item.VerticalAlign = horizontal ? EGridAlign.Center : EGridAlign.Stretch;
                 }
-
-                Measure(element.Rect);
             }
 
             for (int i = 0; i < spare.Count; i++)
@@ -1109,27 +1018,6 @@ namespace FlappyTemplate
             }
         }
 
-        // An auto track is as big as the items in it say they need to be, and a rect says nothing at all unless
-        // something on it answers - so a size from the style is written as a Layout Element rather than only as
-        // a sizeDelta. Zero on an axis writes nothing, which leaves a prefab's own answer standing.
-        private void Measure(RectTransform rect)
-        {
-            var size = style.ElementSize;
-
-            var element = rect.GetComponent<LayoutElement>();
-            if (size.x <= 0f && size.y <= 0f)
-                return;
-
-            if (element == null)
-                element = rect.gameObject.AddComponent<LayoutElement>();
-
-            element.ignoreLayout = false;
-            element.minWidth = size.x > 0f ? size.x : -1f;
-            element.preferredWidth = size.x > 0f ? size.x : -1f;
-            element.minHeight = size.y > 0f ? size.y : -1f;
-            element.preferredHeight = size.y > 0f ? size.y : -1f;
-        }
-
         // One track per element, plus a flexible one at whichever end the strip is not packed against. A
         // scrolling strip gets neither: its content is exactly as long as its elements, and a spacer in it would
         // be room to scroll into that has nothing in it.
@@ -1137,15 +1025,7 @@ namespace FlappyTemplate
         {
             if (live.Count == 0)
             {
-                // One empty cell rather than no layout at all. A grid with no layout shows every child it has,
-                // which on this one would be every spare element in the pool.
-                grid.SetLayout(UiGridLayout
-                    .Build()
-                    .Columns(GridTrack.Flexible())
-                    .Rows(GridTrack.Flexible())
-                    .Row(UiGridLayout.Empty)
-                    .Done());
-
+                Nothing();
                 return;
             }
 
@@ -1153,7 +1033,6 @@ namespace FlappyTemplate
             cells.Clear();
 
             bool spacing = !scrolling;
-            float along = horizontal ? style.ElementSize.x : style.ElementSize.y;
 
             if (spacing && align != EHistoryAlign.Start)
             {
@@ -1163,7 +1042,7 @@ namespace FlappyTemplate
 
             for (int i = 0; i < live.Count; i++)
             {
-                tracks.Add(along > 0f ? GridTrack.Fixed(along) : GridTrack.Auto());
+                tracks.Add(stepAlong > 0f ? GridTrack.Fixed(stepAlong) : GridTrack.Auto());
                 cells.Add(Area(i));
             }
 
@@ -1190,6 +1069,18 @@ namespace FlappyTemplate
             }
 
             grid.SetLayout(arrangement.Done());
+        }
+
+        // One empty cell rather than no layout at all. A grid with no layout shows every child it has, which on
+        // this one would be every spare element in the pool.
+        private void Nothing()
+        {
+            grid.SetLayout(UiGridLayout
+                .Build()
+                .Columns(GridTrack.Flexible())
+                .Rows(GridTrack.Flexible())
+                .Row(UiGridLayout.Empty)
+                .Done());
         }
 
         private void Scroll(bool horizontal, bool scrolling)
@@ -1242,7 +1133,7 @@ namespace FlappyTemplate
 
         private void Fill(UiHistoryElement element, HistoryDto data)
         {
-            element.Bind(data, Value(data));
+            element.Bind(data);
             OnElement.Invoke(element);
         }
 
@@ -1295,10 +1186,11 @@ namespace FlappyTemplate
             follow = null;
         }
 
-        // ------------------------------------------------------------------ what a chip says
+        // ------------------------------------------------------------------ the game's own payload
 
         /// <summary>A value out of a bet's own outcome payload, or empty. Both shapes of it are looked at - the
-        /// flat one the socket fills in and the raw JSON it came as.</summary>
+        /// flat one the socket fills in and the raw JSON it came as. What an element reads to find out what the
+        /// round did.</summary>
         public static string Read(HistoryDto data, string key)
         {
             if (data == null || string.IsNullOrEmpty(key))
@@ -1311,84 +1203,6 @@ namespace FlappyTemplate
                 return token.ToString();
 
             return string.Empty;
-        }
-
-        // What one chip says, in the order a game would try: its own answer, then the key it named in the
-        // outcome, then the nonce, then the tail of the id. Something always comes out - a chip with nothing
-        // written on it reads as a bug in the strip rather than as a bet with no value.
-        private string Value(HistoryDto data)
-        {
-            if (data == null)
-                return string.Empty;
-
-            if (Text != null)
-            {
-                string own = Text(data);
-                if (own != null)
-                    return own;
-            }
-
-            string raw = Read(data, textKey);
-            if (!string.IsNullOrEmpty(raw))
-                return Print(raw);
-
-            if (data.N.HasValue)
-                return data.N.Value.ToString(CultureInfo.InvariantCulture);
-
-            return Tail(data.Id);
-        }
-
-        // Truncated rather than rounded, the same way the rest of this package prints money: a multiplier the
-        // server called 2.839 was 2.83, and rounding it up to 2.84 is showing the player a number that never
-        // happened.
-        private string Print(string raw)
-        {
-            string text = raw;
-
-            if (textDecimals >= 0 && decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
-            {
-                decimal scale = 1m;
-                for (int i = 0; i < textDecimals; i++)
-                    scale *= 10m;
-
-                decimal cut = decimal.Truncate(value * scale) / scale;
-                text = cut.ToString("F" + textDecimals.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
-            }
-
-            if (textPad > 0)
-            {
-                int dot = text.IndexOf('.');
-                string whole = dot < 0 ? text : text.Substring(0, dot);
-                string rest = dot < 0 ? string.Empty : text.Substring(dot);
-
-                if (whole.Length < textPad)
-                    whole = whole.PadLeft(textPad, '0');
-
-                text = whole + rest;
-            }
-
-            if (string.IsNullOrEmpty(textFormat))
-                return text;
-
-            try
-            {
-                return string.Format(CultureInfo.InvariantCulture, textFormat, text);
-            }
-            catch (FormatException)
-            {
-                // A pattern typed wrong in the inspector is a typo, not a reason to throw once per element per
-                // frame. The value goes up unformatted and the strip carries on.
-                return text;
-            }
-        }
-
-        private string Tail(string id)
-        {
-            if (string.IsNullOrEmpty(id))
-                return string.Empty;
-
-            int length = Mathf.Clamp(idLength, 1, id.Length);
-            return idFromEnd ? id.Substring(id.Length - length, length) : id.Substring(0, length);
         }
 
         // ------------------------------------------------------------------ the feed
@@ -1517,7 +1331,6 @@ namespace FlappyTemplate
         void OnValidate()
         {
             capacity = Mathf.Max(0, capacity);
-            idLength = Mathf.Max(1, idLength);
             sampleCount = Mathf.Max(1, sampleCount);
 
             if (built && Application.isPlaying)
@@ -1532,7 +1345,7 @@ namespace FlappyTemplate
             //
             // EnsureBuilt rather than a check on the flag: the flag is not serialized, so the first inspector
             // edit after a script reload finds a strip that is built on screen and not built as far as this class
-            // knows. Bailing out there is what would make a colour edited in the editor appear to do nothing.
+            // knows. Bailing out there is what would make a gap edited in the editor appear to do nothing.
             UnityEditor.EditorApplication.delayCall += () =>
             {
                 if (this == null)
