@@ -5,8 +5,8 @@ using UnityEngine;
 namespace FlappyTemplate
 {
     // What the inside of a fairness window looks like. The window around it - panel, caption, close button,
-    // backdrop - is UiWindowStyle's business; this is the client seed box, the two green buttons, the section
-    // headings and the label-over-value blocks under them.
+    // backdrop - is set on those objects themselves; this is the client seed box, the two green buttons, the
+    // section headings and the label-over-value blocks under them.
     //
     // The defaults are the violet-and-mint reading the rest of this folder is drawn in: a wash of white for
     // the input, mint buttons, and captions in bold over plain values.
@@ -160,7 +160,7 @@ namespace FlappyTemplate
 
         /// <summary>A copy, for a window that wants its own colours without editing the shared style.</summary>
         // Every field here is a value or a reference to something the style does not own - a font, a sprite -
-        // so a shallow copy is a whole copy, the same as UiWindowStyle.Clone.
+        // so a shallow copy is a whole copy.
         public FairnessWindowStyle Clone() => (FairnessWindowStyle)MemberwiseClone();
     }
 }

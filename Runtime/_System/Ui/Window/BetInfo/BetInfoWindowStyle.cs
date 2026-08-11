@@ -5,8 +5,8 @@ using UnityEngine;
 namespace FlappyTemplate
 {
     // What the inside of a bet info window looks like. The window around it - panel, caption, close button,
-    // backdrop - is UiWindowStyle's business; this is the card, the profit banner, the pairs of columns under
-    // it, and the two buttons along the bottom.
+    // backdrop - is set on those objects themselves; this is the card, the profit banner, the pairs of
+    // columns under it, and the two buttons along the bottom.
     //
     // The defaults are the violet-and-mint reading the rest of this folder is drawn in: a card that is a wash
     // of white over the panel, mint buttons, and a banner that is green above a payout of one and red below
@@ -210,7 +210,7 @@ namespace FlappyTemplate
 
         /// <summary>A copy, for a window that wants its own colours without editing the shared style.</summary>
         // Every field here is a value or a reference to something the style does not own - a font, a sprite -
-        // so a shallow copy is a whole copy, the same as UiWindowStyle.Clone.
+        // so a shallow copy is a whole copy.
         public BetInfoWindowStyle Clone() => (BetInfoWindowStyle)MemberwiseClone();
     }
 }

@@ -283,7 +283,7 @@
   <strong>Contents</strong>
   <a href="#look">What it looks like</a>
   <a href="#window">The window</a>
-  <a class="sub" href="#style">Style</a>
+  <a href="#style">Styling</a>
   <a href="#code">From code</a>
   <a class="sub" href="#steps">Every step</a>
   <a href="#size">How tall it may be</a>
@@ -314,10 +314,13 @@
   <h1>Window</h1>
   <p class="lede">A dialog that is one component rather than a prefab: a rounded panel, a caption, a close
   button, a drag, and an opening that is animated rather than a SetActive. Everything it is made of is built
-  from code the first time it is needed, so there is no hierarchy to keep in step with the palette and
-  nothing to rebuild when a game decides its dialogs have square corners after all. Inside, the caption and the
-  body are two rows of a UiGrid, and the body scrolls once the content is taller than the screen has room for.</p>
-  <p class="stamp">Describes package 1.0.60. Update this file with the code — and README.md beside it.</p>
+  from code the first time it is needed, so there is no hierarchy to keep in step and nothing to assemble by
+  hand. Inside, the caption and the body are two rows of a UiGrid, and the body scrolls once the content is
+  taller than the screen has room for.</p>
+  <p class="lede">The window owns where things go, not what they look like: Panel, Caption, Title, Close,
+  Scrollbar and the sheet behind it are ordinary RoundedBox and TextMeshPro objects — select one and style it
+  as you would any other. Nothing here paints over it afterwards.</p>
+  <p class="stamp">Describes package 1.0.65. Update this file with the code — and README.md beside it.</p>
   <p><strong>GameObject → UI (Canvas) → FlappyBet → Window</strong>, which makes a canvas if the scene has
   none, drops the window under whatever was right-clicked, and builds the whole thing on the spot so it
   arrives looking like a window rather than as an empty rect waiting for play mode. <strong>Statistics
@@ -447,8 +450,8 @@ fairness.Show();</code></pre>
       </div>
     </div>
     <div class="caption">Plain</div>
-    <p class="why">A panel, a caption, a close button, and a drag by that caption. Everything else is the
-    style's defaults.</p>
+    <p class="why">A panel, a caption, a close button, and a drag by that caption. Nothing is said about how
+    it looks, so it arrives in the plain dark dialog every new window starts as.</p>
     <pre><code>UiWindowBuilder.Create(canvas, "Plain")
     .Size(340f, 220f)
     .Title("Draggable")
@@ -470,6 +473,7 @@ fairness.Show();</code></pre>
     <p class="why">The backdrop is what makes it modal — a sheet across the parent that swallows every
     click that misses, and takes the window down when clicked.</p>
     <pre><code>UiWindowBuilder.Create(canvas, "Message")
+    .Panel(box =&gt; box.FillColor = navy)
     .Backdrop(new Color(0f, 0f, 0f, .65f))
     .Transition(EWindowTransition.SlideUp, .34f, .24f)
     .Fixed()
@@ -483,16 +487,21 @@ fairness.Show();</code></pre>
 
 <table>
   <tr><th>Field</th><th>What it does</th></tr>
-  <tr><td>Title</td><td>The caption text. Also <code>Title</code> from code, live.</td></tr>
-  <tr><td>Style</td><td>Colours, sizes and fonts — the table below.</td></tr>
+  <tr><td>Title</td><td>The caption text. Also <code>Title</code> from code, live. What the label looks like is the label's own — select <strong>Title</strong> under the caption.</td></tr>
   <tr><td>Show Caption</td><td>Off drops the whole header and starts the content at the top of the panel. The close button stays.</td></tr>
   <tr><td>Show Close Button</td><td></td></tr>
   <tr><td>Start Closed</td><td>Hide at Awake and wait for <code>Open</code>. Off leaves the window exactly as the scene saved it.</td></tr>
   <tr><td>Destroy On Close</td><td>For a window built for one message — it takes itself down with it.</td></tr>
+  <tr><td>Caption Height</td><td>The whole header block: the drag strip, the close button and the title. Content starts under it.</td></tr>
+  <tr><td>Content Padding Left / Top / Right / Bottom</td><td>Inset of the content area. Top is measured from the bottom of the caption, not the top of the panel. Four floats rather than a <code>RectOffset</code>: that type is a handle onto a native object and cannot be built in a field initialiser.</td></tr>
   <tr><td>Fit Content Height</td><td>Ask the content how tall it wants to be on every open, and be that tall. Needs something under <code>Content</code> that reports a height — see <a href="#size">How tall it may be</a>.</td></tr>
   <tr><td>Max Height</td><td>The tallest the window may be, in its own units. Zero means the parent it is drawn in — the screen, for a full-screen canvas — less Screen Margin.</td></tr>
   <tr><td>Screen Margin</td><td>Room left above and below a window that has grown as far as it may.</td></tr>
   <tr><td>Scroll</td><td><code>Never</code>, <code>WhenTooTall</code> (the default) or <code>Always</code>.</td></tr>
+  <tr><td>Show Scrollbar</td><td>The bar down the right of the body. Off leaves the wheel and the drag, and no hint that there is more below.</td></tr>
+  <tr><td>Scrollbar Width / Inset</td><td>Inset is measured from the right edge of the body inwards; the content is moved over by the width and the inset together, so the two never overlap.</td></tr>
+  <tr><td>Scroll Sensitivity</td><td>Canvas units per notch of the wheel.</td></tr>
+  <tr><td>Scroll Inertia / Deceleration</td><td>Whether a flick carries on after the finger has left, and how quickly it runs out. On by default — a touch screen expects it, and WebGL on a phone is a touch screen.</td></tr>
   <tr><td>Draggable / Drag Anywhere</td><td>By the caption, or by any part of the window. Anywhere catches drags on everything inside it that does not handle its own.</td></tr>
   <tr><td>Clamp To Parent</td><td>Keep the window inside its parent, per axis — see <a href="#notes">Worth knowing</a>.</td></tr>
   <tr><td>Keep Visible</td><td>How much of a window too big for its parent has to stay inside it.</td></tr>
@@ -503,6 +512,7 @@ fairness.Show();</code></pre>
   <tr><td>Sorting Order / Layer</td><td>Where that canvas sorts. The backdrop takes one less, so it stays behind its own window and over everything else. Leave the layer empty for the parent canvas's own.</td></tr>
   <tr><td>Transition</td><td><code>None</code>, <code>Fade</code>, <code>Scale</code>, <code>ScaleFade</code>, <code>SlideUp/Down/Left/Right</code>. Slides are named for the way the window travels as it opens.</td></tr>
   <tr><td>Durations, Easing</td><td>One of each, for opening and closing.</td></tr>
+  <tr><td>Open Scale</td><td>What a window grows from, and shrinks back to.</td></tr>
   <tr><td>Unscaled Time</td><td>On by default, so a window still opens over a paused game.</td></tr>
 </table>
 
@@ -512,32 +522,43 @@ fairness.Show();</code></pre>
   a window is still on screen for the length of its close.</p>
 </div>
 
-<h3 id="style">Style</h3>
+<h2 id="style">Styling</h2>
+
+<p>There is no style object. <strong>Select the part and set it</strong>, the way you would any other box or
+label:</p>
 
 <table>
-  <tr><th>Field</th><th>What it does</th></tr>
-  <tr><td>Fill, Border, Corner Radius, Edge Softness</td><td>The panel. Straight through to <code>RoundedBox</code>.</td></tr>
-  <tr><td>Caption Height</td><td>The whole header block: the drag strip, the close button and the title. Content starts under it.</td></tr>
-  <tr><td>Caption Fill</td><td>Drawn <em>over</em> the panel fill, so the default is a wash rather than a colour — alpha at nothing leaves the header the same colour as the body.</td></tr>
-  <tr><td>Title Top Inset</td><td>Space above the title, which is what leaves room for the close button over it.</td></tr>
-  <tr><td>Title Font / Size / Color / Style / Alignment</td><td></td></tr>
-  <tr><td>Close Size / Offset / Fill / Border / Corner Radius</td><td>Offset is measured inwards from the top right corner. A negative corner radius means a circle at any size.</td></tr>
-  <tr><td>Close Icon Color / Thickness / Scale</td><td></td></tr>
-  <tr><td>Close Icon</td><td>A sprite in place of the drawn cross. Its colour still comes from the style.</td></tr>
-  <tr><td>Content Padding Left / Top / Right / Bottom</td><td>Inset of the content area. Top is measured from the bottom of the caption, not the top of the panel. Four floats rather than a <code>RectOffset</code>: that type is a handle onto a native object and cannot be built in a field initialiser.</td></tr>
-  <tr><td>Show Scrollbar</td><td>The bar down the right of the body. Off leaves the wheel and the drag, and no hint that there is more below.</td></tr>
-  <tr><td>Scrollbar Width / Inset / Corner Radius</td><td>Inset is measured from the right edge of the body inwards; the content is moved over by the width and the inset together, so the two never overlap. A negative radius rounds the bar fully.</td></tr>
-  <tr><td>Scrollbar Track / Handle Color</td><td></td></tr>
-  <tr><td>Scroll Sensitivity</td><td>Canvas units per notch of the wheel.</td></tr>
-  <tr><td>Scroll Inertia / Deceleration</td><td>Whether a flick carries on after the finger has left, and how quickly it runs out. On by default — a touch screen expects it, and WebGL on a phone is a touch screen.</td></tr>
-  <tr><td>Backdrop Color</td><td></td></tr>
-  <tr><td>Open Scale</td><td>What a window grows from, and shrinks back to.</td></tr>
+  <tr><th>Part</th><th>Where</th><th>What it is</th></tr>
+  <tr><td>Panel</td><td>the window object itself</td><td><code>RoundedBox</code> — fill, gradient, border, corners, edge softness.</td></tr>
+  <tr><td>Caption</td><td>child</td><td><code>RoundedBox</code>. Its fill is usually a wash <em>over</em> the panel's, so alpha at nothing leaves the header the colour of the body.</td></tr>
+  <tr><td>Title</td><td>under Caption</td><td><code>TextMeshProUGUI</code> — font, size, colour, style, alignment, and where in the caption it sits.</td></tr>
+  <tr><td>Close</td><td>child, ignored by the grid</td><td><code>RoundedBox</code> — move it, resize it, round it. <code>Close/Cross/Bar A</code> and <code>Bar B</code> are the two rotated boxes the cross is drawn from; drop an <code>Image</code> with a sprite in the button and turn the cross off instead if you would rather.</td></tr>
+  <tr><td>Scrollbar</td><td>under Viewport</td><td><code>RoundedBox</code> for the track, <code>Handle</code> under it. The window sets the <strong>width</strong> and where it sits; both colours are its own.</td></tr>
+  <tr><td>Window Backdrop</td><td>beside the window, in its parent</td><td><code>Image</code>. Only its colour — the window fades it through a <code>CanvasGroup</code>, so opening and closing never touch it.</td></tr>
 </table>
 
-<p><code>ApplyStyle()</code> pushes the lot onto the parts and is cheap enough to call on a window that is
-already open — which is what a theme change is. <code>Style</code> as a property applies itself when
-assigned. <code>Clone()</code> gives a window its own copy so it can be themed without the change reaching
-every other window sharing that style.</p>
+<p>From code the same parts are properties: <code>Panel</code>, <code>Caption</code>, <code>TitleText</code>,
+<code>CloseBox</code>, <code>ScrollTrack</code>, <code>ScrollHandle</code>, <code>Backdrop</code>, and
+<code>CloseButton</code> for the click.</p>
+
+<pre><code>window.Panel.FillColor = new Color(.13f, .12f, .24f);
+window.Panel.SetCornerRadius(20f);
+window.TitleText.color = Color.white;</code></pre>
+
+<div class="note">
+  <p>Two things the window still writes, because they are about clicks rather than looks: the panel and the
+  caption <strong>catch</strong> raycasts and the title does not — a panel that let a click through would pass
+  it to the backdrop and close the dialog the player was aiming at, and a label that caught one would swallow
+  the drag that starts on it.</p>
+  <p><code>ApplyLayout()</code> puts every part back where it belongs — the caption's row, the content's
+  inset, the bar down the side — and is safe to call on a window somebody has styled. It runs on
+  <code>Awake</code>, on every <code>Open</code>, and on any inspector change.</p>
+</div>
+
+<p><strong>A window arrives styled once.</strong> Each part is given a plain dark look at the moment it is
+<em>made</em>, so a window created from the menu is a dialog rather than a white square. That is
+<code>UiWindowSeed</code>, it happens once per part, and it never runs over a part that already exists — a
+hand-styled window stays as it was, through <code>Rebuild()</code> and through every reload.</p>
 
 <h2 id="code">From code</h2>
 
@@ -560,7 +581,7 @@ UiWindowBuilder.Create(canvas, "Message")
 // Or reconfigure one that already exists
 UiWindowBuilder.For(window)
     .Title("Paused")
-    .Fill(Color.black)
+    .Panel(box =&gt; box.FillColor = Color.black)
     .NoBackdrop();</code></pre>
 
 <h3 id="steps">Every step</h3>
@@ -569,11 +590,10 @@ UiWindowBuilder.For(window)
   <tr><th>Step</th><th>Notes</th></tr>
   <tr><td><code>Create(parent, name)</code> / <code>For(window)</code></td><td>Start. <code>Create</code> centres the new rect in its parent.</td></tr>
   <tr><td><code>Size(w, h)</code> · <code>At(pos)</code> · <code>Scale(uniform)</code></td><td></td></tr>
-  <tr><td><code>Title(text)</code> · <code>TitleFont(font, size)</code> · <code>TitleColor(c)</code></td><td></td></tr>
-  <tr><td><code>Caption(height, fill)</code> · <code>NoCaption()</code></td><td></td></tr>
-  <tr><td><code>Style(style)</code></td><td>A whole style at once. Copied.</td></tr>
-  <tr><td><code>Fill(c)</code> · <code>Border(size, c)</code> · <code>Corners(r)</code> · <code>Padding(l, t, r, b)</code></td><td></td></tr>
-  <tr><td><code>CloseButton(bool)</code> · <code>CloseIcon(sprite)</code> · <code>CloseColors(fill, icon)</code></td><td></td></tr>
+  <tr><td><code>Title(text)</code></td><td>The caption text.</td></tr>
+  <tr><td><code>Panel(box =&gt; …)</code> · <code>Caption(box =&gt; …)</code> · <code>Title(label =&gt; …)</code> · <code>Close(box =&gt; …)</code></td><td>Hand back the part itself to style. A callback rather than a step per colour: what a box can be told is <code>RoundedBox</code>'s business, and a chain mirroring all of it would be a second copy of that inspector.</td></tr>
+  <tr><td><code>Caption(height)</code> · <code>NoCaption()</code> · <code>Padding(l, t, r, b)</code></td><td></td></tr>
+  <tr><td><code>CloseButton(bool)</code></td><td></td></tr>
   <tr><td><code>Draggable(anywhere, clamp)</code> · <code>Fixed()</code></td><td></td></tr>
   <tr><td><code>OnTop(order, layer)</code> · <code>InLine()</code></td><td>Own canvas and sorting, or hierarchy order like any other UI object.</td></tr>
   <tr><td><code>Backdrop(...)</code> · <code>NoBackdrop()</code></td><td>With or without a colour.</td></tr>
@@ -602,8 +622,9 @@ window.Open();</code></pre>
 
 <h2 id="size">How tall it may be</h2>
 
-<p>The inside of a window is a <code>UiGrid</code> of one column and two rows — the caption at the height the
-style says, the body taking the rest:</p>
+<p>The inside of a window is a <code>UiGrid</code> of one column and two rows — the caption at
+<strong>Caption Height</strong>, the body taking the rest, both inset by the panel's own border, which is
+read off the <code>RoundedBox</code> rather than held anywhere:</p>
 
 <pre><code>Window            RoundedBox · UiGrid · CanvasGroup
 ├ Caption         cell "caption"        row 0, Fixed(Caption Height)
@@ -705,7 +726,7 @@ together, so switching tabs asks the server for nothing.</p>
 
 <table>
   <tr><th>Field</th><th>What it does</th></tr>
-  <tr><td>Style</td><td>Tabs, rows and reset button. The panel around them is the window's own style.</td></tr>
+  <tr><td>Style</td><td>Tabs, rows and reset button. The panel around them is styled on its own parts.</td></tr>
   <tr><td>Current / Overall Label</td><td>The tab captions. Nothing here is translated.</td></tr>
   <tr><td>Tab</td><td>Which half is showing. <code>Tab</code>, <code>SetTab</code>, <code>ShowCurrent()</code> and <code>ShowOverall()</code> from code.</td></tr>
   <tr><td>Rows</td><td>What it shows, in the order it shows it.</td></tr>
@@ -815,7 +836,7 @@ not given one.</p>
 
 <table>
   <tr><th>Field</th><th>What it does</th></tr>
-  <tr><td>Style</td><td>The card and its fields. The panel around them is the window's own style.</td></tr>
+  <tr><td>Style</td><td>The card and its fields. The panel around them is styled on its own parts.</td></tr>
   <tr><td>Labels</td><td>Every caption on the dialog, <em>Profit</em> to <em>Server SHA-512</em>. Nothing here is translated.</td></tr>
   <tr><td>Show Profit / Bet Payout / Player / Game</td><td>The blocks, each a row of the card. The pairs share a row: bet with payout, player with the bet's id, game with the time.</td></tr>
   <tr><td>Show Details</td><td>The Details button and the seeds it opens.</td></tr>
@@ -971,7 +992,7 @@ reading it while a newer one is on its way.</p>
 
 <table>
   <tr><th>Field</th><th>What it does</th></tr>
-  <tr><td>Style</td><td>The box, the buttons and the rows. The panel around them is the window's own style.</td></tr>
+  <tr><td>Style</td><td>The box, the buttons and the rows. The panel around them is styled on its own parts.</td></tr>
   <tr><td>Labels</td><td>Every caption on the dialog, <em>New client seed</em> to <em>Bets made with pair</em>. Nothing here is translated.</td></tr>
   <tr><td>Show Client Seed Box / Randomize</td><td>The two controls. Both are dropped on a shared or multiplayer game whatever these say — see below.</td></tr>
   <tr><td>Show Current / Previous Pair</td><td>The two sections. The previous one is dropped anyway until there has been one — see below.</td></tr>
@@ -1128,7 +1149,15 @@ against each other by exactly that number, so 100 clears anything the game draws
   <li>Parts are found by name before they are made, so <code>EnsureBuilt</code> can be called as often as you
   like and a window saved as a prefab rebuilds into itself rather than into two of everything.
   <code>Rebuild()</code> from the component's context menu is the way out of a hierarchy that has been edited
-  into a state the style can no longer describe.</li>
+  into a state the layout can no longer describe — and it keeps how every part that is still there
+  looks.</li>
+  <li><strong>Anything else parented to the window root is a cell of its grid.</strong> The window is a
+  <code>UiGrid</code> whose layout names <code>caption</code> and <code>body</code> and nothing else, so a
+  child it has no name for is flowed into a cell of its own — below the body, not over the panel — and
+  switched off the next time the grid is enabled. An overlay says otherwise with a <code>LayoutElement</code>
+  set to <strong>Ignore Layout</strong>, which is what the close button wears; a border overlay or border
+  particles from the Rounded Box menu now add one for themselves. Drop it under <code>Content</code> instead
+  if it belongs to the content rather than to the frame.</li>
   <li>Every tween is built with <code>DOTween.To</code> rather than the <code>DOFade</code> /
   <code>DOAnchorPos</code> shortcuts. Those live in DOTween's UI module, which is compiled into the project's
   own assembly and cannot be reached from a package. <code>Toast</code> does the same thing for the same
@@ -1139,9 +1168,9 @@ against each other by exactly that number, so 100 clears anything the game draws
 
 <table>
   <tr><th>File</th><th></th></tr>
-  <tr><td><code>UiWindow.cs</code></td><td>The window: parts, style, drag, transition.</td></tr>
+  <tr><td><code>UiWindow.cs</code></td><td>The window: parts, layout, drag, transition.</td></tr>
   <tr><td><code>UiWindowBuilder.cs</code></td><td>The fluent API.</td></tr>
-  <tr><td><code>UiWindowStyle.cs</code></td><td>Everything a window looks like.</td></tr>
+  <tr><td><code>UiWindowSeed.cs</code></td><td>The look each part is given when it is made, and never again. Internal.</td></tr>
   <tr><td><code>UiWindowDragHandle.cs</code></td><td>The grab. Usable on its own, for a custom header.</td></tr>
   <tr><td><code>UiWindowParts.cs</code></td><td>Making and finding children, and naming them for a grid. Internal.</td></tr>
   <tr><td><code>EWindowTransition.cs</code>, <code>EWindowScroll.cs</code></td><td></td></tr>

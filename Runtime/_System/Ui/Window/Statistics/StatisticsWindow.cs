@@ -208,7 +208,7 @@ namespace FlappyTemplate
                 return;
 
             host.EnsureBuilt();
-            host.ApplyStyle();
+            host.ApplyLayout();
 
             var content = host.Content;
 
@@ -572,14 +572,13 @@ namespace FlappyTemplate
         private void FitWindow(float tabsHeight, float rowsHeight, float bottomRoom)
         {
             var host = Window;
-            if (host == null || host.Style == null)
+            if (host == null)
                 return;
 
-            float border = Mathf.Max(0f, host.Style.BorderSize);
-            float chrome = (host.ShowCaption ? host.Style.CaptionHeight : border)
-                + host.Style.ContentPaddingTop
-                + host.Style.ContentPaddingBottom
-                + border;
+            // Chrome is the caption's row and the panel's border; the padding is what the content is inset
+            // by inside that. The window works the first out for itself, border included, because the border
+            // is read off the panel rather than held anywhere.
+            float chrome = host.ChromeHeight + host.ContentPaddingTop + host.ContentPaddingBottom;
 
             host.FitTo(chrome + tabsHeight + style.TabGap + rowsHeight + bottomRoom);
         }

@@ -6,7 +6,7 @@ image per variant — a card, a highlighted card and a warning card differ only 
 and here that is a few fields instead of three more atlas entries. The corners are geometry, not pixels, so
 they stay clean at any size the layout ends up at.
 
-*Describes package 1.0.59. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.65. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the shapes drawn rather than described.*
 
 **GameObject → UI (Canvas) → FlappyBet → Rounded Box**, or Add Component → UI → Rounded Box.
@@ -137,7 +137,8 @@ Rounded Box     RoundedBox + Mask
 The overlay exists because of draw order: a canvas draws a graphic before its own children, so a picture
 parented to the box lands on top of the border the box just drew. The overlay repeats the border as the
 last child. Nothing on it is authored — it copies the parent's border, corners and gradient every frame, so
-the border stays one set of fields on the box.
+the border stays one set of fields on the box. It also holds itself last, so something else reordering the
+children — a `UiWindow` rebuilding its parts, say — cannot leave the frame under the content.
 
 Two things to know about masking:
 
@@ -168,6 +169,19 @@ Cost is a canvas rebuild per frame while particles are alive, which scales with 
 rather than just the effect. Put busy effects under a nested `Canvas` to keep the rebuild local. An idle
 system costs one integer read per frame.
 
+### On a box with a layout on it
+
+A window, a `UiGrid`, a Vertical Layout Group — a box that arranges its children would arrange the effect
+too, flowing it into a cell of its own and stretching it to that instead of to the box; a `UiGrid` would go
+further and switch it off for not being named in the layout. Both the border overlay and the border shape
+say they are overlays for you: a `LayoutElement` with **Ignore Layout** is added the moment either notices a
+layout group on the box it belongs to, which is the same thing a `UiWindow`'s close button wears.
+
+The shape also rebuilds when the emitter is moved relative to its box, not only when the box's outline
+changes. The mesh is the outline written in the emitter's own space, so anything that carries the emitter
+off — a layout pass, a hand-dragged rect — would otherwise leave particles spawning around where the box
+used to be.
+
 ## Worth knowing
 
 - **Tint** is the standard `Graphic.color`. It multiplies the fill and every border colour — leave it white
@@ -186,6 +200,7 @@ system costs one integer read per frame.
 | `RoundedBox.cs` | The component and its mesh. |
 | `RoundedBoxBuilder.cs` | The fluent API. |
 | `RoundedBoxBorderOverlay.cs` | Repeats the border above masked content. |
+| `UiOverlay.cs` | Takes an overlay child out of its parent's layout. Internal. |
 | `RoundedBoxExample.cs` | One of each kind of box, built from code. |
 | `EFillGradient.cs`, `EBorderGradient.cs` | Gradient modes. |
 | `../Particles/` | `RoundedBoxBorderShape`, `UiParticleRenderer` and their enums. |

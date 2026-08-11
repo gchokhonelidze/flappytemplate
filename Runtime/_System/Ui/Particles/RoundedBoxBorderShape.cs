@@ -43,6 +43,9 @@ namespace FlappyTemplate
         private ParticleSystem particles;
         private Mesh mesh;
 
+        // Where the box sat in this object's space when the mesh was built. See Rebuild.
+        private Matrix4x4 builtRelation;
+
         private readonly List<Vector2> outerPath = new List<Vector2>();
         private readonly List<Vector2> innerPath = new List<Vector2>();
         private readonly List<Vector2> builtOuter = new List<Vector2>();
@@ -129,17 +132,31 @@ namespace FlappyTemplate
             if (box == null)
                 return;
 
+            // An effect spawning from the box it hangs on is an overlay, not a cell: said before anything is
+            // measured, so a layout group on the box - a UiGrid, a UiWindow - never gets to place this and
+            // carry the emitter away from the outline it is meant to trace.
+            if (box.transform == transform.parent)
+                UiOverlay.KeepOutOfLayout(gameObject);
+
             box.GetBorderPath(outerPath, innerPath);
             if (outerPath.Count < 3)
                 return;
 
             // Compared before rebuilding rather than after: the mesh is uploaded to the GPU, and doing that
             // every frame for an outline that has not moved is the whole cost of this component.
-            if (Matches(outerPath, builtOuter) && Matches(innerPath, builtInner))
+            //
+            // The relation is compared alongside it because the mesh is the box's outline written in this
+            // object's own space, so it goes stale when *either* moves - and the paths above are the box's
+            // own and say nothing about the emitter. Without it, an emitter that is moved after the fact
+            // keeps a shape offset by however far it travelled: particles around where the box used to be.
+            var relation = transform.worldToLocalMatrix * box.transform.localToWorldMatrix;
+
+            if (relation == builtRelation && Matches(outerPath, builtOuter) && Matches(innerPath, builtInner))
                 return;
 
             BuildMesh(box);
 
+            builtRelation = relation;
             builtOuter.Clear();
             builtOuter.AddRange(outerPath);
             builtInner.Clear();

@@ -97,7 +97,7 @@ namespace FlappyTemplate.Editor
 
             window = created.GetComponent<UiWindow>();
             window.EnsureBuilt();
-            window.ApplyStyle();
+            window.ApplyLayout();
 
             // Built before it is parented, so the layer pass inside Parent reaches the caption and the rest
             // of it rather than only the object the menu made.

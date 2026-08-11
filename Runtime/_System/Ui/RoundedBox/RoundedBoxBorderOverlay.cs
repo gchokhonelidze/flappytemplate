@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace FlappyTemplate
 {
@@ -64,7 +65,23 @@ namespace FlappyTemplate
         // already been written by the time this reads it, rather than being picked up a frame behind.
         void LateUpdate()
         {
+            KeepLast();
             Sync();
+        }
+
+        // Held once a frame rather than only at OnEnable, because something else can push a sibling past
+        // this one long after that: a UiWindow rebuilding its parts puts its body and its close button last,
+        // and the frame would be left drawing under the very content it is meant to be over. An int compare
+        // per frame, and the reorder itself only when it has actually moved.
+        private void KeepLast()
+        {
+            if (!keepOnTop || transform.parent == null)
+                return;
+
+            int last = transform.parent.childCount - 1;
+
+            if (transform.GetSiblingIndex() != last)
+                transform.SetAsLastSibling();
         }
 
         /// <summary>Copies the source box's border and corners onto this one.</summary>
@@ -177,6 +194,10 @@ namespace FlappyTemplate
         // placed by hand, and moving its rect from here would fight whoever put it there.
         private void FitToParent()
         {
+            // Before the rect is written, or a layout group on the parent would place this into a cell of
+            // its own and the stretch below would be undone on the next rebuild.
+            UiOverlay.KeepOutOfLayout(gameObject);
+
             var rect = (RectTransform)transform;
 
             // Compared before writing: a RectTransform notifies its children and its layout every time one
@@ -194,6 +215,7 @@ namespace FlappyTemplate
             if (rect.localRotation != Quaternion.identity)
                 rect.localRotation = Quaternion.identity;
         }
+
 
 #if UNITY_EDITOR
         void OnValidate()

@@ -1,3 +1,4 @@
+using System;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -10,10 +11,14 @@ namespace FlappyTemplate
     //     UiWindowBuilder.Create(canvas, "Settings")
     //         .Size(360f, 480f)
     //         .Title("Settings")
-    //         .Fill(new Color(.2f, .18f, .35f))
+    //         .Panel(box => box.FillColor = new Color(.2f, .18f, .35f))
     //         .Draggable()
     //         .Backdrop()
     //         .Open();
+    //
+    // The steps here say where things go and how the window behaves. What it looks like is the parts' own:
+    // Panel, Caption, Title and Close each hand back the component to set as you like, which is the same
+    // thing selecting it in the hierarchy does.
     //
     // A struct holding one reference, so a chain allocates nothing, and a step against a window that has
     // been destroyed is passed over rather than thrown.
@@ -130,40 +135,13 @@ namespace FlappyTemplate
             return this;
         }
 
-        public UiWindowBuilder TitleFont(TMP_FontAsset font, float size = 0f)
+        /// <summary>Height of the header block. What it looks like is the Caption box's own business - the
+        /// chain hands it back with <see cref="Caption()"/> for that.</summary>
+        public UiWindowBuilder Caption(float height)
         {
-            if (window == null)
-                return this;
+            if (window != null)
+                window.CaptionHeight = height;
 
-            window.Style.TitleFont = font;
-
-            if (size > 0f)
-                window.Style.TitleSize = size;
-
-            window.ApplyStyle();
-            return this;
-        }
-
-        public UiWindowBuilder TitleColor(Color color)
-        {
-            if (window == null)
-                return this;
-
-            window.Style.TitleColor = color;
-            window.ApplyStyle();
-            return this;
-        }
-
-        /// <summary>Height of the header block and the wash drawn over it. The wash carries its own alpha,
-        /// so Color.clear leaves the header the same colour as the body.</summary>
-        public UiWindowBuilder Caption(float height, Color fill)
-        {
-            if (window == null)
-                return this;
-
-            window.Style.CaptionHeight = height;
-            window.Style.CaptionFill = fill;
-            window.ApplyStyle();
             return this;
         }
 
@@ -176,44 +154,46 @@ namespace FlappyTemplate
             return this;
         }
 
-        /// <summary>Takes a whole style at once. Copied, so the window can be themed afterwards without the
-        /// change reaching every other window sharing that style.</summary>
-        public UiWindowBuilder Style(UiWindowStyle style)
+        /// <summary>The panel, for styling it: colour, corners, border, gradient - a RoundedBox like any
+        /// other. The window never paints over what is set here.</summary>
+        //
+        //     .Panel(box => { box.FillColor = navy; box.SetCornerRadius(20f); })
+        //
+        // A callback rather than a step per colour: what a box can be told is RoundedBox's business, and a
+        // chain that mirrored all of it would be a second copy of that inspector.
+        public UiWindowBuilder Panel(Action<RoundedBox> style)
         {
             if (window != null && style != null)
-                window.Style = style.Clone();
+                style(window.Panel);
 
             return this;
         }
 
-        public UiWindowBuilder Fill(Color color)
+        /// <summary>The header block, for styling it. Its height is <see cref="Caption(float)"/>.</summary>
+        public UiWindowBuilder Caption(Action<RoundedBox> style)
         {
-            if (window == null)
-                return this;
+            if (window != null && style != null)
+                style(window.Caption);
 
-            window.Style.Fill = color;
-            window.ApplyStyle();
             return this;
         }
 
-        public UiWindowBuilder Border(float size, Color color)
+        /// <summary>The title label, for font, size, colour and alignment.</summary>
+        public UiWindowBuilder Title(Action<TextMeshProUGUI> style)
         {
-            if (window == null)
-                return this;
+            if (window != null && style != null)
+                style(window.TitleText);
 
-            window.Style.BorderSize = size;
-            window.Style.BorderColor = color;
-            window.ApplyStyle();
             return this;
         }
 
-        public UiWindowBuilder Corners(float radius)
+        /// <summary>The close button's box. The cross inside it is two rotated boxes under Close/Cross, and
+        /// an Image with a sprite dropped on the button does just as well.</summary>
+        public UiWindowBuilder Close(Action<RoundedBox> style)
         {
-            if (window == null)
-                return this;
+            if (window != null && style != null)
+                style(window.CloseBox);
 
-            window.Style.CornerRadius = radius;
-            window.ApplyStyle();
             return this;
         }
 
@@ -221,14 +201,9 @@ namespace FlappyTemplate
         /// caption rather than the top of the panel.</summary>
         public UiWindowBuilder Padding(float left, float top, float right, float bottom)
         {
-            if (window == null)
-                return this;
+            if (window != null)
+                window.SetContentPadding(left, top, right, bottom);
 
-            window.Style.ContentPaddingLeft = left;
-            window.Style.ContentPaddingTop = top;
-            window.Style.ContentPaddingRight = right;
-            window.Style.ContentPaddingBottom = bottom;
-            window.ApplyStyle();
             return this;
         }
 
@@ -240,28 +215,6 @@ namespace FlappyTemplate
             if (window != null)
                 window.ShowCloseButton = shown;
 
-            return this;
-        }
-
-        /// <summary>A sprite in place of the drawn cross. Its colour still comes from the style.</summary>
-        public UiWindowBuilder CloseIcon(Sprite sprite)
-        {
-            if (window == null)
-                return this;
-
-            window.Style.CloseIcon = sprite;
-            window.ApplyStyle();
-            return this;
-        }
-
-        public UiWindowBuilder CloseColors(Color fill, Color icon)
-        {
-            if (window == null)
-                return this;
-
-            window.Style.CloseFill = fill;
-            window.Style.CloseIconColor = icon;
-            window.ApplyStyle();
             return this;
         }
 
@@ -296,13 +249,16 @@ namespace FlappyTemplate
             return this;
         }
 
+        /// <summary>The same, and the sheet's colour with it. Only its colour is the sheet's own - the fade
+        /// in and out goes through a group beside it, so this is not written over.</summary>
         public UiWindowBuilder Backdrop(Color color, bool closeOnClick = true)
         {
-            if (window == null)
-                return this;
+            Backdrop(closeOnClick);
 
-            window.Style.BackdropColor = color;
-            return Backdrop(closeOnClick);
+            if (window != null && window.Backdrop != null)
+                window.Backdrop.color = color;
+
+            return this;
         }
 
         public UiWindowBuilder NoBackdrop()
@@ -434,7 +390,7 @@ namespace FlappyTemplate
                 window.gameObject.SetActive(true);
 
             window.EnsureBuilt();
-            window.ApplyStyle();
+            window.ApplyLayout();
         }
     }
 }

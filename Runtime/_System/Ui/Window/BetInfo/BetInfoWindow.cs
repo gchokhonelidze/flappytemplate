@@ -436,7 +436,7 @@ namespace FlappyTemplate
                 return;
 
             host.EnsureBuilt();
-            host.ApplyStyle();
+            host.ApplyLayout();
 
             BuildParts(host.Content);
 

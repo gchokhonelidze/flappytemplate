@@ -10,8 +10,7 @@ namespace FlappyTemplate
     // A window: a rounded panel with a caption, a close button, an area to put things in, and an opening
     // that is animated rather than a SetActive. Everything it is made of is built from code the first time
     // it is needed, so a window is one component on an empty RectTransform - there is no prefab to keep in
-    // step with the palette, and no hierarchy to rebuild when a game decides its dialogs have square
-    // corners after all.
+    // step, and no hierarchy to rebuild when a game decides its dialogs look different after all.
     //
     //     UiWindowBuilder.Create(canvas, "Settings")
     //         .Size(360f, 480f)
@@ -20,11 +19,21 @@ namespace FlappyTemplate
     //         .Backdrop()
     //         .Open();
     //
+    // What this class owns is where things go, not what they look like: the caption's height, the inset of
+    // the content, the width of the scrollbar, and the rules about growing, scrolling, dragging and sorting.
+    // Colours, corners, borders and fonts belong to the parts themselves - select Panel (this object),
+    // Caption, Title, Close or Scrollbar in the hierarchy and style each as you would any other RoundedBox
+    // or TextMeshPro label. Nothing here paints over them afterwards.
+    //
+    // A window whose parts are made for the first time is seeded with a plain dark dialog, so one created
+    // from the menu arrives looking like a window rather than like a white square. That happens once, at the
+    // moment each part is made, and never again - so a window styled by hand stays styled.
+    //
     // Parts are found by name before they are made, so all of that survives being saved as a prefab and
     // rebuilt: a second EnsureBuilt reuses the caption that is already there rather than adding another.
     //
-    // Whatever goes inside belongs under Content, which is inset from the panel by the style's padding and
-    // starts below the caption. StatisticsWindow next door is one worked example of filling it.
+    // Whatever goes inside belongs under Content, which is inset from the panel by the padding below and
+    // starts under the caption. StatisticsWindow next door is one worked example of filling it.
     [AddComponentMenu("UI/Ui Window")]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(RectTransform))]
@@ -49,9 +58,6 @@ namespace FlappyTemplate
         private string title = "Window";
 
         [SerializeField]
-        private UiWindowStyle style = new UiWindowStyle();
-
-        [SerializeField]
         private bool showCaption = true;
 
         [SerializeField]
@@ -64,6 +70,29 @@ namespace FlappyTemplate
         [Tooltip("Destroy the window once it has finished closing, rather than leaving it hidden.")]
         [SerializeField]
         private bool destroyOnClose = false;
+
+        [Header("Layout")]
+        [Tooltip("The whole header block: the drag strip, the close button and the title. Content starts under it. What it looks like is the Caption object's own business.")]
+        [Min(0f)]
+        [SerializeField]
+        private float captionHeight = 104f;
+
+        // Four floats rather than a RectOffset, which looks like the obvious type for this and is the wrong
+        // one: a RectOffset is a handle onto a native object, so building one in a field initialiser throws
+        // before the component exists.
+        [Tooltip("Inset of the content area from the left of the panel.")]
+        [SerializeField]
+        private float contentPaddingLeft = 20f;
+
+        [Tooltip("Inset of the content area below the caption. Measured from the bottom of the caption, not the top of the panel.")]
+        [SerializeField]
+        private float contentPaddingTop = 0f;
+
+        [SerializeField]
+        private float contentPaddingRight = 20f;
+
+        [SerializeField]
+        private float contentPaddingBottom = 20f;
 
         [Header("Size")]
         [Tooltip("Ask the content how tall it wants to be whenever the window opens, and be that tall. Needs something under Content that reports a height - a layout group, a label, a Layout Element. Off, the window is whatever height it was given.")]
@@ -83,6 +112,33 @@ namespace FlappyTemplate
         [Tooltip("What happens when the content will not fit the height the window is allowed.")]
         [SerializeField]
         private EWindowScroll scroll = EWindowScroll.WhenTooTall;
+
+        [Header("Scrolling")]
+        [Tooltip("Draw a bar down the right of the body while it is scrolling. Off leaves the wheel and the drag, and no hint that there is more below. Its colours are the Scrollbar and Handle objects' own.")]
+        [SerializeField]
+        private bool showScrollbar = true;
+
+        [Min(1f)]
+        [SerializeField]
+        private float scrollbarWidth = 8f;
+
+        [Tooltip("From the right edge of the body, inwards. The content is moved over by the bar's width and this together, so the two never overlap.")]
+        [SerializeField]
+        private float scrollbarInset = 4f;
+
+        [Tooltip("Canvas units per notch of the wheel.")]
+        [Min(1f)]
+        [SerializeField]
+        private float scrollSensitivity = 28f;
+
+        [Tooltip("Let a flick carry on after the finger has left. What a touch screen expects, and WebGL on a phone is a touch screen.")]
+        [SerializeField]
+        private bool scrollInertia = true;
+
+        [Tooltip("How quickly a flick runs out. Lower stops sooner; 0.135 is UGUI's own.")]
+        [Range(0.01f, 0.99f)]
+        [SerializeField]
+        private float scrollDeceleration = 0.135f;
 
         [Header("Dragging")]
         [SerializeField]
@@ -105,7 +161,7 @@ namespace FlappyTemplate
         private bool bringToFront = true;
 
         [Header("Backdrop")]
-        [Tooltip("A full-parent sheet behind the window, which is what makes it modal - it swallows every click that misses.")]
+        [Tooltip("A full-parent sheet behind the window, which is what makes it modal - it swallows every click that misses. Its colour is the sheet's own; the window only fades it in and out.")]
         [SerializeField]
         private bool showBackdrop = false;
 
@@ -147,6 +203,11 @@ namespace FlappyTemplate
 
         [SerializeField]
         private Ease closeEase = Ease.InBack;
+
+        [Tooltip("Scale a window starts at when it grows in, and shrinks back to when it leaves.")]
+        [Min(0f)]
+        [SerializeField]
+        private float openScale = 0.86f;
 
         [Tooltip("Run on unscaled time, so a window still opens over a paused game.")]
         [SerializeField]
@@ -205,25 +266,18 @@ namespace FlappyTemplate
         private Button closeButton;
 
         [SerializeField, HideInInspector]
-        private RectTransform crossIcon;
-
-        [SerializeField, HideInInspector]
-        private RoundedBox crossBarA;
-
-        [SerializeField, HideInInspector]
-        private RoundedBox crossBarB;
-
-        [SerializeField, HideInInspector]
-        private Image spriteIcon;
-
-        [SerializeField, HideInInspector]
         private CanvasGroup group;
 
         [SerializeField, HideInInspector]
         private Image backdrop;
 
+        // The sheet's fade goes through a group rather than through its colour, which leaves the colour
+        // entirely to whoever styled it - a sheet tinted by hand is not reset to black on the next open.
+        [SerializeField, HideInInspector]
+        private CanvasGroup backdropGroup;
+
         // Serialized alongside the parts it stands for. A private bool would come back false after every
-        // script reload, and a window in an open scene would then refuse to restyle until it was played.
+        // script reload, and a window in an open scene would then refuse to lay out until it was played.
         [SerializeField, HideInInspector]
         private bool built;
 
@@ -334,7 +388,8 @@ namespace FlappyTemplate
             }
         }
 
-        /// <summary>The panel itself, for anything the style does not reach.</summary>
+        /// <summary>The panel itself. Its colour, corners and border are set on the RoundedBox, by hand or
+        /// from code; the window only reads the border back to know how far in the caption and body sit.</summary>
         public RoundedBox Panel
         {
             get
@@ -372,7 +427,37 @@ namespace FlappyTemplate
             }
         }
 
-        /// <summary>The modal sheet, or null while Show Backdrop is off.</summary>
+        /// <summary>The close button's own box, for styling it.</summary>
+        public RoundedBox CloseBox
+        {
+            get
+            {
+                EnsureBuilt();
+                return closeBox;
+            }
+        }
+
+        /// <summary>The track down the right of the body, for styling it. The handle is the box under it,
+        /// and <see cref="Scroller"/> is the thing that moves.</summary>
+        public RoundedBox ScrollTrack
+        {
+            get
+            {
+                EnsureBuilt();
+                return scrollTrack;
+            }
+        }
+
+        public RoundedBox ScrollHandle
+        {
+            get
+            {
+                EnsureBuilt();
+                return scrollHandle;
+            }
+        }
+
+        /// <summary>The modal sheet, or null until Show Backdrop has built one. Its colour is its own.</summary>
         public Image Backdrop => backdrop;
 
         public string Title
@@ -386,15 +471,99 @@ namespace FlappyTemplate
             }
         }
 
-        /// <summary>Colours, sizes and fonts. Assigning one applies it; editing the one already there needs
-        /// a call to <see cref="ApplyStyle"/> afterwards.</summary>
-        public UiWindowStyle Style
+        /// <summary>Height of the header block. Content starts under it.</summary>
+        public float CaptionHeight
         {
-            get => style;
+            get => captionHeight;
             set
             {
-                style = value ?? new UiWindowStyle();
-                ApplyStyle();
+                captionHeight = Mathf.Max(0f, value);
+                ApplyLayout();
+            }
+        }
+
+        public float ContentPaddingLeft
+        {
+            get => contentPaddingLeft;
+            set
+            {
+                contentPaddingLeft = value;
+                ApplyLayout();
+            }
+        }
+
+        public float ContentPaddingTop
+        {
+            get => contentPaddingTop;
+            set
+            {
+                contentPaddingTop = value;
+                ApplyLayout();
+            }
+        }
+
+        public float ContentPaddingRight
+        {
+            get => contentPaddingRight;
+            set
+            {
+                contentPaddingRight = value;
+                ApplyLayout();
+            }
+        }
+
+        public float ContentPaddingBottom
+        {
+            get => contentPaddingBottom;
+            set
+            {
+                contentPaddingBottom = value;
+                ApplyLayout();
+            }
+        }
+
+        /// <summary>The same inset on all four sides.</summary>
+        public void SetContentPadding(float left, float top, float right, float bottom)
+        {
+            contentPaddingLeft = left;
+            contentPaddingTop = top;
+            contentPaddingRight = right;
+            contentPaddingBottom = bottom;
+            ApplyLayout();
+        }
+
+        /// <summary>Everything the content does not get: the caption's row and the panel's border above and
+        /// below it. What a window laying itself out by hand has to add to its own height.</summary>
+        public float ChromeHeight => (showCaption ? captionHeight : 0f) + BorderTop + BorderBottom;
+
+        public bool ShowScrollbar
+        {
+            get => showScrollbar;
+            set
+            {
+                showScrollbar = value;
+                ApplyLayout();
+            }
+        }
+
+        public float ScrollbarWidth
+        {
+            get => scrollbarWidth;
+            set
+            {
+                scrollbarWidth = Mathf.Max(1f, value);
+                ApplyLayout();
+            }
+        }
+
+        /// <summary>From the right edge of the body, inwards.</summary>
+        public float ScrollbarInset
+        {
+            get => scrollbarInset;
+            set
+            {
+                scrollbarInset = value;
+                ApplyLayout();
             }
         }
 
@@ -435,7 +604,7 @@ namespace FlappyTemplate
             set
             {
                 showCaption = value;
-                ApplyStyle();
+                ApplyLayout();
             }
         }
 
@@ -469,6 +638,13 @@ namespace FlappyTemplate
             set => closeEase = value;
         }
 
+        /// <summary>The scale a window grows in from, and shrinks back to when it leaves.</summary>
+        public float OpenScale
+        {
+            get => openScale;
+            set => openScale = Mathf.Max(0f, value);
+        }
+
         /// <summary>Animate on unscaled time, so a window still opens over a paused game.</summary>
         public bool UnscaledTime
         {
@@ -476,14 +652,15 @@ namespace FlappyTemplate
             set => unscaledTime = value;
         }
 
-        /// <summary>The sheet behind the window. Turning it on builds it; the colour comes from the style.</summary>
+        /// <summary>The sheet behind the window. Turning it on builds it; what colour it is, is its own.</summary>
         public bool ShowBackdrop
         {
             get => showBackdrop;
             set
             {
                 showBackdrop = value;
-                ApplyStyle();
+                EnsureBackdrop();
+                ApplySorting();
                 ShowBackdropSheet(IsOpen);
             }
         }
@@ -602,7 +779,7 @@ namespace FlappyTemplate
             restScale = Rect.localScale;
 
             EnsureBuilt();
-            ApplyStyle();
+            ApplyLayout();
 
             // Open is one of the things that can get us here. A window saved switched off has never woken,
             // so the SetActive inside Open is what runs this - and hiding it again on the way through would
@@ -675,7 +852,7 @@ namespace FlappyTemplate
         {
             if (!built || !Application.isPlaying)
             {
-                // OnValidate is not allowed to activate or destroy anything, and applying a style does both.
+                // OnValidate is not allowed to activate or destroy anything, and laying out does both.
                 // Deferring by a frame puts it back on ordinary editor time, where it is.
                 UnityEditor.EditorApplication.delayCall += () =>
                 {
@@ -683,13 +860,13 @@ namespace FlappyTemplate
                         return;
 
                     if (built)
-                        ApplyStyle();
+                        ApplyLayout();
                 };
 
                 return;
             }
 
-            ApplyStyle();
+            ApplyLayout();
         }
 #endif
 
@@ -699,7 +876,7 @@ namespace FlappyTemplate
         {
             // The viewport and the grid are in that list because a window saved by a version that had neither
             // comes back saying it is built. Missing parts are what "built" is really asking about, so the flag
-            // alone would leave that window with a null grid and an ApplyStyle that throws.
+            // alone would leave that window with a null grid and a layout pass that throws.
             if (!built || panel == null || content == null || viewport == null || grid == null)
                 BuildParts();
 
@@ -712,10 +889,20 @@ namespace FlappyTemplate
 
         private void BuildParts()
         {
+            // A window nobody has built before, as opposed to one coming back from a scene file missing a
+            // part. Only the first kind is given a look to start from; the second keeps whatever it was
+            // styled with, and only the part that had gone missing is seeded.
+            bool fresh = !built && UiWindowParts.Find<RoundedBox>(transform, CaptionName) == null;
+
+            bool madePanel = panel == null && GetComponent<RoundedBox>() == null;
+
             if (panel == null)
                 panel = GetComponent<RoundedBox>();
             if (panel == null)
                 panel = gameObject.AddComponent<RoundedBox>();
+
+            if (fresh || madePanel)
+                UiWindowSeed.Panel(panel);
 
             if (group == null)
                 group = GetComponent<CanvasGroup>();
@@ -725,8 +912,17 @@ namespace FlappyTemplate
             if (grid == null)
                 grid = UiWindowParts.Grid(Rect);
 
+            bool madeCaption = UiWindowParts.Find<RoundedBox>(transform, CaptionName) == null;
             caption = UiWindowParts.Box(transform, CaptionName);
+
+            bool madeTitle = UiWindowParts.Find<TextMeshProUGUI>(caption.transform, TitleName) == null;
             titleText = UiWindowParts.Label(caption.transform, TitleName);
+
+            if (madeCaption)
+                UiWindowSeed.Caption(caption);
+
+            if (madeTitle)
+                UiWindowSeed.Title(titleText);
 
             viewport = UiWindowParts.Rect(transform, ViewportName);
 
@@ -768,18 +964,7 @@ namespace FlappyTemplate
             grab.raycastTarget = true;
 
             BuildScrollbar();
-
-            closeBox = UiWindowParts.Box(transform, CloseName);
-            closeButton = closeBox.GetComponent<Button>();
-            if (closeButton == null)
-                closeButton = closeBox.gameObject.AddComponent<Button>();
-
-            closeButton.targetGraphic = closeBox;
-
-            crossIcon = UiWindowParts.Rect(closeBox.transform, CrossName);
-            crossBarA = UiWindowParts.Box(crossIcon, "Bar A");
-            crossBarB = UiWindowParts.Box(crossIcon, "Bar B");
-            spriteIcon = UiWindowParts.Picture(closeBox.transform, "Icon");
+            BuildClose();
 
             // The body last, so it draws over the caption if the two ever overlap - a window whose caption is
             // taller than the grid's row allows for should be covered by its content, not cover it. The close
@@ -800,9 +985,11 @@ namespace FlappyTemplate
 
         // A track down the right of the body with a handle in it, in the shape UGUI's Scrollbar expects: the
         // graphic on the bar itself, a sliding area inside it, and the handle inside that. The Scrollbar writes
-        // the handle's anchors as it moves, so nothing here sets its position - only what it looks like.
+        // the handle's anchors as it moves, so nothing here sets its position - only its size and its place in
+        // the body, both of which are the window's business rather than the bar's colour.
         private void BuildScrollbar()
         {
+            bool madeTrack = UiWindowParts.Find<RoundedBox>(viewport, ScrollbarName) == null;
             scrollTrack = UiWindowParts.Box(viewport, ScrollbarName);
 
             if (scrollbar == null)
@@ -813,12 +1000,62 @@ namespace FlappyTemplate
             var slide = UiWindowParts.Rect(scrollTrack.transform, "Sliding Area");
             UiWindowParts.Stretch(slide, 0f, 0f, 0f, 0f);
 
+            bool madeHandle = UiWindowParts.Find<RoundedBox>(slide, "Handle") == null;
             scrollHandle = UiWindowParts.Box(slide, "Handle");
+
+            if (madeTrack)
+                UiWindowSeed.ScrollTrack(scrollTrack);
+
+            if (madeHandle)
+                UiWindowSeed.ScrollHandle(scrollHandle);
+
+            scrollTrack.raycastTarget = true;
+            scrollHandle.raycastTarget = true;
 
             scrollbar.direction = Scrollbar.Direction.BottomToTop;
             scrollbar.handleRect = scrollHandle.rectTransform;
             scrollbar.targetGraphic = scrollHandle;
             scrollbar.transition = Selectable.Transition.None;
+        }
+
+        // The button, and the cross drawn inside it out of two rotated boxes rather than fetched from an
+        // atlas - which is what keeps it sharp at any size. Both are placed and coloured once, when they are
+        // made: a game that wants a different cross moves, resizes, recolours or replaces them, and nothing
+        // here writes over that afterwards. An Image dropped on Close with a sprite in it does the same job.
+        private void BuildClose()
+        {
+            bool madeClose = UiWindowParts.Find<RoundedBox>(transform, CloseName) == null;
+            closeBox = UiWindowParts.Box(transform, CloseName);
+
+            closeButton = closeBox.GetComponent<Button>();
+            if (closeButton == null)
+                closeButton = closeBox.gameObject.AddComponent<Button>();
+
+            closeButton.targetGraphic = closeBox;
+            closeBox.raycastTarget = true;
+
+            bool madeCross = UiWindowParts.Find<RectTransform>(closeBox.transform, CrossName) == null;
+            var cross = UiWindowParts.Rect(closeBox.transform, CrossName);
+
+            bool madeBarA = UiWindowParts.Find<RoundedBox>(cross, "Bar A") == null;
+            var barA = UiWindowParts.Box(cross, "Bar A");
+
+            bool madeBarB = UiWindowParts.Find<RoundedBox>(cross, "Bar B") == null;
+            var barB = UiWindowParts.Box(cross, "Bar B");
+
+            if (madeClose)
+                UiWindowSeed.Close(closeBox);
+
+            if (madeCross)
+                UiWindowSeed.Cross(cross, closeBox.rectTransform.sizeDelta);
+
+            if (madeBarA)
+                UiWindowSeed.Bar(barA, cross.sizeDelta.x, 45f);
+
+            if (madeBarB)
+                UiWindowSeed.Bar(barB, cross.sizeDelta.x, -45f);
+
+            closeBox.gameObject.SetActive(showCloseButton);
         }
 
         /// <summary>Puts the window's own listeners back on its buttons. Called on every build and every
@@ -844,34 +1081,35 @@ namespace FlappyTemplate
             sheet.onClick.AddListener(HandleBackdropClicked);
         }
 
-        /// <summary>Pushes every colour, size and font from the style onto the parts. Cheap enough to call
-        /// whenever a theme changes, including on a window that is already open.</summary>
-        [ContextMenu("Apply Style")]
-        public void ApplyStyle()
+        /// <summary>Puts every part where it belongs: the caption's row, the body under it, the content
+        /// inset, the scrollbar down the side. Colours and fonts are not its business - it is safe to call on
+        /// a window somebody has styled, and cheap enough to call whenever a size changes.</summary>
+        [ContextMenu("Apply Layout")]
+        public void ApplyLayout()
         {
-            if (style == null)
-                style = new UiWindowStyle();
-
             if (!built || panel == null || caption == null || titleText == null || content == null
                 || closeBox == null || viewport == null || grid == null)
                 return;
 
-            float border = Mathf.Max(0f, style.BorderSize);
-
-            panel.FillGradientMode = EFillGradient.None;
-            panel.FillColor = style.Fill;
-            panel.SetCornerRadius(style.CornerRadius);
-            panel.SetBorderSize(border);
-            panel.SetBorderColor(style.BorderColor);
-            panel.EdgeSoftness = style.EdgeSoftness;
+            // Clicks rather than looks, so these are held rather than left to the inspector: a panel that
+            // does not catch a click lets it through to the backdrop, which closes the window the player was
+            // aiming at, and a title that does catch one swallows the drag that starts on it.
             panel.raycastTarget = true;
+            caption.raycastTarget = true;
+            titleText.raycastTarget = false;
 
-            // The caption and the body are two rows of one column, inset by the border so the caption wash sits
-            // inside the outline rather than over it. Said as a layout rather than by switching the caption on
-            // and off: a grid takes its layout as the whole truth about which of its children are showing, and
-            // re-asserts it every time it is enabled - so a caption hidden with SetActive would come back.
-            int inset = Mathf.RoundToInt(border);
-            grid.padding = new RectOffset(inset, inset, inset, inset);
+            titleText.text = title;
+
+            // The caption and the body are two rows of one column, inset by the panel's own border so neither
+            // sits over the outline. Said as a layout rather than by switching the caption on and off: a grid
+            // takes its layout as the whole truth about which of its children are showing, and re-asserts it
+            // every time it is enabled - so a caption hidden with SetActive would come back.
+            grid.padding = new RectOffset(
+                Mathf.RoundToInt(BorderLeft),
+                Mathf.RoundToInt(BorderRight),
+                Mathf.RoundToInt(BorderTop),
+                Mathf.RoundToInt(BorderBottom));
+
             grid.RowGap = 0f;
             grid.ColumnGap = 0f;
 
@@ -879,7 +1117,7 @@ namespace FlappyTemplate
 
             if (showCaption)
             {
-                arrangement.Rows(GridTrack.Fixed(style.CaptionHeight), GridTrack.Flexible())
+                arrangement.Rows(GridTrack.Fixed(captionHeight), GridTrack.Flexible())
                     .Row(CaptionArea)
                     .Row(BodyArea);
             }
@@ -890,31 +1128,11 @@ namespace FlappyTemplate
 
             grid.SetLayout(arrangement.Done());
 
-            caption.FillGradientMode = EFillGradient.None;
-            caption.FillColor = style.CaptionFill;
-            caption.SetBorderSize(0f);
+            closeBox.gameObject.SetActive(showCloseButton);
 
-            float captionRadius = Mathf.Max(0f, style.CornerRadius - border);
-            caption.RadiusTopLeft = captionRadius;
-            caption.RadiusTopRight = captionRadius;
-            caption.RadiusBottomRight = 0f;
-            caption.RadiusBottomLeft = 0f;
-            caption.EdgeSoftness = style.EdgeSoftness;
-            caption.raycastTarget = true;
-
-            UiWindowParts.Stretch(titleText.rectTransform, 12f, style.TitleTopInset, 12f, 6f);
-            titleText.text = title;
-            titleText.font = style.TitleFont != null ? style.TitleFont : titleText.font;
-            titleText.fontSize = style.TitleSize;
-            titleText.color = style.TitleColor;
-            titleText.fontStyle = style.TitleStyle;
-            titleText.alignment = style.TitleAlignment;
-            titleText.raycastTarget = false;
-
-            ApplyScrollStyle();
+            ApplyScrollbarPlacement();
             ApplyScrollState();
-            ApplyCloseStyle();
-            ApplyBackdropStyle();
+            EnsureBackdrop();
             ApplySorting();
         }
 
@@ -962,7 +1180,7 @@ namespace FlappyTemplate
         }
 
         // Checked against the project's layers first, because assigning a name that is not one of them logs
-        // an error per assignment - and this runs on every style pass.
+        // an error per assignment - and this runs on every layout pass.
         private void ApplySortingLayer(Canvas canvas)
         {
             foreach (var layer in UnityEngine.SortingLayer.layers)
@@ -975,6 +1193,16 @@ namespace FlappyTemplate
             }
         }
 
+        // How far in the panel's outline reaches on each side. Read off the box rather than held here, so a
+        // border thickened by hand moves the caption and the body in with it.
+        private float BorderLeft => panel != null ? panel.BorderLeft : 0f;
+
+        private float BorderRight => panel != null ? panel.BorderRight : 0f;
+
+        private float BorderTop => panel != null ? panel.BorderTop : 0f;
+
+        private float BorderBottom => panel != null ? panel.BorderBottom : 0f;
+
         // ------------------------------------------------------------------ how tall it may be
 
         /// <summary>Asks the content how tall it wants to be and makes the window that tall - as far as it is
@@ -985,7 +1213,7 @@ namespace FlappyTemplate
         public void Fit()
         {
             EnsureBuilt();
-            FitTo(Chrome + Body());
+            FitTo(ChromeHeight + Body());
         }
 
         /// <summary>Makes the window a height the caller worked out, clamped to what it is allowed - after
@@ -1005,10 +1233,6 @@ namespace FlappyTemplate
                 scroller.verticalNormalizedPosition = 1f;
         }
 
-        // The part of the height that is not content: the caption's row and the border above and below it. The
-        // content's own padding is inside the viewport and counted with the content.
-        private float Chrome => (showCaption ? style.CaptionHeight : 0f) + Mathf.Max(0f, style.BorderSize) * 2f;
-
         // What the content says it needs, plus the padding around it. Measured immediately rather than waited
         // for: a window is fitted at the moment it opens, and a layout that has not run yet reports the height
         // it had last time.
@@ -1020,7 +1244,7 @@ namespace FlappyTemplate
             LayoutRebuilder.ForceRebuildLayoutImmediate(content);
 
             float wanted = Mathf.Max(0f, LayoutUtility.GetPreferredHeight(content));
-            return wanted + style.ContentPaddingTop + style.ContentPaddingBottom;
+            return wanted + contentPaddingTop + contentPaddingBottom;
         }
 
         // Height, in the window's own units, that the parent has room for. Divided by the scale because the
@@ -1091,8 +1315,9 @@ namespace FlappyTemplate
                 ScrollToTop();
         }
 
-        // Whatever scrolling currently is, written onto the parts. Called by the style pass as well, so a window
-        // that has never been fitted has its mask and its scroller off rather than however Unity made them.
+        // Whatever scrolling currently is, written onto the parts. Called by the layout pass as well, so a
+        // window that has never been fitted has its mask and its scroller off rather than however Unity made
+        // them.
         private void ApplyScrollState()
         {
             if (scroller != null)
@@ -1102,13 +1327,13 @@ namespace FlappyTemplate
                 scroller.horizontal = false;
                 scroller.vertical = true;
                 scroller.movementType = ScrollRect.MovementType.Clamped;
-                scroller.scrollSensitivity = style.ScrollSensitivity;
-                scroller.verticalScrollbar = style.ShowScrollbar ? scrollbar : null;
+                scroller.scrollSensitivity = scrollSensitivity;
+                scroller.verticalScrollbar = showScrollbar ? scrollbar : null;
 
                 // A flick that carries on after the finger has left is what a touch screen expects, and WebGL on
                 // a phone is a touch screen.
-                scroller.inertia = style.ScrollInertia;
-                scroller.decelerationRate = style.ScrollDeceleration;
+                scroller.inertia = scrollInertia;
+                scroller.decelerationRate = scrollDeceleration;
 
                 // Permanent, and the bar switched on and off here instead: the automatic modes resize the
                 // viewport to make room, and the viewport is a cell of the grid - two things writing one rect.
@@ -1126,7 +1351,7 @@ namespace FlappyTemplate
                 grab.enabled = scrolling;
 
             if (scrollTrack != null)
-                scrollTrack.gameObject.SetActive(scrolling && style.ShowScrollbar);
+                scrollTrack.gameObject.SetActive(scrolling && showScrollbar);
 
             ApplyBody();
         }
@@ -1139,13 +1364,13 @@ namespace FlappyTemplate
             if (content == null || viewport == null)
                 return;
 
-            float left = style.ContentPaddingLeft;
-            float top = style.ContentPaddingTop;
-            float bottom = style.ContentPaddingBottom;
-            float right = style.ContentPaddingRight;
+            float left = contentPaddingLeft;
+            float top = contentPaddingTop;
+            float bottom = contentPaddingBottom;
+            float right = contentPaddingRight;
 
-            if (scrolling && style.ShowScrollbar)
-                right += style.ScrollbarWidth + Mathf.Max(0f, style.ScrollbarInset);
+            if (scrolling && showScrollbar)
+                right += scrollbarWidth + Mathf.Max(0f, scrollbarInset);
 
             if (!scrolling)
             {
@@ -1153,7 +1378,7 @@ namespace FlappyTemplate
                 return;
             }
 
-            float height = Mathf.Max(0f, wantedHeight - Chrome - top - bottom);
+            float height = Mathf.Max(0f, wantedHeight - ChromeHeight - top - bottom);
 
             content.anchorMin = new Vector2(0f, 1f);
             content.anchorMax = new Vector2(1f, 1f);
@@ -1162,26 +1387,22 @@ namespace FlappyTemplate
             content.anchoredPosition = new Vector2((left - right) * 0.5f, -top);
         }
 
-        private void ApplyScrollStyle()
+        // Where the bar sits, and nothing about what it looks like: down the right of the viewport, inset by
+        // the same padding as the content so the two line up.
+        private void ApplyScrollbarPlacement()
         {
             if (scrollTrack == null || scrollHandle == null)
                 return;
 
             var bar = scrollTrack.rectTransform;
 
-            // Down the right of the viewport, inset by the same padding as the content so the two line up.
             bar.anchorMin = new Vector2(1f, 0f);
             bar.anchorMax = new Vector2(1f, 1f);
             bar.pivot = new Vector2(1f, 0.5f);
-            bar.sizeDelta = new Vector2(style.ScrollbarWidth, -(style.ContentPaddingTop + style.ContentPaddingBottom));
+            bar.sizeDelta = new Vector2(scrollbarWidth, -(contentPaddingTop + contentPaddingBottom));
             bar.anchoredPosition = new Vector2(
-                -Mathf.Max(0f, style.ScrollbarInset),
-                (style.ContentPaddingBottom - style.ContentPaddingTop) * 0.5f);
-
-            float radius = style.ScrollbarCornerRadius < 0f ? 100000f : style.ScrollbarCornerRadius;
-
-            Paint(scrollTrack, style.ScrollbarTrackColor, radius);
-            scrollTrack.raycastTarget = true;
+                -Mathf.Max(0f, scrollbarInset),
+                (contentPaddingBottom - contentPaddingTop) * 0.5f);
 
             // UGUI's Scrollbar moves its handle by writing the anchors and nothing else, so the handle's size
             // and position have to be nothing at all for it to sit exactly in the band it is given. Left at the
@@ -1190,18 +1411,6 @@ namespace FlappyTemplate
             var handle = scrollHandle.rectTransform;
             handle.sizeDelta = Vector2.zero;
             handle.anchoredPosition = Vector2.zero;
-
-            Paint(scrollHandle, style.ScrollbarHandleColor, radius);
-            scrollHandle.raycastTarget = true;
-        }
-
-        private void Paint(RoundedBox box, Color fill, float radius)
-        {
-            box.FillGradientMode = EFillGradient.None;
-            box.FillColor = fill;
-            box.SetBorderSize(0f);
-            box.SetCornerRadius(radius);
-            box.EdgeSoftness = style.EdgeSoftness;
         }
 
         /// <summary>Opens with the transition. Already open, it is left alone.</summary>
@@ -1213,7 +1422,7 @@ namespace FlappyTemplate
         public void Open(bool animated)
         {
             EnsureBuilt();
-            ApplyStyle();
+            ApplyLayout();
 
             if (IsOpen && gameObject.activeSelf && transitionTween == null)
             {
@@ -1311,72 +1520,19 @@ namespace FlappyTemplate
         }
 
         /// <summary>Rebuilds the parts from scratch. The way out of a window whose hierarchy was edited into
-        /// a state the style can no longer describe.</summary>
+        /// a state the layout can no longer describe. Parts that are still there keep how they look.</summary>
         [ContextMenu("Rebuild")]
         public void Rebuild()
         {
             built = false;
             EnsureBuilt();
-            ApplyStyle();
+            ApplyLayout();
         }
 
         private void HandleCloseClicked()
         {
             OnCloseClicked.Invoke();
             Close();
-        }
-
-        private void ApplyCloseStyle()
-        {
-            closeBox.gameObject.SetActive(showCloseButton);
-            UiWindowParts.Pin(closeBox.rectTransform, new Vector2(1f, 1f), style.CloseSize, style.CloseOffset);
-
-            closeBox.FillGradientMode = EFillGradient.None;
-            closeBox.FillColor = style.CloseFill;
-            closeBox.SetBorderSize(style.CloseBorderSize);
-            closeBox.SetBorderColor(style.CloseBorderColor);
-            closeBox.EdgeSoftness = style.EdgeSoftness;
-            closeBox.raycastTarget = true;
-
-            // A radius larger than the box is held to it, so any negative value means "as round as it goes"
-            // and stays a circle whatever the button is resized to.
-            closeBox.SetCornerRadius(style.CloseCornerRadius < 0f ? 100000f : style.CloseCornerRadius);
-
-            float span = Mathf.Min(style.CloseSize.x, style.CloseSize.y) * Mathf.Clamp01(style.CloseIconScale);
-            bool useSprite = style.CloseIcon != null;
-
-            if (spriteIcon != null)
-            {
-                spriteIcon.gameObject.SetActive(useSprite);
-                spriteIcon.sprite = style.CloseIcon;
-                spriteIcon.color = style.CloseIconColor;
-                spriteIcon.preserveAspect = true;
-                spriteIcon.raycastTarget = false;
-                UiWindowParts.Pin(spriteIcon.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(span, span), Vector2.zero);
-            }
-
-            if (crossIcon == null || crossBarA == null || crossBarB == null)
-                return;
-
-            crossIcon.gameObject.SetActive(!useSprite);
-            UiWindowParts.Pin(crossIcon, new Vector2(0.5f, 0.5f), new Vector2(span, span), Vector2.zero);
-
-            // Two bars across the same middle, turned against each other. Drawn rather than fetched from an
-            // atlas: a cross is two rectangles, and this way it is the right thickness at any button size.
-            Bar(crossBarA, span, 45f);
-            Bar(crossBarB, span, -45f);
-        }
-
-        private void Bar(RoundedBox bar, float span, float angle)
-        {
-            UiWindowParts.Pin(bar.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(span, style.CloseIconThickness), Vector2.zero);
-            bar.rectTransform.localRotation = Quaternion.Euler(0f, 0f, angle);
-            bar.FillGradientMode = EFillGradient.None;
-            bar.FillColor = style.CloseIconColor;
-            bar.SetBorderSize(0f);
-            bar.SetCornerRadius(100000f);
-            bar.EdgeSoftness = style.EdgeSoftness;
-            bar.raycastTarget = false;
         }
 
         private void ApplyDrag()
@@ -1411,7 +1567,10 @@ namespace FlappyTemplate
             handle.Interactable = true;
         }
 
-        private void ApplyBackdropStyle()
+        // The sheet is made the first time it is asked for and left alone after that: its colour is whatever
+        // the Image says, which is the one seeded when it was made until somebody changes it. The fade goes
+        // through the group beside it, so opening and closing never touch that colour.
+        private void EnsureBackdrop()
         {
             if (!showBackdrop)
             {
@@ -1427,9 +1586,19 @@ namespace FlappyTemplate
                 if (parent == null)
                     return;
 
+                bool made = UiWindowParts.Find<Image>(parent, BackdropName) == null;
                 backdrop = UiWindowParts.Picture(parent, BackdropName);
-                backdrop.raycastTarget = true;
+
+                if (made)
+                    UiWindowSeed.Backdrop(backdrop);
             }
+
+            backdrop.raycastTarget = true;
+
+            if (backdropGroup == null)
+                backdropGroup = backdrop.GetComponent<CanvasGroup>();
+            if (backdropGroup == null)
+                backdropGroup = backdrop.gameObject.AddComponent<CanvasGroup>();
 
             var button = backdrop.GetComponent<Button>();
             if (button == null)
@@ -1445,7 +1614,6 @@ namespace FlappyTemplate
             button.onClick.AddListener(HandleBackdropClicked);
 
             UiWindowParts.Stretch(backdrop.rectTransform, 0f, 0f, 0f, 0f);
-            backdrop.color = style.BackdropColor;
         }
 
         private void HandleBackdropClicked()
@@ -1479,6 +1647,10 @@ namespace FlappyTemplate
                 ResetTransform();
                 group.alpha = opening ? 1f : 0f;
                 group.blocksRaycasts = opening;
+
+                if (backdropGroup != null)
+                    backdropGroup.alpha = 1f;
+
                 done?.Invoke();
                 return;
             }
@@ -1491,14 +1663,14 @@ namespace FlappyTemplate
             // Read where the window rests now rather than remembering it from the last time: a window that
             // has been dragged rests where the player left it, and must come back to there.
             Vector2 rest = rect.anchoredPosition;
-            float openScale = Mathf.Max(0.0001f, style.OpenScale);
+            float from = Mathf.Max(0.0001f, openScale);
 
             if (opening)
             {
                 if (slides)
                     rect.anchoredPosition = rest + offset;
                 if (scales)
-                    rect.localScale = restScale * openScale;
+                    rect.localScale = restScale * from;
                 if (fades)
                     group.alpha = 0f;
             }
@@ -1521,7 +1693,7 @@ namespace FlappyTemplate
 
             if (scales)
             {
-                var to = opening ? restScale : restScale * openScale;
+                var to = opening ? restScale : restScale * from;
                 sequence.Join(DOTween
                     .To(() => rect.localScale, v => rect.localScale = v, to, duration)
                     .SetEase(ease)
@@ -1538,18 +1710,15 @@ namespace FlappyTemplate
                     .SetUpdate(unscaledTime));
             }
 
-            if (backdrop != null && showBackdrop)
+            if (backdropGroup != null && showBackdrop)
             {
-                var sheet = backdrop;
-                var target = style.BackdropColor;
-                var from = target;
-                from.a = 0f;
+                var sheet = backdropGroup;
 
                 if (opening)
-                    sheet.color = from;
+                    sheet.alpha = 0f;
 
                 sequence.Join(DOTween
-                    .To(() => sheet.color, c => sheet.color = c, opening ? target : from, duration)
+                    .To(() => sheet.alpha, a => sheet.alpha = a, opening ? 1f : 0f, duration)
                     .SetEase(Ease.OutQuad)
                     .SetUpdate(unscaledTime));
             }
@@ -1615,6 +1784,9 @@ namespace FlappyTemplate
                 group.alpha = 1f;
                 group.blocksRaycasts = true;
             }
+
+            if (backdropGroup != null)
+                backdropGroup.alpha = 1f;
         }
 
         private void KillTransition()

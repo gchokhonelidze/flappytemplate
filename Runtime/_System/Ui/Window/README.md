@@ -2,8 +2,11 @@
 
 A dialog that is one component rather than a prefab: a rounded panel, a caption, a close button, a drag,
 and an opening that is animated rather than a `SetActive`. Everything it is made of is built from code the
-first time it is needed, so there is no hierarchy to keep in step with the palette and nothing to rebuild
-when a game decides its dialogs have square corners after all.
+first time it is needed, so there is no hierarchy to keep in step and nothing to assemble by hand.
+
+**The window owns where things go, not what they look like.** Panel, Caption, Title, Close, Scrollbar and
+the sheet behind it are ordinary [`RoundedBox`](../RoundedBox/) and TextMeshPro objects — select one and
+style it as you would any other. Nothing here paints over it afterwards.
 
 Inside, the caption and the body are two rows of a [`UiGrid`](../Grid/), and the body **scrolls** once the
 content is taller than the screen has room for — so a dialog is bounded by what it is drawn on rather than by
@@ -14,7 +17,7 @@ Three windows built on it live in folders of their own beside it, and are worked
 for one bet and lays out what came back; and `Fairness/` — the seed pair the game is rolling from, and the two
 ways a player may change it.
 
-*Describes package 1.0.60. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.65. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the windows drawn rather than described.*
 
 **GameObject → UI (Canvas) → FlappyBet → Window**, and **Statistics Window**, **Bet Info Window** and
@@ -40,16 +43,21 @@ UiWindowBuilder.Create(canvas, "Settings")
 
 | Field | What it does |
 | --- | --- |
-| Title | The caption text. Also `Title` from code, live. |
-| Style | Colours, sizes and fonts — the table below. |
+| Title | The caption text. Also `Title` from code, live. What the label looks like is the label's own — select **Title** under the caption. |
 | Show Caption | Off drops the whole header and starts the content at the top of the panel. The close button stays. |
 | Show Close Button | |
 | Start Closed | Hide at Awake and wait for `Open`. Off leaves the window exactly as the scene saved it. |
 | Destroy On Close | For a window built for one message — it takes itself down with it. |
+| Caption Height | The whole header block: the drag strip, the close button and the title. Content starts under it. |
+| Content Padding Left / Top / Right / Bottom | Inset of the content area. Top is measured from the bottom of the caption, not the top of the panel. Four floats rather than a `RectOffset`: that type is a handle onto a native object and cannot be built in a field initialiser. |
 | Fit Content Height | Ask the content how tall it wants to be on every open, and be that tall. Needs something under `Content` that reports a height — see below. |
 | Max Height | The tallest the window may be, in its own units. Zero means the parent it is drawn in — the screen, for a full-screen canvas — less Screen Margin. |
 | Screen Margin | Room left above and below a window that has grown as far as it may. |
 | Scroll | `Never`, `WhenTooTall` (the default) or `Always`. |
+| Show Scrollbar | The bar down the right of the body. Off leaves the wheel and the drag, and no hint that there is more below. |
+| Scrollbar Width / Inset | Inset is measured from the right edge of the body inwards; the content is moved over by the width and the inset together, so the two never overlap. |
+| Scroll Sensitivity | Canvas units per notch of the wheel. |
+| Scroll Inertia / Deceleration | Whether a flick carries on after the finger has left, and how quickly it runs out. On by default — a touch screen expects it, and WebGL on a phone is a touch screen. |
 | Draggable / Drag Anywhere | By the caption, or by any part of the window. Anywhere catches drags on everything inside it that does not handle its own. |
 | Clamp To Parent | Keep the window inside its parent, per axis — see below. |
 | Keep Visible | How much of a window too big for its parent has to stay inside it. |
@@ -60,35 +68,47 @@ UiWindowBuilder.Create(canvas, "Settings")
 | Sorting Order / Layer | Where that canvas sorts. The backdrop takes one less, so it stays behind its own window and over everything else. Leave the layer empty for the parent canvas's own. |
 | Transition | `None`, `Fade`, `Scale`, `ScaleFade`, `SlideUp/Down/Left/Right`. Slides are named for the way the window travels as it opens. |
 | Open / Close Duration, Easing | |
+| Open Scale | What a window grows from, and shrinks back to. |
 | Unscaled Time | On by default, so a window still opens over a paused game. |
 
 `OnOpened`, `OnClosed` and `OnCloseClicked` are UnityEvents. **`OnClosed` fires when the animation has
 finished**, not when `Close` was called — a window is still on screen for the length of its close.
 
-### Style
+## Styling
 
-| | |
-| --- | --- |
-| Fill, Border Color / Size, Corner Radius, Edge Softness | The panel. Straight through to `RoundedBox`. |
-| Caption Height | The whole header block: the drag strip, the close button and the title. Content starts under it. |
-| Caption Fill | Drawn **over** the panel fill, so the default is a wash rather than a colour — alpha at nothing leaves the header the same colour as the body. |
-| Title Top Inset | Space above the title, which is what leaves room for the close button over it. |
-| Title Font / Size / Color / Style / Alignment | |
-| Close Size / Offset / Fill / Border / Corner Radius | Offset is measured inwards from the top right corner. A negative corner radius means a circle at any size. |
-| Close Icon Color / Thickness / Scale | |
-| Close Icon | A sprite in place of the drawn cross. Its colour still comes from the style. |
-| Content Padding Left / Top / Right / Bottom | Inset of the content area. Top is measured from the bottom of the caption, not the top of the panel. Four floats rather than a `RectOffset`: that type is a handle onto a native object and cannot be built in a field initialiser. |
-| Show Scrollbar | The bar down the right of the body. Off leaves the wheel and the drag, and no hint that there is more below. |
-| Scrollbar Width / Inset / Corner Radius | Inset is measured from the right edge of the body inwards; the content is moved over by the width and the inset together, so the two never overlap. A negative radius rounds the bar fully. |
-| Scrollbar Track / Handle Color | |
-| Scroll Sensitivity | Canvas units per notch of the wheel. |
-| Scroll Inertia / Deceleration | Whether a flick carries on after the finger has left, and how quickly it runs out. On by default — a touch screen expects it, and WebGL on a phone is a touch screen. |
-| Backdrop Color | |
-| Open Scale | What a window grows from, and shrinks back to. |
+There is no style object. **Select the part and set it**, the way you would any other box or label:
 
-`ApplyStyle()` pushes the lot onto the parts and is cheap enough to call on a window that is already open —
-which is what a theme change is. `Style` as a property applies itself when assigned. `Clone()` gives a
-window its own copy so it can be themed without the change reaching every other window sharing that style.
+| Part | Where | What it is |
+| --- | --- | --- |
+| Panel | the window object itself | `RoundedBox` — fill, gradient, border, corners, edge softness |
+| Caption | child | `RoundedBox`. Its fill is usually a wash *over* the panel's, so alpha at nothing leaves the header the colour of the body |
+| Title | under Caption | `TextMeshProUGUI` — font, size, colour, style, alignment, and where in the caption it sits |
+| Close | child, ignored by the grid | `RoundedBox` — move it, resize it, round it. `Close/Cross/Bar A` and `Bar B` are the two rotated boxes the cross is drawn from; drop an `Image` with a sprite in the button and turn the cross off instead if you would rather |
+| Scrollbar | under Viewport | `RoundedBox` for the track, `Handle` under it. The window sets the **width** and where it sits; both colours are its own |
+| Window Backdrop | beside the window, in its parent | `Image`. Only its colour — the window fades it through a `CanvasGroup`, so opening and closing never touch it |
+
+From code the same parts are properties: `Panel`, `Caption`, `TitleText`, `CloseBox`, `ScrollTrack`,
+`ScrollHandle`, `Backdrop`, and `CloseButton` for the click.
+
+```csharp
+window.Panel.FillColor = new Color(.13f, .12f, .24f);
+window.Panel.SetCornerRadius(20f);
+window.TitleText.color = Color.white;
+```
+
+Two things the window still writes, because they are about clicks rather than looks: the panel and the
+caption **catch** raycasts and the title does not — a panel that let a click through would pass it to the
+backdrop and close the dialog the player was aiming at, and a label that caught one would swallow the drag
+that starts on it.
+
+`ApplyLayout()` puts every part back where it belongs — the caption's row, the content's inset, the bar down
+the side — and is safe to call on a window somebody has styled. It runs on `Awake`, on every `Open`, and on
+any inspector change.
+
+**A window arrives styled once.** Each part is given a plain dark look at the moment it is *made*, so a
+window created from the menu is a dialog rather than a white square. That is `UiWindowSeed`, it happens once
+per part, and it never runs over a part that already exists — a hand-styled window stays as it was, through
+`Rebuild()` and through every reload.
 
 ## From code
 
@@ -112,7 +132,7 @@ UiWindowBuilder.Create(canvas, "Message")
 // Or reconfigure one that already exists
 UiWindowBuilder.For(window)
     .Title("Paused")
-    .Fill(Color.black)
+    .Panel(box => box.FillColor = Color.black)
     .NoBackdrop();
 ```
 
@@ -120,11 +140,10 @@ UiWindowBuilder.For(window)
 | --- | --- |
 | `Create(parent, name)` / `For(window)` | Start. `Create` centres the new rect in its parent. |
 | `Size(w, h)` · `At(pos)` · `Scale(uniform)` | |
-| `Title(text)` · `TitleFont(font, size)` · `TitleColor(c)` | |
-| `Caption(height, fill)` · `NoCaption()` | |
-| `Style(style)` | A whole style at once. Copied. |
-| `Fill(c)` · `Border(size, c)` · `Corners(r)` · `Padding(l, t, r, b)` | |
-| `CloseButton(bool)` · `CloseIcon(sprite)` · `CloseColors(fill, icon)` | |
+| `Title(text)` | The caption text. |
+| `Panel(box => …)` · `Caption(box => …)` · `Title(label => …)` · `Close(box => …)` | Hand back the part itself to style. A callback rather than a step per colour: what a box can be told is `RoundedBox`'s business, and a chain mirroring all of it would be a second copy of that inspector. |
+| `Caption(height)` · `NoCaption()` · `Padding(l, t, r, b)` | |
+| `CloseButton(bool)` | |
 | `Draggable(anywhere, clamp)` · `Fixed()` | |
 | `OnTop(order, layer)` · `InLine()` | Own canvas and sorting, or hierarchy order like any other UI object. |
 | `Backdrop(closeOnClick)` · `Backdrop(color, closeOnClick)` · `NoBackdrop()` | |
@@ -151,8 +170,9 @@ window.Open();
 
 ## How tall it may be
 
-The inside of a window is a `UiGrid` of one column and two rows — the caption at the height the style says, the
-body taking the rest:
+The inside of a window is a `UiGrid` of one column and two rows — the caption at **Caption Height**, the body
+taking the rest, both inset by the panel's own border, which is read off the `RoundedBox` rather than held
+anywhere:
 
 ```
 Window            RoundedBox · UiGrid · CanvasGroup
@@ -251,7 +271,7 @@ time. Both halves — current and overall — arrive together, so switching tabs
 
 | Field | What it does |
 | --- | --- |
-| Style | Tabs, rows and reset button. The panel around them is the window's own style. |
+| Style | Tabs, rows and reset button. The panel around them is styled on its own parts. |
 | Current / Overall Label | The tab captions. Nothing here is translated. |
 | Tab | Which half is showing. `Tab`, `SetTab`, `ShowCurrent()` and `ShowOverall()` from code. |
 | Rows | What it shows, in the order it shows it — see below. |
@@ -360,7 +380,7 @@ was clicked, finding one in the scene if it was not given one.
 
 | Field | What it does |
 | --- | --- |
-| Style | The card and its fields. The panel around them is the window's own style. |
+| Style | The card and its fields. The panel around them is styled on its own parts. |
 | Labels | Every caption on the dialog, `Profit` to `Server SHA-512`. Nothing here is translated. |
 | Show Profit / Bet Payout / Player / Game | The blocks, each a row of the card. The pairs share a row: bet with payout, player with the bet's id, game with the time. |
 | Show Details | The Details button and the seeds it opens. |
@@ -494,7 +514,7 @@ ordinary `ON_SEED` broadcast, so the window is never showing a pair the server h
 
 | Field | What it does |
 | --- | --- |
-| Style | The box, the buttons and the rows. The panel around them is the window's own style. |
+| Style | The box, the buttons and the rows. The panel around them is styled on its own parts. |
 | Labels | Every caption on the dialog, `New client seed` to `Bets made with pair`. Nothing here is translated. |
 | Show Client Seed Box / Randomize | The two controls. Both are dropped on a shared or multiplayer game whatever these say — see below. |
 | Show Current / Previous Pair | The two sections. The previous one is dropped anyway until there has been one — see below. |
@@ -632,8 +652,14 @@ Two cases it does not cover on its own:
   nothing.
 - Parts are found by name before they are made, so `EnsureBuilt` can be called as often as you like and a
   window saved as a prefab rebuilds into itself rather than into two of everything. `Rebuild()` from the
-  component's context menu is the way out of a hierarchy that has been edited into a state the style can no
-  longer describe.
+  component's context menu is the way out of a hierarchy that has been edited into a state the layout can no
+  longer describe — and it keeps how every part that is still there looks.
+- **Anything else parented to the window root is a cell of its grid.** The window is a `UiGrid` whose
+  layout names `caption` and `body` and nothing else, so a child it has no name for is flowed into a cell of
+  its own — below the body, not over the panel — and switched off the next time the grid is enabled. An
+  overlay says otherwise with a `LayoutElement` set to **Ignore Layout**, which is what the close button
+  wears; a border overlay or border particles from the Rounded Box menu now add one for themselves. Drop it
+  under `Content` instead if it belongs to the content rather than to the frame.
 - Every tween is built with `DOTween.To` rather than the `DOFade`/`DOAnchorPos` shortcuts. Those live in
   DOTween's UI module, which is compiled into the project's own assembly and cannot be reached from a
   package. `Toast` does the same thing for the same reason.
@@ -645,9 +671,9 @@ itself.
 
 | File | |
 | --- | --- |
-| `UiWindow.cs` | The window: parts, style, drag, transition. |
+| `UiWindow.cs` | The window: parts, layout, drag, transition. |
 | `UiWindowBuilder.cs` | The fluent API. |
-| `UiWindowStyle.cs` | Everything a window looks like. |
+| `UiWindowSeed.cs` | The look each part is given when it is made, and never again. Internal. |
 | `UiWindowDragHandle.cs` | The grab. Usable on its own, for a custom header. |
 | `UiWindowParts.cs` | Making and finding children, and naming them for a grid. Internal. |
 | `EWindowTransition.cs`, `EWindowScroll.cs` | |

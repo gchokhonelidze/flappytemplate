@@ -74,8 +74,9 @@ namespace FlappyTemplate
         {
             Clear();
 
-            // The plain case: a panel, a caption, a close button, and a drag by that caption. Everything
-            // else is the style's defaults.
+            // The plain case: a panel, a caption, a close button, and a drag by that caption. Nothing is said
+            // about how it looks, so it arrives in the plain dark dialog every new window starts as - select
+            // any of its parts in the hierarchy and style them from there.
             plain = UiWindowBuilder.Create(transform, "Plain Window")
                 .Size(340f, 220f)
                 .At(new Vector2(-240f, 120f))
@@ -86,12 +87,30 @@ namespace FlappyTemplate
             // A modal, and a slide rather than a pop. The sheet behind it swallows every click that misses
             // the window, and takes it down when clicked - which is why this one has no reason to be
             // dragged, and says so.
+            //
+            // It is also the styled one. Panel, Caption and Title hand back the component itself, so a
+            // window built from code is coloured the same way one built in the editor is: by telling the
+            // RoundedBox and the label what to be, once, after which nothing writes over them.
             modal = UiWindowBuilder.Create(transform, "Modal Window")
                 .Size(420f, 260f)
                 .Title("Modal")
-                .Fill(new Color(0.13f, 0.12f, 0.24f))
-                .Border(2f, new Color(0.45f, 0.4f, 0.75f))
-                .Corners(20f)
+                .Panel(box =>
+                {
+                    box.FillColor = new Color(0.13f, 0.12f, 0.24f);
+                    box.SetBorderSize(2f);
+                    box.SetBorderColor(new Color(0.45f, 0.4f, 0.75f));
+                    box.SetCornerRadius(20f);
+                })
+                .Caption(box =>
+                {
+                    box.FillColor = new Color(1f, 1f, 1f, 0.06f);
+
+                    // The caption sits inside the border, so its top corners are the panel's radius less
+                    // the border to follow the outline rather than cut across it.
+                    box.RadiusTopLeft = 18f;
+                    box.RadiusTopRight = 18f;
+                })
+                .Title(label => label.color = new Color(0.85f, 0.83f, 1f))
                 .Backdrop(new Color(0f, 0f, 0f, 0.65f))
                 .Transition(EWindowTransition.SlideUp, 0.34f, 0.24f)
                 .Easing(Ease.OutCubic, Ease.InCubic)

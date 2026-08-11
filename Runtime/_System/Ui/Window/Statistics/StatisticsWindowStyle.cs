@@ -5,7 +5,8 @@ using UnityEngine;
 namespace FlappyTemplate
 {
     // What the inside of a statistics window looks like. The window around it - panel, caption, close
-    // button, backdrop - is UiWindowStyle's business; this is only the tabs, the rows and the reset button.
+    // button, backdrop - is set on those objects themselves; this is only the tabs, the rows and the reset
+    // button.
     //
     // The defaults are the violet-and-mint reading in the readme: mint for the tab that is showing and for
     // anything above zero, red for anything below it, amber for a count.
@@ -109,7 +110,7 @@ namespace FlappyTemplate
         public Sprite ResetIcon;
 
         /// <summary>A deep copy. Nothing here is a reference type that needs untangling, but it keeps the
-        /// two styles independent the same way UiWindowStyle.Clone does.</summary>
+        /// two styles independent.</summary>
         public StatisticsWindowStyle Clone() => (StatisticsWindowStyle)MemberwiseClone();
     }
 }
