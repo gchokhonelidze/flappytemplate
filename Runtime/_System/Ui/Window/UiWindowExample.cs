@@ -13,7 +13,10 @@ namespace FlappyTemplate
     // most of what UiWindowBuilder can say - a caption, a backdrop, a transition, a drag, a close.
     //
     // The keys are the other half of it: 1 to 5 open the five windows, and Escape closes whatever is open.
-    // Opening a window that is already open does nothing, which is why they can be held down.
+    //
+    // They are placed to overlap on purpose, because that is the other thing to look at here: open several
+    // and each one arrives in front of the last, and clicking any of them - the caption, the body, a button
+    // or a tab inside it - brings that one forward again. None of the five asks for it; a window does it.
     [AddComponentMenu("UI/Ui Window Example")]
     [RequireComponent(typeof(RectTransform))]
     public class UiWindowExample : MonoBehaviour

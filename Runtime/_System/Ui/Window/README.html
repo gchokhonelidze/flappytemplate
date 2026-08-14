@@ -304,6 +304,8 @@
   <a class="sub" href="#previous">The previous pair</a>
   <a class="sub" href="#box">The box</a>
   <a href="#ontop">Drawing over the game</a>
+  <a class="sub" href="#stack">Windows in front of each other</a>
+  <a href="#translations">Translations</a>
   <a href="#notes">Worth knowing</a>
   <a href="#files">Files</a>
 </nav>
@@ -320,12 +322,13 @@
   <p class="lede">The window owns where things go, not what they look like: Panel, Caption, Title, Close,
   Scrollbar and the sheet behind it are ordinary RoundedBox and TextMeshPro objects — select one and style it
   as you would any other. Nothing here paints over it afterwards.</p>
-  <p class="stamp">Describes package 1.0.65. Update this file with the code — and README.md beside it.</p>
+  <p class="stamp">Describes package 1.0.69. Update this file with the code — and README.md beside it.</p>
   <p><strong>GameObject → UI (Canvas) → FlappyBet → Window</strong>, which makes a canvas if the scene has
   none, drops the window under whatever was right-clicked, and builds the whole thing on the spot so it
   arrives looking like a window rather than as an empty rect waiting for play mode. <strong>Statistics
   Window</strong>, <strong>Bet Info Window</strong> and <strong>Fairness Window</strong> sit beside it in that
-  same group, along with everything else this template adds — Rounded Box, Grid and History. Each of the three
+  same group, along with everything else this template adds — Rounded Box, Grid, History and Navbar, the row
+  of buttons that opens two of the windows here. Each of the three
   keeps its own files in a folder of its own: <code>Statistics/</code>, <code>BetInfo/</code>,
   <code>Fairness/</code>.</p>
   <p>Adding the component by hand instead, it belongs on an <strong>empty RectTransform</strong>, not a UI
@@ -505,11 +508,11 @@ fairness.Show();</code></pre>
   <tr><td>Draggable / Drag Anywhere</td><td>By the caption, or by any part of the window. Anywhere catches drags on everything inside it that does not handle its own.</td></tr>
   <tr><td>Clamp To Parent</td><td>Keep the window inside its parent, per axis — see <a href="#notes">Worth knowing</a>.</td></tr>
   <tr><td>Keep Visible</td><td>How much of a window too big for its parent has to stay inside it.</td></tr>
-  <tr><td>Bring To Front</td><td>Draw over the siblings when grabbed or opened.</td></tr>
+  <tr><td>Bring To Front</td><td>Put the window in front of every other open one when it is opened, grabbed, or clicked anywhere — see <a href="#stack">Windows in front of each other</a>.</td></tr>
   <tr><td>Show Backdrop</td><td>A sheet across the parent behind the window, which is what makes it modal.</td></tr>
   <tr><td>Close On Backdrop Click</td><td></td></tr>
   <tr><td>Always On Top</td><td>On by default. Gives the window a canvas of its own with Override Sorting, which is what lifts it clear of the game — see <a href="#ontop">Drawing over the game</a>.</td></tr>
-  <tr><td>Sorting Order / Layer</td><td>Where that canvas sorts. The backdrop takes one less, so it stays behind its own window and over everything else. Leave the layer empty for the parent canvas's own.</td></tr>
+  <tr><td>Sorting Order / Layer</td><td>The floor the open windows are stacked up from, rather than the number any one of them ends up at. The backdrop takes one less than its own window. Leave the layer empty for the parent canvas's own.</td></tr>
   <tr><td>Transition</td><td><code>None</code>, <code>Fade</code>, <code>Scale</code>, <code>ScaleFade</code>, <code>SlideUp/Down/Left/Right</code>. Slides are named for the way the window travels as it opens.</td></tr>
   <tr><td>Durations, Easing</td><td>One of each, for opening and closing.</td></tr>
   <tr><td>Open Scale</td><td>What a window grows from, and shrinks back to.</td></tr>
@@ -629,15 +632,22 @@ read off the <code>RoundedBox</code> rather than held anywhere:</p>
 <pre><code>Window            RoundedBox · UiGrid · CanvasGroup
 ├ Caption         cell "caption"        row 0, Fixed(Caption Height)
 │  └ Title
-├ Viewport        cell "body"           row 1, Flexible · RectMask2D · ScrollRect
-│  ├ Content      ← whatever the window is for
+├ Viewport        cell "body"           row 1, Flexible · ScrollRect
+│  ├ Clip         the viewport less Content Padding · RectMask2D
+│  │  └ Content   ← whatever the window is for
 │  └ Scrollbar    Track → Sliding Area → Handle
 └ Close           an overlay: ignored by the grid entirely</code></pre>
 
 <div class="note">
-  <p>Two things follow from that. <strong><code>Content</code> is a grandchild now</strong>, inside
-  <code>Viewport</code> — a window saved before this moves its own <code>Content</code> in on the next build,
-  children and all, so nothing is lost and nothing needs doing by hand.</p>
+  <p><strong><code>Clip</code> is where the padding lives</strong>, and that is not a detail: a
+  <code>ScrollRect</code> holds its content to the rect it was handed as a viewport, so padding written onto
+  the content as an offset is padding the scroller takes straight back off — the first drag pulls the top
+  margin away and the end of the travel leaves the last row flat against the bottom of the panel. Padding the
+  rect the content moves <em>inside</em> keeps the margin at rest, mid-scroll and at the end alike.
+  <code>Clip</code> is what the scroller is given and what the mask cuts at, so content on its way past is
+  gone before it reaches the margin.</p>
+  <p>A window saved before either of these <strong>moves its own <code>Content</code> in on the next
+  build</strong>, children and all, so nothing is lost and nothing needs doing by hand.</p>
   <p>And the caption is shown and hidden <strong>by the grid's layout</strong> rather than by
   <code>SetActive</code>, because a grid takes its layout as the whole truth about which of its children are
   showing and re-asserts it whenever it is enabled. The close button sits outside all of that: it carries an
@@ -652,7 +662,7 @@ read off the <code>RoundedBox</code> rather than held anywhere:</p>
   <tr><td><code>Fit()</code></td><td>Measures the content, makes the window that tall, clamps, and scrolls the rest.</td></tr>
   <tr><td><code>FitTo(height)</code></td><td>The same from a height the caller worked out itself.</td></tr>
   <tr><td><code>ScrollToTop()</code></td><td>Back to the top of the body.</td></tr>
-  <tr><td><code>IsScrolling</code> · <code>Scroller</code> · <code>Viewport</code> · <code>Grid</code></td><td>What it ended up doing, and the parts that do it.</td></tr>
+  <tr><td><code>IsScrolling</code> · <code>Scroller</code> · <code>Viewport</code> · <code>ClipArea</code> · <code>Grid</code></td><td>What it ended up doing, and the parts that do it.</td></tr>
 </table>
 
 <p><code>Fit()</code> asks the content: <code>LayoutUtility.GetPreferredHeight(Content)</code> after an immediate
@@ -686,10 +696,11 @@ changes that limit without anything asking, so it is checked once a frame per op
 the clamp is worked out again when it moves.</p>
 
 <p>While scrolling, <code>Content</code> is as tall as it asked to be and anchored to the top of
-<code>Viewport</code>, which is the shape a <code>ScrollRect</code> moves; the mask clips at the viewport, and the
-content's right padding grows by the bar's width so the two never overlap. While not, <code>Content</code> fills
-the viewport exactly as it filled the window before, and both the mask and the scroller are switched off —
-nothing is moving, so nothing needs clipping.</p>
+<code>Clip</code>, which is the shape a <code>ScrollRect</code> moves; the mask clips at <code>Clip</code>, and
+its right inset grows by the bar's width so the two never overlap. While not, <code>Content</code> is exactly
+<code>Clip</code> — same rect, no travel — and both the mask and the scroller are switched off, since nothing
+is moving and nothing needs clipping. The <strong>Content Padding</strong> is on <code>Clip</code> in both
+cases, which is why the gap under the last row is the same whether the body scrolls or not.</p>
 
 <div class="note">
   <p><strong>Touch and the wheel both need something to land on.</strong> A <code>ScrollRect</code> is only offered
@@ -1058,7 +1069,7 @@ it.</p>
 <h2 id="ontop">Drawing over the game</h2>
 
 <p>A window that comes out behind the game is not a hierarchy problem, and moving it down the hierarchy will
-not fix it. <strong>Bring To Front only settles the window against its own siblings.</strong> Everything else
+not fix it. <strong>Hierarchy position only settles the window against its own siblings.</strong> Everything else
 on screen — another canvas, and anything the scene draws rather than the canvas: sprites, meshes, particles —
 is sorted long before sibling order is consulted.</p>
 
@@ -1082,6 +1093,76 @@ against each other by exactly that number, so 100 clears anything the game draws
   draws over the whole scene, so the thing in front is other UI. Raise the order, or check that the window is
   not inside a panel that clips it.</li>
 </ul>
+
+<h3 id="stack">Windows in front of each other</h3>
+
+<p>Always On Top settles a window against the game and leaves a second question open: with two of them on
+screen, which is in front? Every window at Sorting Order 100 is a tie, and a tie is broken by nothing anybody
+chose.</p>
+
+<p>So the open windows are kept as <strong>one pile, newest on top</strong>, shared by the whole game:</p>
+
+<table>
+  <thead><tr><th>It happens when</th><th>Because</th></tr></thead>
+  <tbody>
+  <tr><td>A window opens</td><td>Newest on top. A dialog that arrives behind the one it was opened from has, from where the player is sitting, not opened.</td></tr>
+  <tr><td>A window that is already open is opened again</td><td>Asking for a window is nearly always asking to look at it.</td></tr>
+  <tr><td>The window is clicked or touched anywhere</td><td>Grabbing the caption, pressing a button inside it, scrolling the body.</td></tr>
+  </tbody>
+</table>
+
+<p><code>Raise()</code> does it from code, for a front that something else decides.</p>
+
+<p>The pile hands out the sorting orders: <strong>two apart, counted up from the highest Sorting Order among
+the windows that are open</strong>, so each window has the odd number below it for its own backdrop and every
+raise lands inside a known band rather than climbing forever. A window deliberately set to 200 lifts the whole
+pile with it instead of being buried by it. Closing one takes it out and closes the gap.</p>
+
+<p>Sibling order is moved with it, so a window with Always On Top <em>off</em> is stacked by the same rule —
+that is the only thing hierarchy position can be sorted by. Turning <strong>Bring To Front</strong> off leaves
+a window where it is when it is touched; it still joins the pile as it opens, because it has to be
+somewhere.</p>
+
+<div class="note">
+  <p><strong>Clicking a button inside a window counts as clicking the window.</strong> It has to be looked for
+  rather than waited for: a pointer press is delivered to the first handler found walking up from whatever was
+  hit and stops there, so a press on a <code>Button</code>, a <code>Toggle</code> or an input field never
+  reaches the window around it. Those are all <code>Selectable</code>s, and pressing one moves the event
+  system's selection — so the pile watches the selection for a change into a window it has not already raised.
+  One reference compare per frame while a window is open, and nothing at all while none is.</p>
+</div>
+
+<h2 id="translations">Translations</h2>
+
+<p>The windows follow <code>MainState.Locale</code> on their own. Nothing has to be set up for it and no field
+changes meaning: every caption is written through <code>Translator.Label</code>, which</p>
+
+<ol>
+  <li>translates the string if it is a <strong>key</strong> — <code>bet_info.payout</code>;</li>
+  <li>else translates it if it matches a <strong>known en_US label</strong> — <code>"Payout"</code>, which is
+  what a scene saved;</li>
+  <li>else prints it <strong>exactly as typed</strong> — so a wording of your own survives.</li>
+</ol>
+
+<p>That is why an existing scene translates without being opened. The label fields under <strong>Labels</strong>
+in each inspector, the window <code>Title</code>, and a <code>StatisticsRow</code>'s title all go through it.</p>
+
+<table>
+  <tr><th>To…</th><th>Do</th></tr>
+  <tr><td>Change the language</td><td>Set <code>MainState.Locale</code>, or <code>Translator.Locale</code>. Open windows repaint on the next frame</td></tr>
+  <tr><td>Reword a caption everywhere</td><td><code>Translator.Add(locale, "bet_info.payout", "…")</code>, once per language</td></tr>
+  <tr><td>Reword one window only</td><td>Type it into that window's inspector field — an unknown string is left alone</td></tr>
+</table>
+
+<p>Only captions are translated. Every value beside one — an amount, a seed, a hash, a bet id, a player name —
+is printed as the server sent it. The two exceptions are the ones that are words rather than data:
+<strong>N/A</strong> in the fairness rows and <strong>Hidden</strong> where a server seed has not been revealed
+yet.</p>
+
+<div class="note">
+  <p>A window is switched off while it is closed, so a closed one is not listening. It repaints on the way back
+  in, which is why a language changed behind a closed dialog is already applied when it opens.</p>
+</div>
 
 <h2 id="notes">Worth knowing</h2>
 
@@ -1184,6 +1265,7 @@ against each other by exactly that number, so 100 clears anything the game draws
   <tr><td><code>Fairness/FairnessWindow.cs</code></td><td>The fairness dialog.</td></tr>
   <tr><td><code>Fairness/FairnessWindowStyle.cs</code></td><td>What it looks like.</td></tr>
   <tr><td><code>Editor/Window/UiWindowMenu.cs</code></td><td>The four GameObject → UI (Canvas) → FlappyBet entries.</td></tr>
+  <tr><td><code>../../Translations/</code></td><td><code>Translator.Label</code>, which every caption above is written through.</td></tr>
   <tr><td><code>Editor/FlappyBetMenu.cs</code></td><td>The one group they all go in, path and priority. Internal.</td></tr>
   <tr><td><code>../RoundedBox/</code></td><td>Every panel here is one.</td></tr>
   <tr><td><code>../Grid/</code></td><td>What lays the bet info card and the fairness rows out.</td></tr>

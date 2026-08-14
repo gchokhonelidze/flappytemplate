@@ -17,14 +17,18 @@ Three windows built on it live in folders of their own beside it, and are worked
 for one bet and lays out what came back; and `Fairness/` — the seed pair the game is rolling from, and the two
 ways a player may change it.
 
-*Describes package 1.0.65. Update this file with the code — and **README.html** beside it, which is the same
+Every caption in all three, and the title of any window, is **translated** — see
+[Translations](#translations) below.
+
+*Describes package 1.0.69. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the windows drawn rather than described.*
 
 **GameObject → UI (Canvas) → FlappyBet → Window**, and **Statistics Window**, **Bet Info Window** and
 **Fairness Window** beside it. Each makes a canvas if the scene has none, drops the window under whatever was
 right-clicked, and builds the whole thing on the spot so it arrives looking like a window rather than as an
 empty rect waiting for play mode. Everything else this template adds is in that same **FlappyBet** group —
-Rounded Box, Grid and History.
+Rounded Box, Grid, History and [Navbar](../Navbar/), which is the row of buttons that opens two of the
+windows below.
 
 Adding the component by hand instead, it belongs on an **empty RectTransform**, not a UI Panel: the window
 draws its own panel, so a Panel's Image leaves two backgrounds stacked, and anything already inside that
@@ -61,11 +65,11 @@ UiWindowBuilder.Create(canvas, "Settings")
 | Draggable / Drag Anywhere | By the caption, or by any part of the window. Anywhere catches drags on everything inside it that does not handle its own. |
 | Clamp To Parent | Keep the window inside its parent, per axis — see below. |
 | Keep Visible | How much of a window too big for its parent has to stay inside it. |
-| Bring To Front | Draw over the siblings when grabbed or opened. |
+| Bring To Front | Put the window in front of every other open one when it is opened, grabbed, or clicked anywhere — see [Drawing over the game](#drawing-over-the-game). |
 | Show Backdrop | A sheet across the parent behind the window, which is what makes it modal — it swallows every click that misses. |
 | Close On Backdrop Click | |
 | Always On Top | On by default. Gives the window a canvas of its own with Override Sorting, which is what lifts it clear of the game — see below. |
-| Sorting Order / Layer | Where that canvas sorts. The backdrop takes one less, so it stays behind its own window and over everything else. Leave the layer empty for the parent canvas's own. |
+| Sorting Order / Layer | The floor the open windows are stacked up from, rather than the number any one of them ends up at. The backdrop takes one less than its own window. Leave the layer empty for the parent canvas's own. |
 | Transition | `None`, `Fade`, `Scale`, `ScaleFade`, `SlideUp/Down/Left/Right`. Slides are named for the way the window travels as it opens. |
 | Open / Close Duration, Easing | |
 | Open Scale | What a window grows from, and shrinks back to. |
@@ -178,15 +182,23 @@ anywhere:
 Window            RoundedBox · UiGrid · CanvasGroup
 ├ Caption         cell "caption"        row 0, Fixed(Caption Height)
 │  └ Title
-├ Viewport        cell "body"           row 1, Flexible · RectMask2D · ScrollRect
-│  ├ Content      ← whatever the window is for
+├ Viewport        cell "body"           row 1, Flexible · ScrollRect
+│  ├ Clip         the viewport less Content Padding · RectMask2D
+│  │  └ Content   ← whatever the window is for
 │  └ Scrollbar    Track → Sliding Area → Handle
 └ Close           an overlay: ignored by the grid entirely
 ```
 
-Two things follow from that. **`Content` is a grandchild now**, inside `Viewport` — a window saved before this
-moves its own `Content` in on the next build, children and all, so nothing is lost and nothing needs doing by
-hand. And the caption is shown and hidden **by the grid's layout** rather than by `SetActive`, because a grid
+**`Clip` is where the padding lives**, and that is not a detail: a `ScrollRect` holds its content to the rect
+it was handed as a viewport, so padding written onto the content as an offset is padding the scroller takes
+straight back off — the first drag pulls the top margin away and the end of the travel leaves the last row
+flat against the bottom of the panel. Padding the rect the content moves *inside* keeps the margin at rest,
+mid-scroll and at the end alike. `Clip` is what the scroller is given and what the mask cuts at, so content on
+its way past is gone before it reaches the margin.
+
+A window saved before either of these **moves its own `Content` in on the next build**, children and all, so
+nothing is lost and nothing needs doing by hand. The caption is shown and hidden **by the grid's layout**
+rather than by `SetActive`, because a grid
 takes its layout as the whole truth about which of its children are showing and re-asserts it whenever it is
 enabled. The close button sits outside all of that: it carries an ignored `LayoutElement`, so the grid neither
 places it nor has an opinion about whether it is visible.
@@ -198,7 +210,7 @@ places it nor has an opinion about whether it is visible.
 | `Fit()` | Measures the content, makes the window that tall, clamps, and scrolls the rest. |
 | `FitTo(height)` | The same from a height the caller worked out itself. |
 | `ScrollToTop()` | Back to the top of the body. |
-| `IsScrolling` · `Scroller` · `Viewport` · `Grid` | What it ended up doing, and the parts that do it. |
+| `IsScrolling` · `Scroller` · `Viewport` · `ClipArea` · `Grid` | What it ended up doing, and the parts that do it. |
 
 `Fit()` asks the content: `LayoutUtility.GetPreferredHeight(Content)` after an immediate rebuild. That needs
 something under `Content` that **reports a height** — a layout group (`UiGrid` included), a label, a
@@ -224,10 +236,11 @@ reasoning the drag clamp uses. A phone that turns or a player window that is dra
 without anything asking, so it is checked once a frame per open window — a float compare — and the clamp is
 worked out again when it moves.
 
-While scrolling, `Content` is as tall as it asked to be and anchored to the top of `Viewport`, which is the
-shape a `ScrollRect` moves; the mask clips at the viewport, and the content's right padding grows by the bar's
-width so the two never overlap. While not, `Content` fills the viewport exactly as it filled the window before,
-and both the mask and the scroller are switched off — nothing is moving, so nothing needs clipping.
+While scrolling, `Content` is as tall as it asked to be and anchored to the top of `Clip`, which is the shape
+a `ScrollRect` moves; the mask clips at `Clip`, and `Clip`'s right inset grows by the bar's width so the two
+never overlap. While not, `Content` is exactly `Clip` — same rect, no travel — and both the mask and the
+scroller are switched off, since nothing is moving and nothing needs clipping. The **Content Padding** is on
+`Clip` in both cases, which is why the gap under the last row is the same whether the body scrolls or not.
 
 **Touch and the wheel both need something to land on.** A `ScrollRect` is only offered a drag or a scroll if the
 pointer hits a raycast target that is the scroller itself or something under it — and every graphic a window puts
@@ -571,10 +584,35 @@ the moment there is an `Emitter`, the buttons only ever send.
 Like the bet info dialog, the window is fitted **twice over, and again on the next two frames** — a SHA-512
 wraps to three lines, and a label only reports the height it needs at the width the first pass gave it.
 
+## Translations
+
+The windows follow `MainState.Locale` on their own. Nothing has to be set up for it and no field changes
+meaning: every caption is written through [`Translator.Label`](../../Translations/), which
+
+1. translates the string if it is a **key** — `bet_info.payout`;
+2. else translates it if it matches a **known en_US label** — `"Payout"`, which is what a scene saved;
+3. else prints it **exactly as typed** — so a wording of your own survives.
+
+That is why an existing scene translates without being opened. The label fields under **Labels** in each
+inspector, the window `Title`, and a `StatisticsRow`'s title all go through it.
+
+| To… | Do |
+|---|---|
+| Change the language | Set `MainState.Locale`, or `Translator.Locale`. Open windows repaint on the next frame |
+| Reword a caption everywhere | `Translator.Add(locale, "bet_info.payout", "…")`, once per language |
+| Reword one window only | Type it into that window's inspector field — an unknown string is left alone |
+
+Only captions are translated. Every value beside one — an amount, a seed, a hash, a bet id, a player name — is
+printed as the server sent it. The two exceptions are the ones that are words rather than data: **N/A** in the
+fairness rows and **Hidden** where a server seed has not been revealed yet.
+
+> A window is switched off while it is closed, so a closed one is not listening. It repaints on the way back
+> in, which is why a language changed behind a closed dialog is already applied when it opens.
+
 ## Drawing over the game
 
 A window that comes out behind the game is not a hierarchy problem, and moving it down the hierarchy will
-not fix it. **Bring To Front only settles the window against its own siblings.** Everything else on screen —
+not fix it. **Hierarchy position only settles the window against its own siblings.** Everything else on screen —
 another canvas, and anything the scene draws rather than the canvas: sprites, meshes, particles — is sorted
 long before sibling order is consulted.
 
@@ -591,6 +629,37 @@ Two cases it does not cover on its own:
 - **The window is under a Screen Space - Overlay canvas and still hidden.** An overlay canvas draws over the
   whole scene, so the thing in front is other UI. Raise the order, or check that the window is not inside a
   panel that clips it.
+
+### Windows in front of each other
+
+Always On Top settles a window against the game and leaves a second question open: with two of them on screen,
+which is in front? Every window at Sorting Order 100 is a tie, and a tie is broken by nothing anybody chose.
+
+So the open windows are kept as **one pile, newest on top**, shared by the whole game:
+
+| It happens when | Because |
+| --- | --- |
+| A window opens | Newest on top. A dialog that arrives behind the one it was opened from has, from where the player is sitting, not opened. |
+| A window that is already open is opened again | Asking for a window is nearly always asking to look at it. |
+| The window is clicked or touched anywhere | Grabbing the caption, pressing a button inside it, scrolling the body. |
+
+`Raise()` does it from code, for a front that something else decides.
+
+The pile hands out the sorting orders: **two apart, counted up from the highest Sorting Order among the windows
+that are open**, so each window has the odd number below it for its own backdrop and every raise lands inside a
+known band rather than climbing forever. A window deliberately set to 200 lifts the whole pile with it instead
+of being buried by it. Closing one takes it out and closes the gap.
+
+Sibling order is moved with it, so a window with Always On Top *off* is stacked by the same rule — that is the
+only thing hierarchy position can be sorted by. Turning **Bring To Front** off leaves a window where it is when
+it is touched; it still joins the pile as it opens, because it has to be somewhere.
+
+> **Clicking a button inside a window counts as clicking the window.** It has to be looked for rather than
+> waited for: a pointer press is delivered to the first handler found walking up from whatever was hit and
+> stops there, so a press on a `Button`, a `Toggle` or an input field never reaches the window around it. Those
+> are all `Selectable`s, and pressing one moves the event system's selection — so the pile watches the
+> selection for a change into a window it has not already raised. One reference compare per frame while a
+> window is open, and nothing at all while none is.
 
 ## Worth knowing
 
@@ -687,6 +756,7 @@ itself.
 | `Fairness/FairnessWindow.cs` | The fairness dialog. |
 | `Fairness/FairnessWindowStyle.cs` | What it looks like. |
 | `Editor/Window/UiWindowMenu.cs` | The four GameObject → UI (Canvas) → FlappyBet entries. |
+| [`../../Translations/`](../../Translations/) | `Translator.Label`, which every caption above is written through. |
 | `Editor/FlappyBetMenu.cs` | The one group they all go in, path and priority. Internal. |
 | `../RoundedBox/` | Every panel here is one. |
 | `../Grid/` | What lays the bet info card out. |

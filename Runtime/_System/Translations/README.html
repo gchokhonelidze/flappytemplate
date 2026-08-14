@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Translations — FlappyBet Template</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --ink: #1c1f24;
+    --soft: #5b6472;
+    --line: #dfe3e8;
+    --accent: #3f6fd8;
+    --code-bg: #f2f4f7;
+    --note-bg: #eef4ff;
+    --note-line: #6f9bea;
+    --stage: #e9ebef;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --panel: #1d2025;
+      --ink: #e4e7ec;
+      --soft: #9aa3b0;
+      --line: #2c3038;
+      --accent: #7aa2f7;
+      --code-bg: #12141a;
+      --note-bg: #161d2b;
+      --note-line: #4a6ea8;
+      --stage: #0f1114;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 28px 96px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 64px; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 14px;
+    border-left: 2px solid var(--line);
+    padding-left: 16px;
+  }
+  nav.toc strong { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--soft); }
+  nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+
+  header.title { margin-bottom: 28px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 44px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  p { margin: 12px 0; max-width: 74ch; }
+  a { color: var(--accent); }
+  .lede { color: var(--soft); }
+  .stamp { color: var(--soft); font-size: 13.5px; font-style: italic; }
+  ul { max-width: 74ch; }
+
+  code, pre { font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 4px; font-size: 0.86em; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--soft); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td:first-child { white-space: nowrap; }
+
+  .note {
+    border-left: 3px solid var(--note-line);
+    background: var(--note-bg);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+  .note p { margin: 0; }
+  .note p + p { margin-top: 10px; }
+
+  /* --- the lookup, drawn --- */
+  .stage {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 18px 0;
+    overflow-x: auto;
+  }
+  .stage .why { margin: 0 0 14px; color: var(--soft); font-size: 13px; max-width: none; }
+
+  .chain { display: flex; align-items: stretch; gap: 0; min-width: 640px; }
+  .step {
+    flex: 1 1 0;
+    border: 1.5px solid var(--line);
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13.5px;
+  }
+  .step b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--soft); margin-bottom: 6px; }
+  .step.hit { border-color: var(--note-line); background: var(--note-bg); }
+  .step.end { border-color: var(--warn-line); background: var(--warn-bg); }
+  .arrow { flex: 0 0 34px; display: flex; align-items: center; justify-content: center; color: var(--soft); font-size: 18px; }
+
+  .langs { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0; }
+  .lang { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 4px 9px; font: 13px/1.4 Consolas, "SF Mono", Menlo, monospace; }
+  .lang.rtl { border-color: var(--warn-line); background: var(--warn-bg); }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <a href="#start">Quick start</a>
+  <a href="#missing">When a string is missing</a>
+  <a href="#tables">The two tables</a>
+  <a class="sub" href="#adding">Adding a language</a>
+  <a href="#scene">Strings from a scene</a>
+  <a href="#keys">Keys</a>
+  <a class="sub" href="#package">Adding one to the package</a>
+  <a href="#format">Numbers in a string</a>
+  <a href="#labels">How a label knows</a>
+  <a class="sub" href="#component">Ui Translated Text</a>
+  <a href="#shipping">Before shipping a language</a>
+  <a href="#locales">Locales</a>
+  <a href="#files">Files</a>
+</nav>
+
+<main>
+
+<header class="title">
+  <h1>Translations</h1>
+  <p class="lede">Every word the player reads, in the language <code>MainState.Locale</code> names. One call, no
+  files to load, no initialisation step.</p>
+  <span class="version">Describes package 1.0.68</span>
+</header>
+
+<pre><code>label.text = Translator.T("bet_info.payout");</code></pre>
+
+<p>The strings are dictionaries compiled into the package. A lookup is two dictionary hits, so calling
+<code>T</code> from <code>Update</code> is not a thing to worry about.</p>
+
+<p>The package's own windows — <strong>Statistics</strong>, <strong>Bet info</strong>, <strong>Fairness</strong>
+and any <code>UiWindow</code> title — already go through this, so they follow the locale with nothing wired up.
+See <a href="#scene">Strings from a scene</a> for how, and why an existing scene translates without being
+opened.</p>
+
+<h2 id="start">Quick start</h2>
+
+<ol>
+  <li>Put <strong>Ui Translated Text</strong> on a TextMeshPro or a uGUI Text and type a key —
+  <code>statistics.luck</code>.</li>
+  <li>Change <code>StateManager.Inst.MainState.Locale</code>, from code or from the inspector while the game
+  runs.</li>
+  <li>The label rewrites itself. So does every other one.</li>
+</ol>
+
+<p>From code, without the component:</p>
+
+<pre><code>title.text = Translator.T("fairness.title");
+Translator.Locale = ELocale.de_DE;          // writes MainState.Locale
+Translator.OnLocaleChanged += Redraw;       // your turn to redraw</code></pre>
+
+<h2 id="missing">When a string is missing</h2>
+
+<p>This is the whole of it, and it is worth reading once. A lookup walks left to right and stops at the first
+box that has the key:</p>
+
+<div class="stage">
+  <p class="why">Translator.T("shop.title") — with the locale set to de_DE</p>
+  <div class="chain">
+    <div class="step"><b>Added, de_DE</b>What the game registered for this language</div>
+    <div class="arrow">→</div>
+    <div class="step"><b>Package, de_DE</b>Translations.cs</div>
+    <div class="arrow">→</div>
+    <div class="step hit"><b>Added, en_US</b>The fallback the game wrote</div>
+    <div class="arrow">→</div>
+    <div class="step hit"><b>Package, en_US</b>The fallback the package ships</div>
+    <div class="arrow">→</div>
+    <div class="step end"><b>Nobody</b>“untranslated”</div>
+  </div>
+</div>
+
+<table>
+  <tr><th>The key is in…</th><th>You get</th></tr>
+  <tr><td>The current locale</td><td>That text</td></tr>
+  <tr><td>Only <code>en_US</code></td><td>The <strong>en_US</strong> text — a language that is not finished still reads</td></tr>
+  <tr><td>Neither, in either table</td><td><strong><code>untranslated</code></strong></td></tr>
+</table>
+
+<p>A key is never shown. <code>bet_info.payout</code> on screen is a bug wearing a label's clothes, and a player
+cannot tell it from a feature. While a game is being built, name the holes instead:</p>
+
+<pre><code>Translator.MissingFormat = "untranslated: {0}";</code></pre>
+
+<p><code>{0}</code> is the key. Without it the format is used as it stands, so the default prints the bare
+word.</p>
+
+<h2 id="tables">The two tables</h2>
+
+<p>A lookup asks two tables, in this order, for the current locale — and then asks both again for
+<code>en_US</code>:</p>
+
+<ol>
+  <li><strong>What the game added</strong> — <code>Translator.Add(…)</code></li>
+  <li><strong>What the package ships</strong> — <code>Translations.cs</code></li>
+</ol>
+
+<p>So a game may override a package string, add keys of its own, or fill in a locale the package left out, and
+never edit the package to do it — an update walks over <code>Translations.cs</code>, and would walk over
+anything you had written into it.</p>
+
+<h3 id="adding">Adding a language</h3>
+
+<pre><code>Translator.Add(ELocale.de_DE, new Dictionary&lt;string, string&gt;
+{
+    ["shop.title"]      = "Laden",
+    ["bet_info.payout"] = "Gewinn",     // overrides the package, in de_DE only
+});</code></pre>
+
+<table>
+  <tr><th>Call</th><th>Does</th></tr>
+  <tr><td><code>Add(locale, key, text)</code></td><td>One string</td></tr>
+  <tr><td><code>Add(locale, entries)</code></td><td>A whole language at once — the usual way</td></tr>
+  <tr><td><code>Remove(locale, key)</code></td><td>Drops yours; the package's text comes back</td></tr>
+  <tr><td><code>Clear()</code></td><td>Drops everything you added, in every locale</td></tr>
+</table>
+
+<p>Adding redraws every listening label, so strings registered after a scene has loaded still land.</p>
+
+<h2 id="scene">Strings from a scene</h2>
+
+<p><code>T</code> is for code that knows it is holding a key. A caption typed into an inspector, a
+<code>StatisticsRow</code> title, a window's <code>Title</code> — none of those are known to be keys, and half
+of them are English text a scene saved months ago. <code>Label</code> is for those:</p>
+
+<pre><code>titleText.text = Translator.Label(title);</code></pre>
+
+<table>
+  <tr><th>The string is…</th><th>You get</th></tr>
+  <tr><td>A key either table knows — <code>bet_info.payout</code></td><td>The translation</td></tr>
+  <tr><td>A <strong>known en_US text</strong> — <code>"Payout"</code></td><td>The translation of the key that holds it</td></tr>
+  <tr><td>Neither — <code>"Winnings"</code></td><td>The string, exactly as it came in</td></tr>
+</table>
+
+<p>The middle row is the one that matters: it is why the package's windows translate without a single scene or
+prefab being touched, and why a wording of your own is left alone rather than being replaced or shown as
+<code>untranslated</code>. Nothing is ever printed as a bare key by <code>Label</code> — the worst case is the
+string you gave it.</p>
+
+<p>The reverse index it reads is built the first time it is needed and dropped whenever strings are added, so a
+game that registers its own <code>en_US</code> text gets that matched too. Two keys that happen to share an
+English wording resolve to whichever was written first; a game's own <code>en_US</code> string wins over the
+package's.</p>
+
+<div class="note">
+  <p>Use <code>T</code> where you control the key and want a missing one to be loud. Use <code>Label</code> for
+  anything that came out of a scene, a prefab or a game's own data.</p>
+</div>
+
+<h2 id="keys">Keys</h2>
+
+<p>Lower case, <code>area.thing</code>. The package ships these:</p>
+
+<table>
+  <tr><th>Area</th><th>Keys</th></tr>
+  <tr><td><code>common</code></td><td><code>na</code>, <code>hidden</code>, <code>nonce</code>, <code>client_seed</code>, <code>server_seed</code>, <code>block_hash</code>, <code>server_sha512</code></td></tr>
+  <tr><td><code>bet_info</code></td><td><code>title</code>, <code>profit</code>, <code>bet</code>, <code>payout</code>, <code>player</code>, <code>bet_id</code>, <code>game</code>, <code>time</code>, <code>details</code>, <code>verify</code></td></tr>
+  <tr><td><code>fairness</code></td><td><code>title</code>, <code>new_client_seed</code>, <code>randomize</code>, <code>current_pair</code>, <code>previous_pair</code>, <code>server_sha512</code>, <code>bets_made</code></td></tr>
+  <tr><td><code>statistics</code></td><td><code>title</code>, <code>current</code>, <code>overall</code>, <code>total_wagered</code>, <code>counts</code>, <code>revenue</code>, <code>total_profit</code>, <code>luck</code></td></tr>
+</table>
+
+<p>A word that reads the same in two windows is one key under <code>common</code>, so a better wording for it is
+a one-line change rather than a hunt.</p>
+
+<h3 id="package">Adding one to the package</h3>
+
+<p><code>Translations.cs</code> is a list of <code>Row</code> calls, one per key, <strong>one named argument per
+language</strong>:</p>
+
+<pre><code>Row("shop.buy",
+    en_US: "Buy", ru_RU: "Купить", fr_FR: "Acheter", bn_BD: "কিনুন",
+    …
+    ka_GE: "ყიდვა", hy_AM: "Գնել");</code></pre>
+
+<div class="note">
+  <p>Every argument is required, so a key added without a Georgian string <strong>does not compile</strong>.
+  That is the rule the file exists to enforce: a translation is added for every locale at once, or it is not
+  added.</p>
+  <p>They are named rather than positional because a row is 22 strings long, and a language shifted by one is a
+  bug nobody would see until a player did.</p>
+</div>
+
+<h2 id="format">Numbers and names in a string</h2>
+
+<p>Put the placeholders in the translation, so a language that wants them in the other order can have them
+there:</p>
+
+<pre><code>// "won.line" is "You won {0} on {1}" in en_US
+label.text = Translator.Format("won.line", amount, game);</code></pre>
+
+<p>A translation with a stray brace in it prints as it stands rather than throwing under a label being
+drawn.</p>
+
+<h2 id="labels">How a label knows</h2>
+
+<p><code>MainState.Locale</code> is a plain field: nothing fires when it is written, whether by the inspector, a
+language menu or a server message. So one hidden object — <code>LocaleWatcher</code>, made for you when the game
+starts — reads it once a frame and raises <code>Translator.OnLocaleChanged</code> when it has moved.</p>
+
+<p>One <code>Update</code> for the whole system, however many labels are listening: a
+<code>UiTranslatedText</code> does nothing until that event is raised.</p>
+
+<table>
+  <tr><th>Member</th><th>Means</th></tr>
+  <tr><td><code>Translator.Locale</code></td><td>Get and set <code>MainState.Locale</code>. Setting it raises the event at once rather than next frame</td></tr>
+  <tr><td><code>Translator.OnLocaleChanged</code></td><td>Redraw whatever you drew by hand</td></tr>
+  <tr><td><code>Translator.Refresh()</code></td><td>Raise it without the locale having changed — after adding strings, or changing <code>MissingFormat</code></td></tr>
+</table>
+
+<h3 id="component">Ui Translated Text</h3>
+
+<table>
+  <tr><th>Field</th><th>Means</th></tr>
+  <tr><td><code>Key</code></td><td>What to look up</td></tr>
+  <tr><td><code>Prefix</code>, <code>Suffix</code></td><td>Written around the translation, and never translated themselves</td></tr>
+  <tr><td><code>Label</code></td><td>Which label to write into. Empty: this object's, else the first one inside it</td></tr>
+</table>
+
+<p>Nothing else on the label is touched — font, size, colour and alignment stay the label's own.</p>
+
+<h2 id="shipping">Before shipping a language</h2>
+
+<pre><code>Debug.Log(string.Join(", ", Translator.Untranslated(ELocale.th_TH)));</code></pre>
+
+<p>The keys that have nothing of their own in that locale — the ones being read out of <code>en_US</code>
+instead. Empty means the language is whole. <code>Translator.Keys</code> lists every key both tables know.</p>
+
+<h2 id="locales">Locales</h2>
+
+<p>The 22 <code>ELocale</code> names, all of them filled in for every key the package ships. The three in amber
+are read right to left:</p>
+
+<div class="langs">
+  <span class="lang">en_US</span><span class="lang">ru_RU</span><span class="lang">fr_FR</span>
+  <span class="lang">bn_BD</span><span class="lang">de_DE</span><span class="lang">es_ES</span>
+  <span class="lang">id_ID</span><span class="lang">pt_PT</span><span class="lang">tr_TR</span>
+  <span class="lang">vi_VN</span><span class="lang rtl">ar_AE</span><span class="lang">hi_IN</span>
+  <span class="lang">th_TH</span><span class="lang">ja_JP</span><span class="lang">ko_KR</span>
+  <span class="lang">zh_CN</span><span class="lang">fil_PH</span><span class="lang rtl">ur_PK</span>
+  <span class="lang rtl">fa_IR</span><span class="lang">ms_MY</span><span class="lang">ka_GE</span>
+  <span class="lang">hy_AM</span>
+</div>
+
+<div class="note">
+  <p><code>ar_AE</code>, <code>ur_PK</code> and <code>fa_IR</code> are read right to left, and
+  <code>bn_BD</code>, <code>hi_IN</code>, <code>th_TH</code>, <code>ka_GE</code>, <code>hy_AM</code> and the CJK
+  languages are outside a Latin font's character set.</p>
+  <p>The translator hands back the text; making it legible is the font asset's job — a TMP font with those
+  ranges in it, and <code>isRightToLeftText</code> on for the three above.</p>
+</div>
+
+<h2 id="files">Files</h2>
+
+<table>
+  <tr><th>File</th><th>What it is</th></tr>
+  <tr><td><code>Translator.cs</code></td><td>The lookup, the fallback, the locale, the event</td></tr>
+  <tr><td><code>Translations.cs</code></td><td>Every string the package's own windows show, in all 22 languages</td></tr>
+  <tr><td><code>../Ui/Window/</code></td><td>Statistics, Bet info and Fairness, whose every caption goes through <code>Label</code></td></tr>
+  <tr><td><code>UiTranslatedText.cs</code></td><td>A label that writes itself from a key</td></tr>
+  <tr><td><code>LocaleWatcher.cs</code></td><td>The one <code>Update</code> that notices <code>MainState.Locale</code> moving</td></tr>
+  <tr><td><code>TranslationExample.cs</code></td><td>A column of labels, a key nobody wrote, and a menu to cycle the language</td></tr>
+  <tr><td><code>../Enums/ELocale.cs</code></td><td>The 22 languages</td></tr>
+  <tr><td><code>../States/MainState.cs</code></td><td><code>Locale</code>, which is the only copy of it</td></tr>
+</table>
+
+</main>
+</div>
+</body>
+</html>

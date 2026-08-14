@@ -348,6 +348,10 @@ namespace FlappyTemplate
 
             Listen(true);
 
+            // Every caption below goes through Translator.Label, so a language change is a repaint and
+            // nothing more. Only while the dialog is open: a closed one refreshes on the way back in anyway.
+            Translator.OnLocaleChanged += Refresh;
+
             // This is where the dialog opening is heard: UiWindow.Open switches the object on and Close
             // switches it off again, so being enabled is the same event as being opened - and it catches a
             // window opened straight through UiWindow.Open as well as through Show.
@@ -360,6 +364,7 @@ namespace FlappyTemplate
         void OnDisable()
         {
             Listen(false);
+            Translator.OnLocaleChanged -= Refresh;
             StopPulse();
         }
 
@@ -729,7 +734,7 @@ namespace FlappyTemplate
 
             Label(newSeedCaption, style.CaptionFont, style.CaptionSize, style.CaptionColor, style.CaptionStyle);
             newSeedCaption.alignment = TextAlignmentOptions.Left;
-            newSeedCaption.text = newClientSeedLabel;
+            newSeedCaption.text = Translator.Label(newClientSeedLabel);
 
             Columns(newSeedRow,
                 GridTrack.Fixed(style.LockSize),
@@ -811,7 +816,7 @@ namespace FlappyTemplate
 
             Label(inputPlaceholder, style.ValueFont, style.InputTextSize, style.InputPlaceholderColor, FontStyles.Italic);
             inputPlaceholder.alignment = TextAlignmentOptions.Left;
-            inputPlaceholder.text = newClientSeedLabel;
+            inputPlaceholder.text = Translator.Label(newClientSeedLabel);
             UiWindowParts.Stretch(inputPlaceholder.rectTransform, 0f, 0f, 0f, 0f);
 
             input.characterLimit = Mathf.Max(1, clientSeedLength);
@@ -844,7 +849,7 @@ namespace FlappyTemplate
             PaintArrow(randomizeArrow, style.ButtonFill);
 
             Label(randomizeText, style.CaptionFont, style.ButtonTextSize, style.ButtonTextColor, style.CaptionStyle);
-            randomizeText.text = randomizeLabel;
+            randomizeText.text = Translator.Label(randomizeLabel);
             randomizeText.alignment = TextAlignmentOptions.Left;
         }
 
@@ -918,7 +923,7 @@ namespace FlappyTemplate
 
             Label(label, style.HeadingFont, style.HeadingSize, style.HeadingColor, style.HeadingStyle);
             label.alignment = TextAlignmentOptions.Left;
-            label.text = text;
+            label.text = Translator.Label(text);
         }
 
         private void PaintEntries()
@@ -1093,8 +1098,9 @@ namespace FlappyTemplate
                 return;
 
             var entry = entries[index];
-            entry.Caption.text = caption;
-            entry.Value.text = string.IsNullOrEmpty(value) ? emptyLabel : value;
+            // The caption is a label and is translated; the value is a seed, a hash or a count and is not.
+            entry.Caption.text = Translator.Label(caption);
+            entry.Value.text = string.IsNullOrEmpty(value) ? Translator.Label(emptyLabel) : value;
         }
 
         // The box follows the pair, and only the pair: a broadcast that left the client seed alone must not

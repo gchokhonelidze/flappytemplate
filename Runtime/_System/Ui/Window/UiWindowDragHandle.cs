@@ -81,9 +81,20 @@ namespace FlappyTemplate
                 target = transform as RectTransform;
         }
 
+        // The window's own raise rather than the sibling move, where there is a window to ask: sibling order
+        // settles nothing between two windows drawn on canvases of their own, which is what Always On Top
+        // gives them. The handle sits on the caption, and a press that lands there is delivered to the first
+        // handler walking up from it and stops - so the window never hears about this one by itself.
         public void OnPointerDown(PointerEventData eventData)
         {
-            if (interactable && bringToFront && target != null)
+            if (!interactable || !bringToFront || target == null)
+                return;
+
+            var window = target.GetComponent<UiWindow>();
+
+            if (window != null)
+                window.Raise();
+            else
                 target.SetAsLastSibling();
         }
 

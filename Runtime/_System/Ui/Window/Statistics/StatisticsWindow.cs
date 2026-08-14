@@ -178,12 +178,29 @@ namespace FlappyTemplate
         {
             EnsureBuilt();
             Listen(true);
+
+            // The tab labels and the row titles are written in Layout, through Translator.Label, so a language
+            // change is a re-layout. Only while the window is open: a closed one catches up on the way back in.
+            Translator.OnLocaleChanged += Relabel;
+
             Refresh();
         }
 
         void OnDisable()
         {
             Listen(false);
+            Translator.OnLocaleChanged -= Relabel;
+        }
+
+        // The rows can come out a different width in another language, so this is a layout pass and not only a
+        // repaint - a title that was one line in English may be two in German, and the window is fitted to it.
+        private void Relabel()
+        {
+            if (!built)
+                return;
+
+            Layout();
+            Refresh();
         }
 
         /// <summary>Makes whatever is missing and lays it out. Safe to call as often as you like.</summary>
@@ -335,7 +352,7 @@ namespace FlappyTemplate
                 var label = UiWindowParts.Label(holder, "Label");
                 var value = UiWindowParts.Label(holder, "Value");
 
-                label.text = row.Label;
+                label.text = Translator.Label(row.Label);
 
                 shown.Add(row);
                 labels.Add(label);
@@ -404,6 +421,10 @@ namespace FlappyTemplate
                 var holder = (RectTransform)labels[i].transform.parent;
                 UiWindowParts.TopStrip(holder, height, 0f, cursor);
 
+                // Written again here rather than only where the row was built, so a row title follows the
+                // language without the list having to be rebuilt around it.
+                labels[i].text = Translator.Label(shown[i].Label);
+
                 UiWindowParts.TopStrip(labels[i].rectTransform, labelHeight, 0f, 0f);
                 UiWindowParts.TopStrip(values[i].rectTransform, valueHeight, 0f, labelHeight + style.LabelGap);
 
@@ -433,7 +454,7 @@ namespace FlappyTemplate
         private void LayoutTabLabel(TextMeshProUGUI label, string text)
         {
             UiWindowParts.Stretch(label.rectTransform, 6f, 0f, 6f, 0f);
-            label.text = text;
+            label.text = Translator.Label(text);
             label.alignment = TextAlignmentOptions.Center;
             label.raycastTarget = false;
             label.font = style.TabFont != null ? style.TabFont : label.font;

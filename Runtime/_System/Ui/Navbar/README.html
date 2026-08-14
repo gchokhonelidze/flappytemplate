@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ui Navbar — FlappyBet Template</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --ink: #1c1f24;
+    --soft: #5b6472;
+    --line: #dfe3e8;
+    --accent: #3f6fd8;
+    --code-bg: #f2f4f7;
+    --note-bg: #eef4ff;
+    --note-line: #6f9bea;
+    --warn-bg: #fff6e5;
+    --warn-line: #e6a23c;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --panel: #1d2025;
+      --ink: #e4e7ec;
+      --soft: #9aa3b0;
+      --line: #2c3038;
+      --accent: #7aa2f7;
+      --code-bg: #12141a;
+      --note-bg: #161d2b;
+      --note-line: #4a6ea8;
+      --warn-bg: #2c2415;
+      --warn-line: #b98330;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 28px 96px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 64px; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 14px;
+    border-left: 2px solid var(--line);
+    padding-left: 16px;
+  }
+  nav.toc strong { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--soft); }
+  nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+
+  header.title { margin-bottom: 28px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 44px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  p { margin: 12px 0; max-width: 74ch; }
+  a { color: var(--accent); }
+  .lede { color: var(--soft); }
+  .stamp { color: var(--soft); font-size: 13.5px; font-style: italic; }
+  ul, ol { max-width: 74ch; }
+
+  code, pre { font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 4px; font-size: 0.86em; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--soft); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td:first-child { white-space: nowrap; }
+
+  .note, .warn {
+    border-left: 3px solid var(--note-line);
+    background: var(--note-bg);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+  .warn { border-left-color: var(--warn-line); background: var(--warn-bg); }
+  .note p, .warn p { margin: 0; max-width: none; }
+  .note p + p, .warn p + p { margin-top: 10px; }
+
+  /* --- the bar, drawn --- */
+  .stage {
+    background: #171429;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 22px;
+    margin: 18px 0;
+    overflow-x: auto;
+  }
+  .stage .why { margin: 0 0 14px; color: #9a93b8; font-size: 13px; max-width: none; }
+  .stage.wide { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+
+  .navbar {
+    display: inline-flex;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 20px;
+    background: rgba(46, 41, 92, 0.92);
+  }
+  .navbar.column { flex-direction: column; }
+  .navbar.bare { background: none; }
+  .navbar.labelled { gap: 14px; padding: 10px; border-radius: 26px; }
+  .navbar.spread { display: flex; justify-content: space-between; width: 420px; }
+
+  .nbtn {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: #90e49a;
+    position: relative;
+    flex: 0 0 auto;
+  }
+  .nbtn.active { background: #facc14; }
+  .labelled .nbtn { width: 72px; height: 72px; }
+
+  .cap {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 4px;
+    text-align: center;
+    font: 700 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1c1a4a;
+  }
+
+  /* the glyph square, centred in its button */
+  .glyph {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 28px;
+    height: 28px;
+    transform: translate(-50%, -50%);
+  }
+  .labelled .glyph { width: 30px; height: 30px; margin-top: -7px; }
+  .glyph > * { position: absolute; background: #1c1a4a; }
+
+  /* home: a turned square for the roof, the body over its lower half, a door painted on */
+  .g-roof { width: 42%; height: 42%; left: 29%; top: 8%; transform: rotate(45deg); border-radius: 1px; }
+  .g-body { width: 52%; height: 40%; left: 24%; bottom: 0; border-radius: 1.5px; }
+  .g-door { width: 16%; height: 22%; left: 42%; bottom: 0; background: #90e49a; border-radius: 1px; }
+  .active .g-door { background: #facc14; }
+
+  /* statistics: three bars standing on the bottom edge */
+  .g-b0 { width: 22%; height: 45%; left: 6%; bottom: 0; border-radius: 2px; }
+  .g-b1 { width: 22%; height: 72%; left: 39%; bottom: 0; border-radius: 2px; }
+  .g-b2 { width: 22%; height: 100%; left: 72%; bottom: 0; border-radius: 2px; }
+
+  /* fairness: a badge with square shoulders and a round foot, with a tick painted over it */
+  .g-shield {
+    width: 78%; height: 94%; left: 11%; top: 3%;
+    border-radius: 18% 18% 50% 50% / 12% 12% 42% 42%;
+  }
+  .g-tick-a { width: 24%; height: 11%; left: 26%; top: 55%; transform: rotate(45deg); background: #90e49a; border-radius: 9px; }
+  .g-tick-b { width: 40%; height: 11%; left: 40%; top: 46%; transform: rotate(-45deg); background: #90e49a; border-radius: 9px; }
+  .active .g-tick-a, .active .g-tick-b { background: #facc14; }
+
+  .glyphrow { display: flex; gap: 34px; align-items: center; flex-wrap: wrap; }
+  .glyphrow figure { margin: 0; text-align: center; }
+  .glyphrow figcaption { margin-top: 10px; color: #9a93b8; font-size: 12.5px; }
+  .big { width: 96px; height: 96px; border-radius: 26px; }
+  .big .glyph { width: 52px; height: 52px; }
+
+  .tree {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font: 13px/1.7 "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre;
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <a href="#start">Quick start</a>
+  <a href="#buttons">The buttons</a>
+  <a class="sub" href="#glyphs">The glyphs</a>
+  <a href="#leaving">Leaving the game</a>
+  <a class="sub" href="#routes">The four routes</a>
+  <a class="sub" href="#addresses">Which addresses</a>
+  <a href="#windows">The windows</a>
+  <a href="#shape">Shape and place</a>
+  <a href="#styling">Styling</a>
+  <a href="#editor">In the editor</a>
+  <a href="#watches">What it watches</a>
+  <a href="#translations">Translations</a>
+  <a href="#code">From code</a>
+  <a href="#notes">Worth knowing</a>
+  <a href="#files">Files</a>
+</nav>
+
+<main>
+
+<header class="title">
+  <h1>Ui Navbar</h1>
+  <p class="lede">The row of buttons over the game: home, statistics, fairness, and whatever the game adds
+  beside them. One component on an empty RectTransform — the strip, the buttons and the glyphs in them are all
+  built from code, so there is no prefab to keep in step. It knows two things the game would otherwise have to
+  be told: Home leaves for the address the server sent, taking the whole page with it rather than the iframe
+  the build is drawn in, and hides itself while there is no such address; Statistics and Fairness find their
+  windows in the scene, or build them, and light up while the one they opened is on screen.</p>
+  <p class="stamp">Describes package 1.0.71. Update this file with the code — and README.md beside it.</p>
+  <p><strong>GameObject → UI (Canvas) → FlappyBet → Navbar</strong>, or Add Component → UI → Ui Navbar.</p>
+</header>
+
+<div class="stage">
+  <p class="why">The default bar: three buttons, pinned to a corner, sized to what is showing in it. The
+  statistics window is open, which is what its button's colour is saying.</p>
+  <div class="navbar">
+    <div class="nbtn"><span class="glyph"><i class="g-roof"></i><i class="g-body"></i><i class="g-door"></i></span></div>
+    <div class="nbtn active"><span class="glyph"><i class="g-b0"></i><i class="g-b1"></i><i class="g-b2"></i></span></div>
+    <div class="nbtn"><span class="glyph"><i class="g-shield"></i><i class="g-tick-a"></i><i class="g-tick-b"></i></span></div>
+  </div>
+</div>
+
+<h2 id="start">Quick start</h2>
+
+<p>It belongs on an <strong>empty RectTransform</strong>, not a UI Panel: the bar draws its own strip, so a
+Panel's Image leaves two backgrounds stacked. Or build one from code:</p>
+
+<pre><code>var navbar = UiNavbar.Create(canvas);</code></pre>
+
+<p>That is the whole of it. The three buttons are the default list, the bar pins itself to the top right
+corner, and it sizes itself to whatever is showing in it.</p>
+
+<div class="tree">Navbar          UiNavbar + RoundedBox — the strip is this object's own graphic
+├─ Button 0     RoundedBox + Button
+│  ├─ Icon      the glyph's square, drawn from boxes
+│  ├─ Picture   a sprite instead, when the slot has one
+│  └─ Label     the caption, when the style is drawing them
+├─ Button 1
+└─ Button 2</div>
+
+<h2 id="buttons">The buttons</h2>
+
+<table>
+  <thead><tr><th>Kind</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td>Home</td><td>Leaves the game for <code>SystemDto.ReturnUrl</code>. <strong>Hides itself while there is no such address</strong>, which is the usual case for a demo or a direct link.</td></tr>
+    <tr><td>Statistics</td><td>Opens the statistics window, and closes it again on a second press.</td></tr>
+    <tr><td>Fairness</td><td>Opens the fairness window, the same way.</td></tr>
+    <tr><td>Custom</td><td>Nothing of its own: it fires the slot's event and the bar's. For a button of the game's own.</td></tr>
+  </tbody>
+</table>
+
+<p>Each slot in the <strong>Buttons</strong> list carries its kind, a caption, an optional sprite, an
+<strong>Enabled</strong> tick and a <code>UnityEvent</code> of its own. Reordering the list reorders the bar.
+Unticking Enabled takes the button out entirely rather than greying it — nothing is placed for it, and the
+buttons after it close the gap.</p>
+
+<pre><code>var mine = new NavbarButton(ENavbarButton.Custom, "Sound");
+mine.OnPressed.AddListener(() =&gt; audio.Toggle());
+
+navbar.Buttons.Add(mine);
+navbar.Rebuild();          // the list changed, so the bar builds the button now in it</code></pre>
+
+<p>Every press also fires the bar's own <code>OnPressed</code>, which carries the kind — one listener for the
+lot, where a game wants to play a click or close something else first.</p>
+
+<div class="note">
+  <p>Adding a <strong>built-in</strong> button later is three lines: a value on <code>ENavbarButton</code>, a
+  glyph in <code>UiNavbarIcons.Draw</code>, and a case in <code>UiNavbar.Press</code>. That is the shape a
+  switch between a horizontal and a vertical game mode is meant to arrive in; until it does,
+  <code>Custom</code> plus a listener is the same button without the package having an opinion about it.</p>
+</div>
+
+<h3 id="glyphs">The glyphs</h3>
+
+<div class="stage">
+  <p class="why">Drawn from rounded boxes rather than fetched from an atlas — the same reasoning as the
+  window's close cross. Generated geometry stays sharp at any size, costs no import and no texture memory, and
+  follows the style's colour without a second sprite being authored for a light theme.</p>
+  <div class="glyphrow">
+    <figure>
+      <div class="nbtn big"><span class="glyph"><i class="g-roof"></i><i class="g-body"></i><i class="g-door"></i></span></div>
+      <figcaption>Home — a turned square, the body over its lower half, a door painted on</figcaption>
+    </figure>
+    <figure>
+      <div class="nbtn big"><span class="glyph"><i class="g-b0"></i><i class="g-b1"></i><i class="g-b2"></i></span></div>
+      <figcaption>Statistics — three bars standing on the bottom edge</figcaption>
+    </figure>
+    <figure>
+      <div class="nbtn big"><span class="glyph"><i class="g-shield"></i><i class="g-tick-a"></i><i class="g-tick-b"></i></span></div>
+      <figcaption>Fairness — a badge with a round foot, and a tick painted over it</figcaption>
+    </figure>
+  </div>
+</div>
+
+<div class="warn">
+  <p>Two of them are <strong>painted over rather than cut out</strong>: the door of the house and the tick on
+  the shield are drawn in the <em>button's</em> colour. Worth knowing before a gradient is put on a button —
+  against anything but a flat fill they would show as the wrong colour rather than disappear.</p>
+</div>
+
+<p>A <strong>sprite on the slot</strong> replaces the drawn glyph entirely. It is tinted with the icon colour
+and fitted to the same square, so a game with an icon set of its own keeps every other setting on this
+page.</p>
+
+<h2 id="leaving">Leaving the game</h2>
+
+<p>A FlappyBet build is nearly always an <strong>iframe inside an operator's page</strong>, and
+<code>ReturnUrl</code> is a page on that operator's site. So Home aims at the <strong>top</strong> window:
+pointing the iframe at a lobby would draw that lobby inside the game's rectangle, with the operator's chrome
+still wrapped around it.</p>
+
+<p>Whether that is allowed is the browser's decision, and not one that can be asked about in advance —
+<code>Location.href</code> is writable across origins, so a frame may set <code>window.top.location</code>
+without an error and be refused all the same.</p>
+
+<h3 id="routes">The four routes</h3>
+
+<p><code>Navigation.jslib</code> therefore tries every route there is, in this order:</p>
+
+<ol>
+  <li><code>window.top.location.href</code> — works same-origin, and wherever the frame is allowed to navigate the top.</li>
+  <li>A link with <code>target="_top"</code>, clicked. The route <code>allow-top-navigation-by-user-activation</code> opens, and a press on the canvas is that activation.</li>
+  <li><code>window.open(url, "_top")</code>.</li>
+  <li>Failing all three, the frame goes there itself. Not what was asked for — but it is the destination, and a button that does nothing at all is worse.</li>
+</ol>
+
+<p>Alongside that it <strong>posts to the parent page</strong> in the envelope the aggregator front already
+speaks, so a host that keeps top navigation to itself can act on it:</p>
+
+<pre><code>{ EventName: "NAVIGATE", Data: { Url: "https://…" } }</code></pre>
+
+<p>Both paths lead to the same address, so it does not matter which of them the browser honours.</p>
+
+<p><code>Navigator</code> is the C# half, and is worth calling directly for a Home button of the game's
+own:</p>
+
+<pre><code>if (Navigator.CanReturn)
+    Navigator.Home();</code></pre>
+
+<p>Outside WebGL — the editor, a standalone build — there is no top window and it is
+<code>Application.OpenURL</code>.</p>
+
+<h3 id="addresses">Which addresses</h3>
+
+<div class="warn">
+  <p><strong>Only http and https.</strong> The address arrives over the socket rather than out of the scene,
+  which makes it worth a look before it is handed to a browser: <code>javascript:</code> and
+  <code>data:</code> are addresses the way an instruction is an address. <code>Navigator.IsNavigable</code>
+  allows those two schemes, a path on the page (<code>/lobby</code>, <code>?back=1</code>), and a
+  protocol-relative <code>//host/path</code>. Anything else is refused and logged rather than followed.</p>
+</div>
+
+<p>To try the button in the editor, where there is no socket to send an address over, fill in
+<strong>Return Url</strong> on the bar. A build leaves it empty.</p>
+
+<h2 id="windows">The windows</h2>
+
+<p>Statistics and Fairness need a window each, and the bar will find one three ways, in this order:</p>
+
+<ol>
+  <li><strong>The one in the slot.</strong> Drag a window from the scene into Statistics Window or Fairness
+  Window, and that is the one opened — styled, placed and sized however it was built.</li>
+  <li><strong>The one in the scene.</strong> Left empty, the bar looks for a window of that type, switched off
+  ones included — which every closed window is.</li>
+  <li><strong>One it builds.</strong> Nothing found, it builds one under the canvas. Not under the bar: a
+  window parented into the bar would move with it, be clipped by it, and sit in the corner the bar was pinned
+  to. <strong>Window Parent</strong> overrides where it goes; <strong>Create Windows</strong> off leaves the
+  button firing its event and nothing more, for a game that opens its own dialogs.</li>
+</ol>
+
+<p>Neither window is built until its button is first pressed, so a bar in a scene that never opens one costs
+nothing. While a window is open its button takes <code>ButtonActiveFill</code>, so a player can see which
+dialog they are looking at from the bar rather than from the dialog. <strong>Toggle Windows</strong> off makes
+a second press leave it open instead of closing it.</p>
+
+<h2 id="shape">Shape and place</h2>
+
+<p><strong>Flow</strong> is which way the bar runs — <code>Horizontal</code>, a row, or <code>Vertical</code>,
+a column down one side. That is the bar's own direction and has nothing to do with the game being played in
+portrait or landscape.</p>
+
+<div class="stage wide">
+  <div>
+    <p class="why">Vertical, with a fourth button of the game's own.</p>
+    <div class="navbar column">
+      <div class="nbtn"><span class="glyph"><i class="g-roof"></i><i class="g-body"></i><i class="g-door"></i></span></div>
+      <div class="nbtn"><span class="glyph"><i class="g-b0"></i><i class="g-b1"></i><i class="g-b2"></i></span></div>
+      <div class="nbtn"><span class="glyph"><i class="g-shield"></i><i class="g-tick-a"></i><i class="g-tick-b"></i></span></div>
+      <div class="nbtn"></div>
+    </div>
+  </div>
+  <div>
+    <p class="why">Labels on, spread across a bar that is not fitted to its buttons — the shape a bar across a
+    phone screen wants.</p>
+    <div class="navbar labelled spread">
+      <div class="nbtn"><span class="glyph"><i class="g-roof"></i><i class="g-body"></i><i class="g-door"></i></span><span class="cap">Home</span></div>
+      <div class="nbtn"><span class="glyph"><i class="g-b0"></i><i class="g-b1"></i><i class="g-b2"></i></span><span class="cap">Statistics</span></div>
+      <div class="nbtn"><span class="glyph"><i class="g-shield"></i><i class="g-tick-a"></i><i class="g-tick-b"></i></span><span class="cap">Fairness</span></div>
+    </div>
+  </div>
+</div>
+
+<p><strong>Dock</strong> pins the bar to a corner or an edge of whatever it is drawn in, and <strong>Dock
+Offset</strong> is how far in from there. Both numbers are read as a distance from the edge they are nearest,
+so one pair means the same thing in every corner — a bar moved from the top right to the bottom left in the
+inspector stays the same distance in rather than jumping off the screen. Off leaves the rect exactly as the
+scene saved it.</p>
+
+<div class="warn">
+  <p><strong>A parent with no size does not defeat it.</strong> An anchor is a <em>fraction</em> of the
+  parent's rect, so in a parent that is nothing by nothing — an empty holder, or a grid cell the layout never
+  gave an area to — every fraction lands on the same point: top right, centre and bottom left all come out in
+  one place, and only the pivot appears to move anything. The bar therefore measures its corner on the nearest
+  rect above it that <em>has</em> a size, usually the canvas, and follows it as that resizes.
+  <code>DockHost()</code> hands back whichever rect that turned out to be. Docking inside a parent that is
+  properly sized is untouched by any of this — including a grid cell that the grid does give an area to.</p>
+</div>
+
+<p><strong>Fit To Buttons</strong> sizes the bar to what is showing in it, padding included, which is what a
+bar in a corner wants. Off leaves the rect the size it was given and <strong>Align</strong> decides where the
+buttons sit in it:</p>
+
+<table>
+  <tbody>
+    <tr><td>Start</td><td>Left, or top.</td></tr>
+    <tr><td>Center</td><td>The middle of the bar.</td></tr>
+    <tr><td>End</td><td>Right, or bottom.</td></tr>
+    <tr><td>Spread</td><td>First and last against the ends, the rest evenly between. Spacing becomes a minimum rather than the gap.</td></tr>
+  </tbody>
+</table>
+
+<pre><code>var navbar = UiNavbar.Create(canvas);
+
+navbar.DockTo = ERectAnchor.Bottom;
+navbar.DockOffset = new Vector2(0f, 24f);
+navbar.FitToButtons = false;
+navbar.Align = ENavbarAlign.Spread;
+
+navbar.Rect.sizeDelta = new Vector2(420f, 92f);
+navbar.Layout();</code></pre>
+
+<h2 id="styling">Styling</h2>
+
+<p>Everything the bar draws is on <strong>Style</strong>, and unlike the window next door the bar does paint
+over its parts — they are generated geometry rather than objects to be styled by hand, and a glyph has to
+follow the colour its button was given.</p>
+
+<table>
+  <thead><tr><th>Field</th><th></th></tr></thead>
+  <tbody>
+    <tr><td>Show Bar</td><td>The strip behind the buttons. Off leaves them floating over the game, and the strip stops swallowing the clicks that miss a button.</td></tr>
+    <tr><td>Bar Fill<br>Bar Corner Radius</td><td></td></tr>
+    <tr><td>Bar Padding</td><td>Between the strip's edge and the buttons in it.</td></tr>
+    <tr><td>Button Size<br>Button Spacing<br>Button Corner Radius</td><td></td></tr>
+    <tr><td>Button Fill</td><td></td></tr>
+    <tr><td>Button Active Fill</td><td>While the window that button opens is on screen.</td></tr>
+    <tr><td>Icon Color</td><td></td></tr>
+    <tr><td>Icon Scale</td><td>The glyph's square as a fraction of the smaller side of the button.</td></tr>
+    <tr><td>Icon Thickness</td><td>Stroke width of the glyphs drawn from boxes.</td></tr>
+    <tr><td>Show Labels</td><td>A caption under each glyph. Off is the usual case for small buttons over the game.</td></tr>
+    <tr><td>Label Font / Size / Color / Style</td><td></td></tr>
+    <tr><td>Label Gap<br>Label Height</td><td>The band the caption is drawn in, off the bottom of the button. The glyph gets what is left — so a bar with labels wants a higher Icon Scale than one without.</td></tr>
+  </tbody>
+</table>
+
+<p>A style is read rather than watched, so assign it back to have it taken up:</p>
+
+<pre><code>var style = navbar.Style;
+style.ShowLabels = true;
+style.IconScale = 0.62f;
+
+navbar.Style = style;      // assigning is what rebuilds the bar around it</code></pre>
+
+<h2 id="editor">In the editor</h2>
+
+<p>The bar is <code>[ExecuteAlways]</code>, so <strong>every field takes effect as it is typed</strong> — a
+colour, a size, a flow, a dock corner or a whole button changes what is on screen without entering play mode.
+The parts it is made of are not authored but built from these fields, and a field whose result cannot be seen
+is a field being guessed at.</p>
+
+<p>Two things follow from that:</p>
+
+<ul>
+  <li><strong>The Home button is drawn while a scene is only being laid out</strong> — no
+  <code>StateManager</code> and not playing means there is no socket to have sent an address over, so the
+  button is shown to be seen, measured and styled. The same reasoning as the statistics window showing sample
+  figures to a scene with nothing feeding it. A build always has a <code>StateManager</code>, so this never
+  hides a real absence from a player. Fill in <strong>Return Url</strong> to make the button actually go
+  somewhere from the editor.</li>
+  <li><strong>Rebuilding is safe to ask for at any time.</strong> Parts that exist are found by the name they
+  were made under and only what is missing is made, so the bar heals itself after a script reload, an undo, or
+  a button deleted from the hierarchy by hand. <code>Rebuild</code> and <code>Layout</code> are both on the
+  component's context menu.</li>
+</ul>
+
+<h2 id="watches">What it watches</h2>
+
+<table>
+  <tbody>
+    <tr><td><code>OnSystem</code></td><td>The return address arrives with the rest of the system state, after the scene has loaded rather than with it. This is what puts the Home button on screen at all.</td></tr>
+    <tr><td>A window opening or closing</td><td>Neither goes through the socket, so the bar listens to the windows it resolved. This is where the active colour comes from.</td></tr>
+    <tr><td><code>Translator.OnLocaleChanged</code></td><td>The captions are written through <code>Translator.Label</code>, and one that is a word in English may be two in German — so a language change is a re-layout, not a repaint.</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Follow State</strong> off drops all three. The bar then shows whatever it was last told, which is
+what a scene built to look at the bar rather than to play in wants.</p>
+
+<h2 id="translations">Translations</h2>
+
+<p>The captions go through <code>Translator.Label</code>, the same as every other caption the package draws. A
+key is translated, the en_US wording of a key is translated, and a word of your own is printed as it was typed
+— which is why the defaults are <code>Home</code>, <code>Statistics</code> and <code>Fairness</code> and they
+still come out in the player's language. <code>Home</code> is <code>navbar.home</code>; the other two are
+<code>statistics.title</code> and <code>fairness.title</code>, shared with the windows they open, since a
+button named one thing and a dialog named another read as two features.</p>
+
+<h2 id="code">From code</h2>
+
+<table>
+  <tbody>
+    <tr><td><code>UiNavbar.Create(parent, name, flow)</code></td><td>Builds the whole thing under a parent, usually a canvas.</td></tr>
+    <tr><td><code>Buttons</code></td><td>The slots, in the order they are drawn. <code>Rebuild</code> after changing it.</td></tr>
+    <tr><td><code>Style</code></td><td>Read it, change it, assign it back.</td></tr>
+    <tr><td><code>Flow</code>, <code>Align</code>, <code>FitToButtons</code>, <code>Docked</code>, <code>DockTo</code>, <code>DockOffset</code></td><td>Each lays the bar out again as it is set.</td></tr>
+    <tr><td><code>Press(kind)</code></td><td>Does whatever the kind says, and fires the events. For driving the bar from a key.</td></tr>
+    <tr><td><code>GoHome()</code></td><td>Leaves for the return address. False means there was nowhere to go.</td></tr>
+    <tr><td><code>ShowStatistics()</code><br><code>ShowFairness()</code></td><td>Open the window, or close it again.</td></tr>
+    <tr><td><code>Statistics</code><br><code>Fairness</code></td><td>The windows themselves — found or built on the first read.</td></tr>
+    <tr><td><code>Destination</code><br><code>CanReturn</code></td><td>Where Home would go, and whether it would go anywhere.</td></tr>
+    <tr><td><code>DockHost()</code></td><td>The rect the dock corner is measured on: the parent, or the nearest sized thing above it.</td></tr>
+    <tr><td><code>Rebuild()</code></td><td>Builds the buttons from scratch. After changing the list.</td></tr>
+    <tr><td><code>Layout()</code></td><td>Places and repaints. After changing a rect by hand.</td></tr>
+    <tr><td><code>Refresh()</code></td><td>Reads the state again. Called for you by everything the bar watches.</td></tr>
+    <tr><td><code>OnPressed</code><br><code>OnHome</code></td><td></td></tr>
+  </tbody>
+</table>
+
+<h2 id="notes">Worth knowing</h2>
+
+<ul>
+  <li><strong>The bar is not a window.</strong> It has no backdrop, no transition and no canvas of its own, so
+  it sorts by hierarchy position like any other UI object. A bar that ends up behind the game wants to be
+  later in the canvas than whatever is covering it — or on a canvas of its own with Override Sorting, the way
+  <code>UiWindow</code> does it.</li>
+  <li><strong>A strip that is drawn swallows the clicks that miss its buttons</strong>, which is what stops a
+  press on the bar reaching the game behind it. Show Bar off catches nothing, and a press between two buttons
+  goes through.</li>
+  <li><strong>Nothing showing means no strip either.</strong> A bar whose only button was Home, on a game with
+  nowhere to return to, would otherwise be an empty tab of colour in the corner.</li>
+  <li><strong>Buttons the bar made are named <code>Button 0</code>, <code>Button 1</code>…</strong> and only
+  those are swept away on a rebuild, so a badge or a divider parked under the bar by the game survives.</li>
+  <li><strong><code>Custom</code> draws nothing</strong> without a sprite: an empty coloured button, waiting
+  for one.</li>
+</ul>
+
+<h2 id="files">Files</h2>
+
+<table>
+  <tbody>
+    <tr><td><code>UiNavbar.cs</code></td><td>The component: building, placing, painting, and what each press does.</td></tr>
+    <tr><td><code>UiNavbarStyle.cs</code></td><td>Everything it looks like.</td></tr>
+    <tr><td><code>UiNavbarIcons.cs</code></td><td>The house, the bars and the shield, drawn from boxes.</td></tr>
+    <tr><td><code>NavbarButton.cs</code></td><td>One slot: kind, caption, sprite, event.</td></tr>
+    <tr><td><code>ENavbarButton.cs</code></td><td>What a button does.</td></tr>
+    <tr><td><code>ENavbarFlow.cs</code></td><td>A row or a column.</td></tr>
+    <tr><td><code>ENavbarAlign.cs</code></td><td>Where the buttons sit along a bar longer than they need.</td></tr>
+    <tr><td><code>UiNavbarExample.cs</code></td><td>Three bars, built at runtime. Read as much as run.</td></tr>
+    <tr><td><code>../../Navigation/Navigator.cs</code></td><td>Leaving the game, and what an address has to look like to be followed.</td></tr>
+    <tr><td><code>../../JSPlugins/Navigation.jslib</code></td><td>The four routes to the top window, and the message to the parent.</td></tr>
+  </tbody>
+</table>
+
+</main>
+</div>
+</body>
+</html>

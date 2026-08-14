@@ -400,12 +400,18 @@ namespace FlappyTemplate
         {
             EnsureBuilt();
             Listen(true);
+
+            // Every caption below goes through Translator.Label, so a language change is a repaint and
+            // nothing more. Only while the dialog is open: a closed one refreshes on the way back in anyway.
+            Translator.OnLocaleChanged += Refresh;
+
             Refresh();
         }
 
         void OnDisable()
         {
             Listen(false);
+            Translator.OnLocaleChanged -= Refresh;
             StopPulse();
         }
 
@@ -1023,7 +1029,7 @@ namespace FlappyTemplate
 
             UiWindowParts.Stretch(label.rectTransform, 6f, 0f, 6f, 0f);
             Label(label, style.CaptionFont, style.ButtonTextSize, style.ButtonTextColor, style.CaptionStyle);
-            label.text = text;
+            label.text = Translator.Label(text);
         }
 
         // ------------------------------------------------------------------ what is showing
@@ -1172,29 +1178,31 @@ namespace FlappyTemplate
             decimal wagered = Number(data.BetAmount);
             decimal won = Number(data.WinAmount);
 
-            profitCaption.text = profitLabel;
+            // Captions are labels and are translated; every value beside one is a figure, a name or an id and
+            // is printed as the server sent it.
+            profitCaption.text = Translator.Label(profitLabel);
             profitAmount.text = Amount(won - wagered, decimals, data.Currency);
 
             // Green from a payout of one: the bet came back whole or better. Below it the player is down on
             // the bet, whatever the win amount says on its own.
             profitBox.FillColor = Number(data.Payout) >= 1m ? style.ProfitPositiveFill : style.ProfitNegativeFill;
 
-            bet.Caption.text = betLabel;
+            bet.Caption.text = Translator.Label(betLabel);
             bet.Value.text = Amount(wagered, decimals, data.Currency);
 
-            payout.Caption.text = payoutLabel;
+            payout.Caption.text = Translator.Label(payoutLabel);
             payout.Value.text = Money(Number(data.Payout), style.PayoutDecimals) + Small(" x");
 
-            player.Caption.text = playerLabel;
+            player.Caption.text = Translator.Label(playerLabel);
             player.Value.text = string.IsNullOrEmpty(data.IPlayerName) ? data.IPlayerId : data.IPlayerName;
 
-            betId.Caption.text = betIdLabel;
+            betId.Caption.text = Translator.Label(betIdLabel);
             betId.Value.text = data.Id;
 
-            game.Caption.text = gameLabel;
+            game.Caption.text = Translator.Label(gameLabel);
             game.Value.text = data.GameName;
 
-            time.Caption.text = timeLabel;
+            time.Caption.text = Translator.Label(timeLabel);
             time.Value.text = Moment(data.CreatedAt);
 
             Letter(profitCoin, data.Currency);
@@ -1222,7 +1230,7 @@ namespace FlappyTemplate
 
             Seed(0, nonceLabel, string.IsNullOrEmpty(data.Nonce) ? "0" : data.Nonce, single);
             Seed(1, single ? clientSeedLabel : blockHashLabel, data.ClientSalt, true);
-            Seed(2, serverSeedLabel, string.IsNullOrEmpty(data.ServerSeed) ? hiddenLabel : data.ServerSeed, true);
+            Seed(2, serverSeedLabel, string.IsNullOrEmpty(data.ServerSeed) ? Translator.Label(hiddenLabel) : data.ServerSeed, true);
             Seed(3, serverShaLabel, data.ServerSeedSha512 ?? string.Empty, true);
         }
 
@@ -1233,7 +1241,7 @@ namespace FlappyTemplate
 
             var field = seeds[index];
             seedOn[index] = shown;
-            field.Caption.text = caption;
+            field.Caption.text = Translator.Label(caption);
             field.Value.text = value;
         }
 

@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
@@ -37,11 +39,12 @@ namespace FlappyTemplate
     [AddComponentMenu("UI/Ui Window")]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(RectTransform))]
-    public class UiWindow : MonoBehaviour
+    public class UiWindow : MonoBehaviour, IPointerDownHandler
     {
         private const string CaptionName = "Caption";
         private const string TitleName = "Title";
         private const string ViewportName = "Viewport";
+        private const string ClipName = "Clip";
         private const string ContentName = "Content";
         private const string CloseName = "Close";
         private const string CrossName = "Cross";
@@ -156,7 +159,7 @@ namespace FlappyTemplate
         [SerializeField]
         private float keepVisible = 64f;
 
-        [Tooltip("Draw the window over its siblings when it is grabbed or opened.")]
+        [Tooltip("Bring the window in front of every other open window when it is opened, grabbed, or clicked anywhere.")]
         [SerializeField]
         private bool bringToFront = true;
 
@@ -178,7 +181,7 @@ namespace FlappyTemplate
         [SerializeField]
         private bool alwaysOnTop = true;
 
-        [Tooltip("Above every sprite and canvas below this number. The backdrop takes one less, so it stays behind its own window and over everything else.")]
+        [Tooltip("Above every sprite and canvas below this number. The floor the open windows are stacked from rather than the number each one ends up at - see the stack below. The backdrop takes one less than its own window.")]
         [SerializeField]
         private int sortingOrder = 100;
 
@@ -238,6 +241,13 @@ namespace FlappyTemplate
         [SerializeField, HideInInspector]
         private RectTransform viewport;
 
+        // The padded rect inside the viewport, and what the scroller is told its viewport is. It is the whole
+        // reason the padding survives scrolling: a ScrollRect holds the content it moves to the rect it is
+        // given, so a viewport that stops at the padding is a scroll that stops there too, rather than one
+        // that pulls the last row flat against the bottom of the panel.
+        [SerializeField, HideInInspector]
+        private RectTransform clipArea;
+
         [SerializeField, HideInInspector]
         private RectMask2D clip;
 
@@ -281,6 +291,21 @@ namespace FlappyTemplate
         [SerializeField, HideInInspector]
         private bool built;
 
+        // Every window that is currently open, bottom of the pile first. One list for the whole game, because
+        // the question it answers - which window is in front - is not one a window can answer about itself:
+        // sibling order settles nothing between two windows on canvases of their own, and nothing at all
+        // between two windows under different parents.
+        private static readonly List<UiWindow> stack = new List<UiWindow>();
+
+        // What the selection was the last time the stack looked, and the frame it looked on. See WatchFocus.
+        private static GameObject watchedSelection;
+        private static int watchedFrame = -1;
+
+        // Where this window sits in the pile, or -1 for a window that has never been stacked - in the editor,
+        // or before the first open. Not serialized: a window's place in the pile is a fact about the session
+        // it is open in, and a scene that saved one would come back claiming a place it has not earned.
+        private int activeOrder = -1;
+
         private Sequence transitionTween;
         private bool finishing;
 
@@ -312,14 +337,26 @@ namespace FlappyTemplate
             }
         }
 
-        /// <summary>The masked cell the content sits in and scrolls inside. The grid gives it whatever the
-        /// caption leaves.</summary>
+        /// <summary>The cell the body sits in, which the grid gives whatever the caption leaves. The scroller
+        /// and the scrollbar live on it; the content is a step further in, inside <see cref="ClipArea"/>.</summary>
         public RectTransform Viewport
         {
             get
             {
                 EnsureBuilt();
                 return viewport;
+            }
+        }
+
+        /// <summary>The viewport less the content padding: the masked rect the content scrolls inside, and
+        /// what the scroller measures its travel against. The padding is here rather than on the content
+        /// precisely so that scrolling cannot take it away.</summary>
+        public RectTransform ClipArea
+        {
+            get
+            {
+                EnsureBuilt();
+                return clipArea;
             }
         }
 
@@ -467,7 +504,7 @@ namespace FlappyTemplate
             {
                 title = value;
                 if (titleText != null)
-                    titleText.text = value;
+                    titleText.text = Translator.Label(value);
             }
         }
 
@@ -682,13 +719,18 @@ namespace FlappyTemplate
             }
         }
 
-        /// <summary>Where that canvas sorts. The backdrop takes one less.</summary>
+        /// <summary>The floor the open windows are stacked from, not the number this one ends up at - see
+        /// <see cref="Raise"/>. The backdrop takes one less than its own window.</summary>
         public int SortingOrder
         {
             get => sortingOrder;
             set
             {
                 sortingOrder = value;
+
+                // Both, because the floor is the highest of them: raising one window's order lifts the pile
+                // it is in, and a window that is not in one has only itself to answer to.
+                Restack();
                 ApplySorting();
             }
         }
@@ -799,8 +841,26 @@ namespace FlappyTemplate
             gameObject.SetActive(false);
         }
 
+        // A window is switched off while it is closed, so this is also where a window that was away while the
+        // language changed catches up - the title is written again on the way back in, before anything is on
+        // screen to be seen changing.
+        void OnEnable()
+        {
+            Translator.OnLocaleChanged += WriteTitle;
+            WriteTitle();
+
+            // A window is switched off while it is closed, so being enabled is the same event as being
+            // opened - including the window a scene saved switched on, which never goes through Open at all.
+            // Newest on top: a dialog that arrives behind the one it was opened from has, from where the
+            // player is sitting, not opened.
+            Enlist();
+        }
+
         void OnDisable()
         {
+            Translator.OnLocaleChanged -= WriteTitle;
+            Delist();
+
             // Not while the closing sequence is delivering its own OnComplete - that is what deactivated the
             // object in the first place, and killing a tween from inside its own callback is asking for it.
             if (finishing)
@@ -832,6 +892,10 @@ namespace FlappyTemplate
         // a window that has been fitted at all.
         void LateUpdate()
         {
+            // Once a frame between all of them, whichever window gets here first. Only open windows run at
+            // all, so a game with no dialog on screen pays nothing for it.
+            WatchFocus();
+
             if (!built || wantedHeight <= 0f || transitionTween != null)
                 return;
 
@@ -841,6 +905,7 @@ namespace FlappyTemplate
 
         void OnDestroy()
         {
+            Delist();
             KillTransition();
 
             if (backdrop != null)
@@ -877,7 +942,7 @@ namespace FlappyTemplate
             // The viewport and the grid are in that list because a window saved by a version that had neither
             // comes back saying it is built. Missing parts are what "built" is really asking about, so the flag
             // alone would leave that window with a null grid and a layout pass that throws.
-            if (!built || panel == null || content == null || viewport == null || grid == null)
+            if (!built || panel == null || content == null || viewport == null || clipArea == null || grid == null)
                 BuildParts();
 
             // Outside that check, and deliberately. A listener added with AddListener is not serialized, so
@@ -925,24 +990,33 @@ namespace FlappyTemplate
                 UiWindowSeed.Title(titleText);
 
             viewport = UiWindowParts.Rect(transform, ViewportName);
+            clipArea = UiWindowParts.Rect(viewport, ClipName);
 
-            // A window built before the viewport existed has its Content at the root, with whatever the game
-            // put in it. Moved rather than replaced: finding parts by name would otherwise make a second,
-            // empty Content inside the viewport and leave the full one orphaned beside it.
+            // A window built before the viewport - or before the clip - has its Content further up, with
+            // whatever the game put in it. Moved rather than replaced: finding parts by name would otherwise
+            // make a second, empty Content inside the clip and leave the full one orphaned beside it.
             var stray = UiWindowParts.Find<RectTransform>(transform, ContentName);
-            if (stray != null)
-                stray.SetParent(viewport, false);
+            if (stray == null)
+                stray = UiWindowParts.Find<RectTransform>(viewport, ContentName);
 
-            content = UiWindowParts.Rect(viewport, ContentName);
+            if (stray != null)
+                stray.SetParent(clipArea, false);
+
+            content = UiWindowParts.Rect(clipArea, ContentName);
 
             // The mask is what makes scrolling look like scrolling rather than like content sliding over the
-            // caption. RectMask2D rather than Mask: it costs no stencil pass, and both RoundedBox and TMP
+            // caption. On the clip rather than on the viewport, so it cuts at the padding: content scrolling
+            // past is gone by the time it reaches the panel, instead of running into the margin the window
+            // was given. RectMask2D rather than Mask: it costs no stencil pass, and both RoundedBox and TMP
             // clip against it - a rounded box is generated geometry on the default UI material, which reads
             // the clip rect like any other graphic.
+            var stale = viewport.GetComponent<RectMask2D>();
+            if (stale != null)
+                UiWindowParts.Discard(stale);
+
+            clip = clipArea.GetComponent<RectMask2D>();
             if (clip == null)
-                clip = viewport.GetComponent<RectMask2D>();
-            if (clip == null)
-                clip = viewport.gameObject.AddComponent<RectMask2D>();
+                clip = clipArea.gameObject.AddComponent<RectMask2D>();
 
             if (scroller == null)
                 scroller = viewport.GetComponent<ScrollRect>();
@@ -1016,6 +1090,10 @@ namespace FlappyTemplate
             scrollbar.handleRect = scrollHandle.rectTransform;
             scrollbar.targetGraphic = scrollHandle;
             scrollbar.transition = Selectable.Transition.None;
+
+            // Over the clip, not under it: a bar drawn before its own body is a bar the content slides over,
+            // and on a window rebuilt from an older layout the clip is the newer child of the two.
+            scrollTrack.rectTransform.SetAsLastSibling();
         }
 
         // The button, and the cross drawn inside it out of two rotated boxes rather than fetched from an
@@ -1084,11 +1162,17 @@ namespace FlappyTemplate
         /// <summary>Puts every part where it belongs: the caption's row, the body under it, the content
         /// inset, the scrollbar down the side. Colours and fonts are not its business - it is safe to call on
         /// a window somebody has styled, and cheap enough to call whenever a size changes.</summary>
+        private void WriteTitle()
+        {
+            if (titleText != null)
+                titleText.text = Translator.Label(title);
+        }
+
         [ContextMenu("Apply Layout")]
         public void ApplyLayout()
         {
             if (!built || panel == null || caption == null || titleText == null || content == null
-                || closeBox == null || viewport == null || grid == null)
+                || closeBox == null || viewport == null || clipArea == null || grid == null)
                 return;
 
             // Clicks rather than looks, so these are held rather than left to the inspector: a panel that
@@ -1098,7 +1182,10 @@ namespace FlappyTemplate
             caption.raycastTarget = true;
             titleText.raycastTarget = false;
 
-            titleText.text = title;
+            // Through the translator rather than straight from the field: a title of "Fairness" is a key's
+            // en_US text and comes back in the player's language, and a title nothing knows is printed as it
+            // was typed. See Translations/README.md.
+            titleText.text = Translator.Label(title);
 
             // The caption and the body are two rows of one column, inset by the panel's own border so neither
             // sits over the outline. Said as a layout rather than by switching the caption on and off: a grid
@@ -1136,6 +1223,144 @@ namespace FlappyTemplate
             ApplySorting();
         }
 
+        // ------------------------------------------------------------------ which window is in front
+
+        // Statics outlive a play session when the editor is set to skip the domain reload, so the pile is
+        // emptied by hand rather than left to start the next one holding the last one's windows.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ClearStack()
+        {
+            stack.Clear();
+            watchedSelection = null;
+            watchedFrame = -1;
+        }
+
+        /// <summary>Puts the window in front of every other one that is open. What opening it does, and what
+        /// touching it does afterwards - so this is only needed for a front that some other thing decides.</summary>
+        // Two things at once, because a window is sorted by two different rules depending on Always On Top:
+        // the sibling move settles a window drawn in hierarchy order, and the restack settles one drawn on a
+        // canvas of its own. Doing both means neither has to be asked about.
+        public void Raise()
+        {
+            int at = stack.IndexOf(this);
+
+            // Already the front one and already told so. Worth the check: this runs on every press, and the
+            // work below writes to every open window's canvas.
+            if (at >= 0 && at == stack.Count - 1 && activeOrder >= 0)
+                return;
+
+            if (at >= 0)
+                stack.RemoveAt(at);
+
+            stack.Add(this);
+
+            if (transform.parent != null)
+                transform.SetAsLastSibling();
+
+            // The sheet follows the window it belongs to rather than being left under whatever was raised
+            // past it - the same reasoning as in ShowBackdropSheet, applied again now the window has moved.
+            if (backdrop != null && backdrop.gameObject.activeSelf)
+                backdrop.transform.SetSiblingIndex(transform.GetSiblingIndex());
+
+            Restack();
+        }
+
+        private void Enlist()
+        {
+            if (!stack.Contains(this))
+                stack.Add(this);
+
+            // Not through Raise: a window with Bring To Front off still takes its place in the pile - it just
+            // does not climb it afterwards.
+            if (bringToFront)
+                Raise();
+            else
+                Restack();
+        }
+
+        private void Delist()
+        {
+            if (!stack.Remove(this))
+                return;
+
+            // Back to the plain serialized order, so a window that opens again is sorted by the stack it
+            // joins rather than by the place it held in a pile it has left.
+            activeOrder = -1;
+            Restack();
+        }
+
+        // Where each open window's canvas ends up. Two apart rather than one, because every window may want a
+        // backdrop immediately under itself and over the window below - which is the slot the odd numbers are.
+        //
+        // Handed out by position in the pile rather than counted upwards from the last one, so the numbers
+        // stay inside a known band however many times windows are raised past each other. The floor is the
+        // highest Sorting Order among the windows that are open: a window deliberately set above the rest
+        // lifts the whole pile with it rather than being buried by it.
+        private static void Restack()
+        {
+            // Destroyed windows first. OnDestroy takes them out itself, but a static list outlives a play
+            // session where the editor is set to skip the domain reload, and a hole left in the pile would
+            // push every window above it a slot higher on each restack.
+            for (int i = stack.Count - 1; i >= 0; i--)
+            {
+                if (stack[i] == null)
+                    stack.RemoveAt(i);
+            }
+
+            if (stack.Count == 0)
+                return;
+
+            int floor = int.MinValue;
+
+            for (int i = 0; i < stack.Count; i++)
+                floor = Mathf.Max(floor, stack[i].sortingOrder);
+
+            for (int i = 0; i < stack.Count; i++)
+            {
+                stack[i].activeOrder = floor + i * 2;
+                stack[i].ApplySorting();
+            }
+        }
+
+        /// <summary>A press anywhere on the window that nothing inside it took for itself.</summary>
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            if (bringToFront)
+                Raise();
+        }
+
+        // The other half of clicking a window to the front, and the reason the press above is not enough on
+        // its own: a pointer-down is delivered to the first handler found walking up from what was hit and
+        // stops there, so a press that lands on a Button, a Toggle or an input field inside the window never
+        // reaches the window. Those are all Selectables, and pressing one is exactly what moves the event
+        // system's selection - so a selection that has changed into a window is a press the window missed.
+        //
+        // Read rather than subscribed to because the event system offers nothing to subscribe to. One
+        // reference compare per frame while any window is open, and nothing at all while none is.
+        private static void WatchFocus()
+        {
+            if (watchedFrame == Time.frameCount)
+                return;
+
+            watchedFrame = Time.frameCount;
+
+            var events = EventSystem.current;
+            var selected = events != null ? events.currentSelectedGameObject : null;
+
+            if (selected == watchedSelection)
+                return;
+
+            watchedSelection = selected;
+
+            if (selected == null)
+                return;
+
+            var window = selected.GetComponentInParent<UiWindow>();
+
+            if (window != null && window.bringToFront)
+                window.Raise();
+        }
+
         // A nested canvas takes its graphics out of the parent canvas's draw call and sorts them on its own
         // sortingLayer and sortingOrder, which is what lifts a window clear of everything else on screen -
         // other canvases included, and sprites, which sort against a canvas by exactly these two numbers.
@@ -1145,12 +1370,17 @@ namespace FlappyTemplate
         // whatever is behind it.
         private void ApplySorting()
         {
-            Sort(gameObject, alwaysOnTop, sortingOrder);
+            Sort(gameObject, alwaysOnTop, DrawOrder);
 
-            // One below the window, so the sheet is over the game and under the dialog it belongs to.
+            // One below the window, so the sheet is over the game and under the dialog it belongs to - and,
+            // once the pile is two apart per window, over every window below this one as well.
             if (backdrop != null)
-                Sort(backdrop.gameObject, alwaysOnTop && showBackdrop, sortingOrder - 1);
+                Sort(backdrop.gameObject, alwaysOnTop && showBackdrop, DrawOrder - 1);
         }
+
+        // The place the stack gave it, or the serialized order for a window that is not in a stack: one in a
+        // scene being edited, or the only window there is.
+        private int DrawOrder => activeOrder >= 0 ? activeOrder : sortingOrder;
 
         private void Sort(GameObject target, bool on, int order)
         {
@@ -1322,7 +1552,9 @@ namespace FlappyTemplate
         {
             if (scroller != null)
             {
-                scroller.viewport = viewport;
+                // The clip, not the viewport: the scroller holds its content to the rect it is given at both
+                // ends, so this is what keeps the padding under the last row rather than scrolling it away.
+                scroller.viewport = clipArea;
                 scroller.content = content;
                 scroller.horizontal = false;
                 scroller.vertical = true;
@@ -1356,12 +1588,15 @@ namespace FlappyTemplate
             ApplyBody();
         }
 
-        // Where the content sits inside the viewport. Not scrolling, it fills it, inset by the padding, exactly
-        // as it did when the window laid itself out by hand. Scrolling, it is as tall as it asked to be and
-        // anchored to the top, which is the shape a ScrollRect moves.
+        // The padding is the clip's, and the content sits square inside it. Which is the whole trick: a
+        // ScrollRect measures its travel against the rect it was handed as a viewport, so padding written onto
+        // the content as an offset is padding the scroller takes straight back off - the first drag pulls the
+        // top margin away, and the end of the travel leaves the last row flat against the bottom of the panel.
+        // Padding the clip instead makes the margin part of the frame the content moves inside, and it is
+        // there at rest, mid-scroll and at the end alike.
         private void ApplyBody()
         {
-            if (content == null || viewport == null)
+            if (content == null || viewport == null || clipArea == null)
                 return;
 
             float left = contentPaddingLeft;
@@ -1372,19 +1607,25 @@ namespace FlappyTemplate
             if (scrolling && showScrollbar)
                 right += scrollbarWidth + Mathf.Max(0f, scrollbarInset);
 
+            UiWindowParts.Stretch(clipArea, left, top, right, bottom);
+
+            // Not scrolling, the content is simply the clip: same rect, no travel, nothing to hold.
             if (!scrolling)
             {
-                UiWindowParts.Stretch(content, left, top, right, bottom);
+                UiWindowParts.Stretch(content, 0f, 0f, 0f, 0f);
                 return;
             }
 
+            // Scrolling, it is as tall as it asked to be and anchored to the top of the clip, which is the
+            // shape a ScrollRect moves. The height is the content's own - the padding is not in it, because
+            // the padding is the clip's.
             float height = Mathf.Max(0f, wantedHeight - ChromeHeight - top - bottom);
 
             content.anchorMin = new Vector2(0f, 1f);
             content.anchorMax = new Vector2(1f, 1f);
             content.pivot = new Vector2(0.5f, 1f);
-            content.sizeDelta = new Vector2(-(left + right), height);
-            content.anchoredPosition = new Vector2((left - right) * 0.5f, -top);
+            content.sizeDelta = new Vector2(0f, height);
+            content.anchoredPosition = Vector2.zero;
         }
 
         // Where the bar sits, and nothing about what it looks like: down the right of the viewport, inset by
@@ -1431,6 +1672,12 @@ namespace FlappyTemplate
                 // left it part-scaled or transparent, the press that asks for it again puts it right instead of
                 // returning to a dialog nobody can see.
                 ResetTransform();
+
+                // And to the front with it. Asking for a window that is already open is nearly always asking
+                // to look at it, which a dialog left behind three others does not answer.
+                if (bringToFront)
+                    Raise();
+
                 return;
             }
 
@@ -1462,8 +1709,11 @@ namespace FlappyTemplate
                 Clamp();
             }
 
+            // After the SetActive rather than instead of the one it already ran through OnEnable: a window
+            // that was on screen and is being opened again - a second press, a reopen from code - never left
+            // the pile, so being enabled is not what puts it back on top of it.
             if (bringToFront)
-                transform.SetAsLastSibling();
+                Raise();
 
             ShowBackdropSheet(true);
 
