@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sprite Gradient — FlappyBet Template</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --ink: #1c1f24;
+    --soft: #5b6472;
+    --line: #dfe3e8;
+    --accent: #3f6fd8;
+    --code-bg: #f2f4f7;
+    --note-bg: #eef4ff;
+    --note-line: #6f9bea;
+    --warn-bg: #fff5e8;
+    --warn-line: #e0a13c;
+    --stage: #e9ebef;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --panel: #1d2025;
+      --ink: #e4e7ec;
+      --soft: #9aa3b0;
+      --line: #2c3038;
+      --accent: #7aa2f7;
+      --code-bg: #12141a;
+      --note-bg: #161d2b;
+      --note-line: #4a6ea8;
+      --warn-bg: #2a2013;
+      --warn-line: #b8862f;
+      --stage: #0f1114;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 28px 96px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 64px; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 14px;
+    border-left: 2px solid var(--line);
+    padding-left: 16px;
+  }
+  nav.toc strong { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--soft); }
+  nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+
+  header.title { margin-bottom: 28px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 44px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  p { margin: 12px 0; max-width: 74ch; }
+  a { color: var(--accent); }
+  .lede { color: var(--soft); }
+  .stamp { color: var(--soft); font-size: 13.5px; font-style: italic; }
+  ul { max-width: 74ch; }
+
+  code, pre { font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 4px; font-size: 0.86em; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--soft); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td:first-child { white-space: nowrap; }
+
+  .note {
+    border-left: 3px solid var(--note-line);
+    background: var(--note-bg);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+  .note p { margin: 0; }
+  .note p + p { margin-top: 10px; }
+  .note.warn { border-left-color: var(--warn-line); background: var(--warn-bg); }
+
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(276px, 1fr)); gap: 20px; margin: 24px 0; }
+  .specimen { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
+  .stage {
+    background: var(--stage);
+    padding: 22px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+  }
+  .stage.dark { background: #14161b; }
+  .caption { padding: 11px 14px 0; font-weight: 600; font-size: 14px; }
+  .specimen .why { padding: 2px 14px 10px; margin: 0; color: var(--soft); font-size: 13px; max-width: none; }
+  .specimen pre { margin: 0 14px 14px; border: none; background: transparent; padding: 0; font-size: 12px; }
+
+  svg.shape { width: 118px; height: 118px; display: block; overflow: visible; }
+  .figure { margin: 24px 0; padding: 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+  .figure figcaption { color: var(--soft); font-size: 13.5px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <a href="#what">What it looks like</a>
+  <a class="sub" href="#fills">Fills</a>
+  <a class="sub" href="#borders">Borders</a>
+  <a href="#how">How the border is possible</a>
+  <a class="sub" href="#readable">Reading the pixels</a>
+  <a href="#inspector">The inspector</a>
+  <a class="sub" href="#folds">Why it does not fold</a>
+  <a class="sub" href="#inset">What it draws through</a>
+  <a href="#code">From code</a>
+  <a class="sub" href="#steps">Every step</a>
+  <a class="sub" href="#recipes">Recipes</a>
+  <a href="#notes">Worth knowing</a>
+  <a href="#files">Files</a>
+</nav>
+
+<main>
+
+<header class="title">
+  <h1>Sprite Gradient</h1>
+  <p class="lede">A sprite drawn with a gradient painted through it and a border grown around its
+  silhouette, rather than the one flat tint an Image can give it. The sprite supplies the shape and the
+  detail; everything else is geometry, so a single white glyph, badge or coin becomes as many coloured
+  variants as are wanted without another file in the atlas.</p>
+  <p class="stamp">Describes package 1.0.78. Update this file with the code — and README.md beside it.</p>
+  <p><strong>GameObject → UI (Canvas) → FlappyBet → Sprite Gradient</strong>, or Add Component → UI →
+  Sprite Gradient.</p>
+</header>
+
+<div class="note">
+  <p>It <strong>replaces Image</strong> rather than sitting on top of one. A GameObject has a single
+  CanvasRenderer, and two Graphics fighting over it end up with one of them not drawn.</p>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="warm" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#f2593f"/><stop offset="1" stop-color="#ffd45a"/>
+    </linearGradient>
+    <linearGradient id="turned" x1="0" y1="1" x2="1" y2="0" gradientTransform="rotate(-12 .5 .5)">
+      <stop offset="0" stop-color="#5a8cff"/><stop offset="1" stop-color="#b45cf2"/>
+    </linearGradient>
+    <radialGradient id="round" cx="0.5" cy="0.5" r="0.72">
+      <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#2f74e6"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff6680"/><stop offset="0.5" stop-color="#ffd45a"/>
+      <stop offset="1" stop-color="#66d9ff"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff3c4"/><stop offset="1" stop-color="#8c6510"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<h2 id="what">What it looks like</h2>
+
+<h3 id="fills">Fills</h3>
+<div class="gallery">
+
+  <div class="specimen">
+    <div class="stage">
+      <svg class="shape" viewBox="0 0 100 100"><path d="M50 5 L38.8 34.6 L7.2 36.1 L31.9 55.9 L23.6 86.4 L50 69 L76.5 86.4 L68.1 55.9 L92.8 36.1 L61.2 34.6 Z" fill="#ffc633"/></svg>
+    </div>
+    <div class="caption">Flat</div>
+    <p class="why">No gradient at all — the component being an Image with a longer reach.</p>
+    <pre><code>SpriteGradientBuilder.For(star)
+    .Fill(new Color(1f, .78f, .2f));</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage">
+      <svg class="shape" viewBox="0 0 100 100"><path d="M50 5 L38.8 34.6 L7.2 36.1 L31.9 55.9 L23.6 86.4 L50 69 L76.5 86.4 L68.1 55.9 L92.8 36.1 L61.2 34.6 Z" fill="url(#warm)"/></svg>
+    </div>
+    <div class="caption">Linear</div>
+    <p class="why">A ramp painted through the sprite's alpha, bottom to top.</p>
+    <pre><code>.Fill(warm)            // 90°, the default</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage">
+      <svg class="shape" viewBox="0 0 100 100"><path d="M50 5 L38.8 34.6 L7.2 36.1 L31.9 55.9 L23.6 86.4 L50 69 L76.5 86.4 L68.1 55.9 L92.8 36.1 L61.2 34.6 Z" fill="url(#turned)"/></svg>
+    </div>
+    <div class="caption">Turned</div>
+    <p class="why">0° runs left to right and the angle goes anticlockwise from there. It always spans the
+    sprite, so the ends stay on its edges whatever the angle is.</p>
+    <pre><code>.Fill(cool, 30f)</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage">
+      <svg class="shape" viewBox="0 0 100 100"><path d="M50 5 L38.8 34.6 L7.2 36.1 L31.9 55.9 L23.6 86.4 L50 69 L76.5 86.4 L68.1 55.9 L92.8 36.1 L61.2 34.6 Z" fill="url(#round)"/></svg>
+    </div>
+    <div class="caption">Radial</div>
+    <p class="why">Out from the middle, measured to the corner of the sprite — a circle spreading over the
+    picture rather than a rectangle following its edge.</p>
+    <pre><code>.RadialFill(ramp)</code></pre>
+  </div>
+
+</div>
+
+<h3 id="borders">Borders</h3>
+<div class="gallery">
+
+  <div class="specimen">
+    <div class="stage">
+      <svg class="shape" viewBox="0 0 100 100"><path d="M50 5 L38.8 34.6 L7.2 36.1 L31.9 55.9 L23.6 86.4 L50 69 L76.5 86.4 L68.1 55.9 L92.8 36.1 L61.2 34.6 Z" fill="url(#warm)" stroke="#3d1f00" stroke-width="7" stroke-linejoin="round" paint-order="stroke"/></svg>
+    </div>
+    <div class="caption">Outside</div>
+    <p class="why">One colour, grown outward off the silhouette so the picture is left whole.</p>
+    <pre><code>.Fill(warm).Border(4f, ink)</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage dark">
+      <svg class="shape" viewBox="0 0 100 100"><path d="M50 5 L38.8 34.6 L7.2 36.1 L31.9 55.9 L23.6 86.4 L50 69 L76.5 86.4 L68.1 55.9 L92.8 36.1 L61.2 34.6 Z" fill="#1a1d24" stroke="url(#rim)" stroke-width="8" stroke-linejoin="round" paint-order="stroke"/></svg>
+    </div>
+    <div class="caption">Around</div>
+    <p class="why">The ramp run along the outline rather than across the sprite, measured by distance
+    travelled so it moves at the same speed on a straight edge as around a curve.</p>
+    <pre><code>.Fill(dark)
+.Border(5f, rim, EBorderGradient.Around)</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage dark">
+      <svg class="shape" viewBox="0 0 100 100">
+        <path d="M50 5 L38.8 34.6 L7.2 36.1 L31.9 55.9 L23.6 86.4 L50 69 L76.5 86.4 L68.1 55.9 L92.8 36.1 L61.2 34.6 Z" fill="#1a1d24" stroke="#8c6510" stroke-width="12" stroke-linejoin="round" paint-order="stroke"/>
+        <path d="M50 5 L38.8 34.6 L7.2 36.1 L31.9 55.9 L23.6 86.4 L50 69 L76.5 86.4 L68.1 55.9 L92.8 36.1 L61.2 34.6 Z" fill="none" stroke="url(#metal)" stroke-width="6" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="caption">Frame</div>
+    <p class="why">Across the thickness of the border instead of along it, outer edge to inner — the
+    moulding of a picture frame, where the ramp turns with the edge it is on.</p>
+    <pre><code>.Border(9f, metal, EBorderGradient.Frame)</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage">
+      <svg class="shape" viewBox="0 0 100 100">
+        <clipPath id="starclip"><path d="M50 5 L38.8 34.6 L7.2 36.1 L31.9 55.9 L23.6 86.4 L50 69 L76.5 86.4 L68.1 55.9 L92.8 36.1 L61.2 34.6 Z"/></clipPath>
+        <path d="M50 5 L38.8 34.6 L7.2 36.1 L31.9 55.9 L23.6 86.4 L50 69 L76.5 86.4 L68.1 55.9 L92.8 36.1 L61.2 34.6 Z" fill="url(#warm)"/>
+        <path d="M50 5 L38.8 34.6 L7.2 36.1 L31.9 55.9 L23.6 86.4 L50 69 L76.5 86.4 L68.1 55.9 L92.8 36.1 L61.2 34.6 Z" clip-path="url(#starclip)" fill="none" stroke="#ffffff" stroke-width="9" stroke-linejoin="round" opacity="0.85"/>
+      </svg>
+    </div>
+    <div class="caption">Inside</div>
+    <p class="why">Grown inward instead: the shape keeps the size the layout gave it and the border is
+    painted over the edge of the picture. Drawn last, or the sprite would cover it.</p>
+    <pre><code>.Border(6f, white)
+.Placement(ESpriteBorderPlacement.Inside)</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage">
+      <svg class="shape" viewBox="0 0 100 100">
+        <path d="M50 6 A44 44 0 1 1 49.9 6 Z M50 28 A22 22 0 1 0 50.1 28 Z" fill-rule="evenodd" fill="url(#turned)" stroke="#ffffff" stroke-width="6" paint-order="stroke"/>
+      </svg>
+    </div>
+    <div class="caption">A shape with a hole</div>
+    <p class="why">The trace comes back with a loop for the outside and another for the hole, wound the
+    other way, and the border is grown off both.</p>
+    <pre><code>.Picture(ring, true).Fill(cool, 45f)
+.Border(4f, Color.white)</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage dark">
+      <svg class="shape" viewBox="0 0 100 100">
+        <path d="M50 5 L38.8 34.6 L7.2 36.1 L31.9 55.9 L23.6 86.4 L50 69 L76.5 86.4 L68.1 55.9 L92.8 36.1 L61.2 34.6 Z" fill="none" stroke="#ffcc33" stroke-width="22" stroke-linejoin="round" opacity="0.18"/>
+        <path d="M50 5 L38.8 34.6 L7.2 36.1 L31.9 55.9 L23.6 86.4 L50 69 L76.5 86.4 L68.1 55.9 L92.8 36.1 L61.2 34.6 Z" fill="none" stroke="#ffcc33" stroke-width="11" stroke-linejoin="round" opacity="0.3"/>
+        <path d="M50 5 L38.8 34.6 L7.2 36.1 L31.9 55.9 L23.6 86.4 L50 69 L76.5 86.4 L68.1 55.9 L92.8 36.1 L61.2 34.6 Z" fill="url(#warm)"/>
+      </svg>
+    </div>
+    <div class="caption">Glow</div>
+    <p class="why">A wide, half-transparent border with a soft edge on it. The fade is geometry like
+    everything else here, so it costs a ring of triangles rather than a shader.</p>
+    <pre><code>.Border(14f, new Color(1f, .8f, .2f, .35f))
+.Softness(6f)</code></pre>
+  </div>
+
+</div>
+
+<h2 id="how">How the border is possible</h2>
+
+<p>An Image can be tinted but not outlined, because a sprite is pixels and a border is a path — and nothing
+in a sprite says where its edge is. So the edge is found: the alpha channel is sampled onto a grid, and the
+line where it crosses a threshold is traced into closed loops. Once the silhouette is a path, a border
+around it is the same strip of triangles a <a href="../RoundedBox/README.html">Rounded Box</a> draws around
+its own outline, and every way of colouring that strip carries over.</p>
+
+<p>The trace handles more than one loop, so a doughnut, a dotted glyph or a shape with a hole in it gets a
+border around every part of itself, holes included. Loops are wound so that the shape is on the left of the
+direction of travel — the outside runs anticlockwise and a hole runs clockwise — which is what lets one
+rule, <em>outward is to the right</em>, push the border the correct way around both without anything having
+to work out which it is holding.</p>
+
+<p>What comes off a grid is a staircase, and a staircase is the one thing a border cannot survive: offset
+by more than the depth of its steps, the strip's own quads fan out and cross each other. So the alpha is
+averaged over each sample rather than read from the middle of it — which turns a hard edge into a ramp the
+crossing can be read off to a fraction of a texel — and the loop is then corner-cut twice before being
+thinned by Douglas–Peucker, which bounds how far the finished outline strays from the real one. On a 200px
+circle the result is 32 points, none of them more than half a pixel off.</p>
+
+<h3 id="readable">Reading the pixels</h3>
+
+<p><strong>No import settings are needed.</strong> <code>GetPixels</code> only works on a texture with
+Read/Write on, which is off by default, doubles what the texture costs in memory, and cannot be turned on
+at all for a sprite that arrived in an asset bundle or was downloaded at runtime — a border that needed it
+would be a border that usually did not work.</p>
+
+<p>So when the texture will not hand its pixels over, they are taken off the GPU instead: the sprite's
+corner of the atlas is blitted into a render target, which decompresses it and puts it somewhere
+<code>ReadPixels</code> can reach. That works for any texture the renderer can draw at all, and costs one
+stall, once per sprite.</p>
+
+<div class="note warn">
+  <p>The one sprite this cannot read is one <strong>rotated inside an atlas</strong>, whose pixels no longer
+  line up with the rect being drawn. There the border falls back to the outline the importer generated —
+  which for a <strong>Full Rect</strong> sprite is the plain quad, so the border comes back as a
+  rectangle.</p>
+  <p>Untick <em>Allow Rotation</em> on the atlas, or set <strong>Mesh Type</strong> to <strong>Tight</strong>
+  for a rougher outline as things stand. The inspector says so, with a button to the texture, whenever it
+  applies.</p>
+</div>
+
+<h2 id="inspector">The inspector</h2>
+
+<table>
+  <tr><th>Field</th><th>What it does</th></tr>
+  <tr><td>Sprite</td><td>The picture. Its alpha is the shape.</td></tr>
+  <tr><td>Preserve Aspect</td><td>Fits the sprite in the rect at its own proportions. The border follows what it ends up filling.</td></tr>
+  <tr><td>Fill Color</td><td>Painted through the sprite. With a gradient running it becomes a tint over it — white leaves the gradient alone, and its alpha fades the whole thing.</td></tr>
+  <tr><td>Gradient</td><td><code>None</code>, <code>Linear</code> (at an angle) or <code>Radial</code> (middle to corners).</td></tr>
+  <tr><td>Angle</td><td>0 left to right, 90 bottom to top, 180 right to left.</td></tr>
+  <tr><td>Border Size</td><td>Thickness, in the rect's own units. 0 leaves the sprite alone.</td></tr>
+  <tr><td>Placement</td><td><code>Outside</code> grows off the silhouette and leaves the picture whole. <code>Inside</code> eats into its edge and keeps the shape its size. <code>Center</code> splits the difference.</td></tr>
+  <tr><td>Border Gradient</td><td><code>Linear</code> across the sprite, <code>Around</code> the outline, or <code>Frame</code> across the thickness. Replaces the border colour.</td></tr>
+  <tr><td>Alpha Threshold</td><td>How much alpha counts as part of the shape. Lower catches more of a soft edge and puts the border further out; higher hugs the solid core.</td></tr>
+  <tr><td>Simplify</td><td>How far the outline may stray from the traced one, as a fraction of the sprite. Up means fewer vertices and a looser border. Floored at half a sample either way — nothing finer than the grid it was read off can be true.</td></tr>
+  <tr><td>Edge Softness</td><td>The fade that smooths the border; the mesh has no anti-aliasing of its own. About a pixel is right.</td></tr>
+</table>
+
+<h3 id="folds">Why the border does not fold over itself</h3>
+
+<p>Moving every point of an outline outwards is not the same thing as offsetting it, and the difference is
+all folds — the border painted twice over the same ground, which shows as a spike off a sharp corner or a
+patch of double-strength colour in a notch. <code>SpriteBorderPath</code> answers three ways of folding, in
+order:</p>
+
+<table>
+  <tr><td><strong>Corners</strong></td><td>A corner turning away from the border is rounded once a mitre would reach more than twice the width; a mitre on something sharp <em>is</em> the spike. A corner turning towards it keeps the mitre at any angle — there the mitre is not a corner treatment but exactly where the two offset edges cross.</td></tr>
+  <tr><td><strong>Reach</strong></td><td>No point may end up nearer to another part of the outline than the border is wide, which is what going past the middle of a narrow place means. Points that do are pulled back along the line they were pushed out on, so the two sides of a slot come to rest against each other.</td></tr>
+  <tr><td><strong>Folds</strong></td><td>Edge that genuinely crosses itself has everything between the crossing segments collapsed onto the crossing point, so what it covered twice is covered once by a fan from there. Which side is the fold is settled by winding, since a fold and a hole look identical from close up: a border thick enough to bridge a C's mouth turns it into a ring, and a ring's inside is a hole, not a mistake.</td></tr>
+</table>
+
+<p>Measured two ways — sampling the plane to count how many of the border's own triangles sit on each
+point, and walking outward from every point of the outline to see how far the border actually reaches — a
+C, a star (outside or centred) and a circle come out at <strong>0% double coverage and a uniform 0.99×
+width</strong>, at border widths from a hairline up to half the shape.</p>
+
+<div class="note warn">
+  <p><strong>A border does come out thinner inside a sharp notch</strong>, and there is no version of this
+  that does not. A notch narrower than twice the border has nowhere to put the whole of it: the two sides
+  meet in the middle and the border tapers to the point. Widen the notch, or narrow the border, or accept
+  it — the only other answer is to let the two sides run through each other, which is the border painted
+  twice.</p>
+</div>
+
+<p>It is not a true polygon offset — that would mean rebuilding the border as an area and unioning it with
+itself — so the tips of a nearly closed crescent still overlap by a few per cent.</p>
+
+<h3 id="inset">What the border is drawn through</h3>
+
+<p>The border is drawn through the sprite's own texture, like everything else in this mesh — a UI graphic
+has one texture and no say in the matter. So the border is only as opaque as whatever it lands on, and it
+lands on the edge of the picture where the alpha is on its way out, or outside it where there is none at
+all. Drawn where it sits it would come out in pieces: solid only where the outline happened to cross
+something opaque, and gone everywhere else.</p>
+
+<p>So the border keeps its own position and reads the texture from one fixed spot instead. The trace
+already knows where the picture is solid, so it comes back with a place that is fully opaque, has opaque
+neighbours, and is as close to white as the sprite gets.</p>
+
+<figure class="figure">
+  <svg viewBox="0 0 320 110" width="100%" style="max-width:420px;display:block">
+    <path d="M20 84 C 90 26, 210 26, 300 68" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <path d="M20 68 C 90 10, 210 10, 300 52" fill="none" stroke="#e0a13c" stroke-width="4"/>
+    <path d="M20 100 C 90 42, 210 42, 300 84" fill="none" stroke="var(--soft)" stroke-width="1.5" opacity="0.5"/>
+    <circle cx="160" cy="36" r="3.5" fill="#e0a13c"/>
+    <circle cx="130" cy="36" r="3.5" fill="#e0a13c"/>
+    <circle cx="190" cy="36" r="3.5" fill="#e0a13c"/>
+    <circle cx="160" cy="88" r="4.5" fill="var(--accent)"/>
+    <path d="M130 36 C 140 78, 150 86, 156 88" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3 2"/>
+    <path d="M160 36 L160 84" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3 2"/>
+    <path d="M190 36 C 180 78, 170 86, 164 88" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3 2"/>
+  </svg>
+  <figcaption>The dashed line is the traced silhouette; the thick one is the border sitting outside it.
+  Border vertices are drawn where the orange dots are, but every one of them reads the texture from the
+  blue dot — the solid spot the trace found well inside the shape.</figcaption>
+</figure>
+
+<p>What that spot does hold is then divided back out of the vertex colour, so the border comes out exactly
+the colour it was asked for even on a picture that is nowhere near white. A spot darker than the colour
+wanted cannot give it: the correction clamps, and the border comes out as bright as that part of the
+picture allows.</p>
+
+<p>For a sprite that could not be traced at all, the middle of the sprite is used and nothing is corrected
+for. It is a guess, but a better one than any point on the outline.</p>
+
+<h2 id="code">From code</h2>
+
+<pre><code>using FlappyTemplate;
+
+SpriteGradientBuilder.Create(panel, "Coin")
+    .Picture(coinSprite, true)
+    .Size(96f, 96f)
+    .Fill(gold, 90f)
+    .Border(3f, new Color(0.35f, 0.2f, 0f))
+    .Done();
+
+// Or reconfigure one that already exists
+SpriteGradientBuilder.For(badge)
+    .Fill(Color.red)
+    .Border(4f, ramp, EBorderGradient.Around);</code></pre>
+
+<h3 id="steps">Every step</h3>
+<table>
+  <tr><th>Step</th><th>Notes</th></tr>
+  <tr><td><code>Create(parent, name)</code><br><code>For(graphic)</code></td><td>Start. <code>Create</code> adds the RectTransform and CanvasRenderer with it.</td></tr>
+  <tr><td><code>Picture(sprite, preserveAspect)</code></td><td>The sprite, and whether to fit it rather than stretch it.</td></tr>
+  <tr><td><code>Size(w, h)</code> · <code>NativeSize()</code> · <code>Stretch(margin)</code> · <code>At(pos)</code></td><td>Layout.</td></tr>
+  <tr><td><code>Fill(color)</code></td><td>Flat. Clears any gradient.</td></tr>
+  <tr><td><code>Fill(gradient, angle)</code> · <code>RadialFill(gradient)</code></td><td>0° is left to right, 90° bottom to top.</td></tr>
+  <tr><td><code>FillTint(color)</code></td><td>Multiplies without replacing — the way to fade or dim a gradient.</td></tr>
+  <tr><td><code>Border(size, color)</code><br><code>Border(size, gradient, mode, angle)</code><br><code>NoBorder()</code></td><td><code>Linear</code>, <code>Around</code> or <code>Frame</code>.</td></tr>
+  <tr><td><code>Placement(mode)</code></td><td><code>Outside</code>, <code>Center</code> or <code>Inside</code>.</td></tr>
+  <tr><td><code>Trace(alphaThreshold, simplify)</code> · <code>Softness(px)</code></td><td>How the silhouette is read and drawn.</td></tr>
+  <tr><td><code>Raycast(bool)</code> · <code>Tint(color)</code> · <code>Material(m)</code></td><td></td></tr>
+  <tr><td><code>Done()</code></td><td>Returns the graphic. There is an implicit conversion too.</td></tr>
+</table>
+
+<h3 id="recipes">Recipes</h3>
+<pre><code>// One white glyph, three states — no second atlas entry for any of them
+.Picture(icon).Fill(idle)
+.Picture(icon).Fill(hot).Border(2f, Color.white)
+.Picture(icon).FillTint(new Color(.4f, .4f, .45f))     // disabled
+
+// Metal coin: a ramp through the sprite, a darker one around its edge
+.Picture(coin, true).Fill(gold, 90f).Border(4f, edge, EBorderGradient.Frame)
+
+// Sticker: a thick white keyline grown outward, the picture untouched
+.Picture(art, true).Border(8f, Color.white).Softness(1.5f)
+
+// Rim light that travels: one ramp run around the outline
+.Picture(shape, true).Fill(dark).Border(5f, rim, EBorderGradient.Around)
+
+// Inked edge — grown inward, so the shape keeps the size the layout gave it
+.Picture(shape, true).Fill(ramp, 90f)
+.Border(3f, ink).Placement(ESpriteBorderPlacement.Inside)
+
+// Glow behind a shape: a wide, soft, half-transparent border
+.Picture(shape, true).Border(14f, new Color(1f, .8f, .2f, .35f)).Softness(6f)</code></pre>
+
+<p><code>SpriteGradientExample</code> builds one of each as a grid — drop it on an empty RectTransform in a
+canvas and press play, or use <strong>Build Now</strong> from its context menu. With no sprite handed to it,
+it paints a star and a ring of its own, so it runs against nothing.</p>
+
+<p>Individual properties are public as well (<code>Sprite</code>, <code>FillColor</code>,
+<code>BorderSize</code>, <code>BorderPlacement</code> …), plus <code>SetNativeSize</code>,
+<code>GetBorderPath</code> for the outline in local space, and <code>CanTraceOutline</code> for whether the
+real silhouette is being used or the importer's mesh is standing in. Each setter rebuilds only when the
+value actually changes, so driving one from a tween is safe.</p>
+
+<h2 id="notes">Worth knowing</h2>
+<ul>
+  <li><strong>Tint</strong> is the standard <code>Graphic.color</code>. It multiplies the fill and the
+  border alike — leave it white unless a fade, an Animator or a CanvasGroup is driving it.</li>
+  <li>Tracing is done <strong>once per sprite</strong> and kept, so the cost — a GPU readback and a march
+  over the alpha — lands on the first frame a sprite is drawn with a border rather than on every rebuild.
+  Changing Alpha Threshold or Simplify is a new trace; changing size, colour or thickness is not. Editing
+  anything in the inspector drops the cache, since a sprite can be reimported under us.</li>
+  <li>Gradients cost geometry. Vertex colours only blend in a straight line, so the sprite is cut at every
+  stop and the border reads its ramp at each outline point; a two-key ramp is nearly free, a dozen keys is
+  not. A <code>Linear</code> or <code>Around</code> border with a key in the middle also has the outline
+  broken up finely enough for that key to land on, which roughly doubles the border's vertices — the other
+  modes do not pay it.</li>
+  <li>An outline is capped at 96 points however low <strong>Simplify</strong> is set. Every point is four
+  vertices of border and four of fade, and a silhouette with a lot of coastline — lettering, fur, a torn
+  edge — would otherwise hand the canvas a mesh nobody budgeted for.</li>
+  <li>The border is <strong>offset rather than pushed out</strong>, so it does not fold over itself — see
+  above. What is left is that two convex corners facing each other across a gap narrower than the border,
+  the tips of a nearly closed crescent, still overlap a little.</li>
+  <li><strong>Around</strong> starts wherever the trace started on each loop. It is a corner of the shape,
+  but not one anybody chose — turn the ramp's keys around rather than looking for an origin field.</li>
+  <li>A sprite <strong>rotated inside an atlas</strong> is the one thing that cannot be traced; its pixels
+  no longer line up with the rect being drawn. Untick <em>Allow Rotation</em> on the atlas if it
+  matters.</li>
+  <li>Raycasting is by the rect, as with any Graphic — the traced silhouette is not used for hit
+  testing.</li>
+</ul>
+
+<h2 id="files">Files</h2>
+<table>
+  <tr><td><code>SpriteGradient.cs</code></td><td>The component and its mesh.</td></tr>
+  <tr><td><code>SpriteOutline.cs</code></td><td>Traces the silhouette and keeps it. Internal.</td></tr>
+  <tr><td><code>SpriteBorderPath.cs</code></td><td>Offsets that outline into the two edges of a border, without folds. Internal.</td></tr>
+  <tr><td><code>SpriteGradientBuilder.cs</code></td><td>The fluent API.</td></tr>
+  <tr><td><code>SpriteGradientExample.cs</code></td><td>One of each, built from code, on a sprite it paints itself.</td></tr>
+  <tr><td><code>ESpriteBorderPlacement.cs</code></td><td>Outside, Center, Inside.</td></tr>
+  <tr><td><code>../RoundedBox/EFillGradient.cs</code><br><code>EBorderGradient.cs</code></td><td>Gradient modes, shared with Rounded Box.</td></tr>
+  <tr><td><code>Editor/SpriteGradient/</code></td><td>The inspector and the GameObject menu.</td></tr>
+</table>
+
+</main>
+</div>
+</body>
+</html>

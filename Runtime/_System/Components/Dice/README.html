@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dice Roller — FlappyBet Template</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --ink: #1c1f24;
+    --soft: #5b6472;
+    --line: #dfe3e8;
+    --accent: #3f6fd8;
+    --code-bg: #f2f4f7;
+    --note-bg: #eef4ff;
+    --note-line: #6f9bea;
+    --stage: #e9ebef;
+    --dice: #ffffff;
+    --dice-line: #b9c0cb;
+    --pip: #2b3038;
+    --track: #c9d1de;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --panel: #1d2025;
+      --ink: #e4e7ec;
+      --soft: #9aa3b0;
+      --line: #2c3038;
+      --accent: #7aa2f7;
+      --code-bg: #12141a;
+      --note-bg: #161d2b;
+      --note-line: #4a6ea8;
+      --stage: #0f1114;
+      --dice: #2b3038;
+      --dice-line: #4a515e;
+      --pip: #e4e7ec;
+      --track: #3a414d;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 28px 96px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 64px; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 14px;
+    border-left: 2px solid var(--line);
+    padding-left: 16px;
+  }
+  nav.toc strong { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--soft); }
+  nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+
+  header.title { margin-bottom: 28px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 44px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  p { margin: 12px 0; max-width: 74ch; }
+  a { color: var(--accent); }
+  .lede { color: var(--soft); }
+  .stamp { color: var(--soft); font-size: 13.5px; font-style: italic; }
+  ul { max-width: 74ch; }
+
+  code, pre { font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 4px; font-size: 0.86em; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--soft); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td:first-child { white-space: nowrap; }
+
+  .note {
+    border-left: 3px solid var(--note-line);
+    background: var(--note-bg);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+  .note p { margin: 0; }
+  .note p + p { margin-top: 10px; }
+
+  figure { margin: 24px 0; }
+  figure figcaption { color: var(--soft); font-size: 13px; margin-top: 8px; max-width: 74ch; }
+  .stagebox {
+    background: var(--stage);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 16px 12px;
+    overflow-x: auto;
+  }
+  .stagebox svg { display: block; width: 100%; min-width: 560px; height: auto; }
+
+  .flightline { fill: none; stroke: var(--accent); stroke-width: 2.5; }
+  .ground { stroke: var(--soft); stroke-width: 1.5; stroke-dasharray: 5 5; opacity: .7; }
+  .tick { stroke: var(--track); stroke-width: 1; stroke-dasharray: 3 4; }
+  .bracket { fill: none; stroke: var(--soft); stroke-width: 1.4; }
+  .cube { fill: var(--dice); stroke: var(--dice-line); stroke-width: 1.5; }
+  .pip { fill: var(--pip); }
+  .lbl { fill: var(--ink); font: 600 13px -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .sub { fill: var(--soft); font: 12px -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .axis { stroke: var(--soft); stroke-width: 1.4; }
+
+  /* The dice on the left of the run below actually does the roll this page describes. */
+  .demo { display: flex; align-items: flex-end; gap: 28px; flex-wrap: wrap; }
+  .demostage {
+    background: var(--stage);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    width: 190px;
+    height: 210px;
+    position: relative;
+    overflow: hidden;
+    flex: none;
+  }
+  .demostage::after {
+    content: "";
+    position: absolute;
+    left: 34px; right: 34px; bottom: 34px;
+    border-bottom: 2px dashed var(--track);
+  }
+  .hop {
+    position: absolute;
+    left: 50%;
+    bottom: 34px;
+    width: 54px;
+    height: 54px;
+    margin-left: -27px;
+    animation: hop 5s cubic-bezier(.4, 0, .6, 1) infinite;
+  }
+  .hop .face {
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    background: var(--dice);
+    border: 1.5px solid var(--dice-line);
+    display: grid;
+    place-items: center;
+    animation: tumble 5s linear infinite;
+  }
+  .hop .face span { font: 700 26px -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--pip); }
+
+  /* 0-9% rise, 9-64% hover, 64-76% fall, then two bounces - the same shape as the sequence. */
+  @keyframes hop {
+    0%   { transform: translateY(0); }
+    9%   { transform: translateY(-116px); }
+    64%  { transform: translateY(-108px); }
+    76%  { transform: translateY(0); }
+    84%  { transform: translateY(-38px); }
+    92%  { transform: translateY(0); }
+    96%  { transform: translateY(-12px); }
+    100% { transform: translateY(0); }
+  }
+  @keyframes tumble {
+    0%   { transform: rotate(0deg); }
+    9%   { transform: rotate(150deg); }
+    64%  { transform: rotate(1240deg); }
+    76%  { transform: rotate(1440deg); }
+    100% { transform: rotate(1440deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hop, .hop .face { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <a href="#flight">The flight</a>
+  <a href="#guarantee">Why it always lands right</a>
+  <a href="#faces">Faces</a>
+  <a href="#hover">Hover</a>
+  <a href="#jumping">Jumping</a>
+  <a href="#local">Everything local</a>
+  <a href="#inspector">The inspector</a>
+  <a href="#code">From code</a>
+  <a href="#notes">Worth knowing</a>
+  <a href="#files">Files</a>
+</nav>
+
+<main>
+
+<header class="title">
+  <h1>Dice Roller</h1>
+  <p class="lede">A dice that rolls to a number you decided beforehand. <code>Roll(6)</code> throws the cube
+  in the air, tumbles it, drops it, bounces it, and it comes to rest showing 6 — every time, on any frame
+  rate, with no physics involved and nothing to settle down afterwards.</p>
+  <p>That is the whole point of it. A rigidbody dice is a lovely thing until the server has already said the
+  answer is 6, and then it is a simulation you have to fight. Here the animation is a DOTween sequence built
+  around the answer, so the throw is free to be as showy as you like without ever putting the wrong face
+  up.</p>
+  <p class="stamp">Describes package 1.0.73. Update this file with the code — and README.md beside it.</p>
+</header>
+
+<p><strong>Add Component → FlappyBet → Dice Roller</strong>, on the cube that carries the dice mesh. Then:</p>
+
+<pre><code>dice.Roll(6);                      // jump, tumble, fall, bounce - lands on 6
+dice.Roll(6, 2f);                  // the same, hanging in the air for 2s first
+dice.Roll(6, () =&gt; Pay(6));        // told when it has settled
+dice.SetFace(1);                   // no animation, just put 1 up</code></pre>
+
+<h2 id="flight">The flight</h2>
+
+<p>One sequence, four stretches, in this order.</p>
+
+<figure>
+  <div class="stagebox">
+    <svg viewBox="0 0 720 250" role="img" aria-label="The path of a roll: rise, hover, fall and two bounces">
+      <!-- ground -->
+      <line class="ground" x1="24" y1="180" x2="700" y2="180"/>
+
+      <!-- phase boundaries -->
+      <line class="tick" x1="180" y1="30" x2="180" y2="180"/>
+      <line class="tick" x1="424" y1="30" x2="424" y2="180"/>
+      <line class="tick" x1="545" y1="60" x2="545" y2="180"/>
+
+      <!-- the path itself -->
+      <path class="flightline" d="M40,180
+        C 92,180 146,74 180,50
+        C 210,40 240,60 270,50
+        C 300,40 330,60 360,50
+        C 388,41 410,58 424,50
+        C 462,64 502,132 545,180
+        Q 578,116 608,180
+        Q 630,148 648,180
+        Q 660,166 670,180"/>
+
+      <!-- dice tumbling along it -->
+      <g class="cube" transform="translate(40,180) rotate(0)"><rect x="-11" y="-22" width="22" height="22" rx="4"/></g>
+      <g class="cube" transform="translate(140,86) rotate(38)"><rect x="-11" y="-11" width="22" height="22" rx="4"/></g>
+      <g class="cube" transform="translate(238,55) rotate(96)"><rect x="-11" y="-11" width="22" height="22" rx="4"/></g>
+      <g class="cube" transform="translate(330,55) rotate(172)"><rect x="-11" y="-11" width="22" height="22" rx="4"/></g>
+      <g class="cube" transform="translate(410,52) rotate(248)"><rect x="-11" y="-11" width="22" height="22" rx="4"/></g>
+      <g class="cube" transform="translate(500,124) rotate(300)"><rect x="-11" y="-11" width="22" height="22" rx="4"/></g>
+      <g class="cube" transform="translate(578,140) rotate(342)"><rect x="-11" y="-11" width="22" height="22" rx="4"/></g>
+      <g class="cube" transform="translate(670,169)"><rect x="-11" y="-11" width="22" height="22" rx="4"/>
+        <circle class="pip" cx="-4" cy="-4" r="2"/><circle class="pip" cx="4" cy="-4" r="2"/>
+        <circle class="pip" cx="-4" cy="0" r="2"/><circle class="pip" cx="4" cy="0" r="2"/>
+        <circle class="pip" cx="-4" cy="4" r="2"/><circle class="pip" cx="4" cy="4" r="2"/></g>
+
+      <!-- brackets and labels -->
+      <path class="bracket" d="M40,200 v8 h140 v-8"/>
+      <path class="bracket" d="M182,200 v8 h240 v-8"/>
+      <path class="bracket" d="M426,200 v8 h117 v-8"/>
+      <path class="bracket" d="M547,200 v8 h140 v-8"/>
+      <text class="lbl" x="110" y="226" text-anchor="middle">Rise</text>
+      <text class="sub" x="110" y="242" text-anchor="middle">45% of Jump Duration</text>
+      <text class="lbl" x="302" y="226" text-anchor="middle">Hover</text>
+      <text class="sub" x="302" y="242" text-anchor="middle">Hover Duration, 0 by default</text>
+      <text class="lbl" x="485" y="226" text-anchor="middle">Fall</text>
+      <text class="sub" x="485" y="242" text-anchor="middle">the other 55%</text>
+      <text class="lbl" x="617" y="226" text-anchor="middle">Bounces</text>
+      <text class="sub" x="617" y="242" text-anchor="middle">each keeps Bounce Damping</text>
+    </svg>
+  </div>
+  <figcaption>The cube tumbles the whole way and is only on its face at the end. With Hover Duration at 0 —
+  the value it ships with — the middle stretch is simply not there and the rise runs straight into the
+  fall.</figcaption>
+</figure>
+
+<figure class="demo">
+  <div class="demostage">
+    <div class="hop"><div class="face"><span>6</span></div></div>
+  </div>
+  <figcaption style="margin-top:0; align-self: center;">The same shape, running: up, a long hover spinning
+  hard in place, a drop, and two bounces that keep a third of the height each. This one is
+  <code>Roll(6, 2f)</code> with a Hover Spin Multiplier of 4.</figcaption>
+</figure>
+
+<table>
+  <tr><th>Stretch</th><th>What happens</th><th>Timing</th></tr>
+  <tr><td><strong>Rise</strong></td><td>Up to the apex, easing out — and part of the way to where it lands</td><td>45% of <code>Jump Duration</code></td></tr>
+  <tr><td><strong>Hover</strong></td><td>Hangs at the apex, still turning, drifting gently up and down</td><td><code>Hover Duration</code>, 0 by default</td></tr>
+  <tr><td><strong>Fall</strong></td><td>Down onto the landing spot, easing in, spin decelerating</td><td>the other 55%</td></tr>
+  <tr><td><strong>Bounces</strong></td><td>Each keeps <code>Bounce Damping</code> of the last one's height</td><td>added on the end</td></tr>
+</table>
+
+<p>Rise and fall are separate tweens with opposite eases — <code>OutQuad</code> up, <code>InQuad</code> down —
+which is what makes the arc read as gravity rather than as a lerp. A bounce's duration falls with the
+<strong>square root</strong> of its height, which is how long a real bounce of that height lasts; scaling it
+linearly makes the small late bounces crawl.</p>
+
+<p>The hover simply pushes the fall later on the timeline. Neither half of the arc changes shape because of
+it, and horizontal travel is split around it — the share of the ground covered on the way up, the rest on the
+way down — so a hovering dice hangs over one spot instead of sliding sideways through the air.</p>
+
+<h2 id="guarantee">Why it always lands right</h2>
+
+<p>The spin is one continuous tumble from wherever the dice is standing to the orientation that puts the
+asked for face up, plus a random number of <strong>whole extra turns per axis</strong>.
+<code>RotateMode.FastBeyond360</code> makes DOTween interpolate the raw euler numbers instead of taking the
+shortest arc, so those extra turns actually play out as tumbling — and because a whole turn leaves an
+orientation exactly where it found it, the dice still ends on the face it was told to. Add fifteen turns for
+a long hover and the guarantee is untouched.</p>
+
+<p>Two more things fall out of that:</p>
+
+<ul>
+  <li><strong>Yaw is free.</strong> Turning about the up axis cannot change which face is up, so each roll
+  picks one of the four quarter turns at random. The dice comes to rest at a different angle every time and
+  still reads as the same number.</li>
+  <li><strong>The last quarter turn rides the first bounce.</strong> With <strong>Tumble On Landing</strong>
+  ticked the spin stops one quarter turn short and the dice rolls over an edge onto its final face as it
+  lands, instead of arriving already flat.</li>
+</ul>
+
+<p>When the sequence finishes, the resting rotation is <em>assigned</em> rather than tweened to — a tween
+chain ends a fraction of a degree off, and a dice resting 0.3° over reads as one that did not quite
+settle.</p>
+
+<h2 id="faces">Faces</h2>
+
+<p>Which face is which is a table, because it depends on the mesh.</p>
+
+<figure>
+  <div class="stagebox">
+    <svg viewBox="0 0 720 250" role="img" aria-label="A cube with 1 on top, 2 forward and 3 to the right">
+      <!-- isometric cube -->
+      <g transform="translate(210,132)">
+        <!-- top face: 1 -->
+        <path class="cube" d="M0,-78 L86,-32 L0,14 L-86,-32 Z"/>
+        <circle class="pip" cx="0" cy="-32" r="7"/>
+        <!-- left face: 2 (+Z, forward) -->
+        <path class="cube" d="M-86,-32 L0,14 L0,104 L-86,58 Z"/>
+        <circle class="pip" cx="-58" cy="20" r="6"/>
+        <circle class="pip" cx="-26" cy="66" r="6"/>
+        <!-- right face: 3 (+X) -->
+        <path class="cube" d="M86,-32 L86,58 L0,104 L0,14 Z"/>
+        <circle class="pip" cx="20" cy="38" r="6"/>
+        <circle class="pip" cx="44" cy="52" r="6"/>
+        <circle class="pip" cx="68" cy="24" r="6"/>
+      </g>
+
+      <!-- axes -->
+      <g transform="translate(520,150)">
+        <line class="axis" x1="0" y1="0" x2="0" y2="-72" marker-end="url(#tip)"/>
+        <line class="axis" x1="0" y1="0" x2="76" y2="-40" marker-end="url(#tip)"/>
+        <line class="axis" x1="0" y1="0" x2="-76" y2="-40" marker-end="url(#tip)"/>
+        <text class="lbl" x="0" y="-82" text-anchor="middle">+Y — 1</text>
+        <text class="lbl" x="92" y="-42" text-anchor="middle">+X — 3</text>
+        <text class="lbl" x="-92" y="-42" text-anchor="middle">+Z — 2</text>
+        <text class="sub" x="0" y="22" text-anchor="middle">and the opposite face of each</text>
+        <text class="sub" x="0" y="40" text-anchor="middle">carries the number that makes 7</text>
+      </g>
+
+      <defs>
+        <marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor" style="fill: var(--soft)"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+  <figcaption>The default layout, which is what a standard dice texture atlas gives you: 1 up, 2 forward,
+  3 to the right, and 6, 5 and 4 opposite them.</figcaption>
+</figure>
+
+<table>
+  <tr><th>Value</th><th>Face</th><th>Local euler</th></tr>
+  <tr><td>1</td><td>+Y (up)</td><td><code>0, 0, 0</code></td></tr>
+  <tr><td>2</td><td>+Z (forward)</td><td><code>-90, 0, 0</code></td></tr>
+  <tr><td>3</td><td>+X (right)</td><td><code>0, 0, 90</code></td></tr>
+  <tr><td>4</td><td>−X (left)</td><td><code>0, 0, -90</code></td></tr>
+  <tr><td>5</td><td>−Z (back)</td><td><code>90, 0, 0</code></td></tr>
+  <tr><td>6</td><td>−Y (down)</td><td><code>180, 0, 0</code></td></tr>
+</table>
+
+<p>If your pips sit elsewhere, re-point the six entries in <strong>Face Orientations</strong> — nothing else
+in the component assumes a layout.</p>
+
+<div class="note">
+  <p>To check them, press <strong>A</strong> with <code>DiceRollerExample</code> on the object: it rolls 1
+  through 6 in order and logs each. Whichever one comes up wrong is the entry to fix.</p>
+</div>
+
+<h2 id="hover">Hover</h2>
+
+<p><code>Hover Duration</code> is <strong>0 out of the box</strong>, and while it is 0 the three fields under
+it do nothing at all — there is no time at the apex for them to act on. Set it, or pass one per roll with
+<code>Roll(6, 2f)</code>, which overrides the inspector for that throw.</p>
+
+<table>
+  <tr><th>Field</th><th>Means</th></tr>
+  <tr><td><code>Hover Duration</code></td><td>Seconds at the apex. The default for <code>Roll(value)</code> calls.</td></tr>
+  <tr><td><code>Hover Spin Multiplier</code></td><td>How much <strong>faster</strong> it spins up there. 1 = the speed of the rest of the jump, 3 = three times faster, 0 = it stops turning.</td></tr>
+  <tr><td><code>Hover Bob Height</code></td><td>How far it drifts up and down while hanging — cosmetic. Scale it against <code>Jump Height</code>: at 2 units of jump, 0.15 is a slight float and 0.5 is obvious.</td></tr>
+  <tr><td><code>Hover Bob Period</code></td><td>Seconds per drift up and back down.</td></tr>
+</table>
+
+<p>The multiplier is there because a hover would otherwise make the dice spin <em>slower</em>: the same turn
+count spread over more seconds. Hovering time is weighted by it when the turn count is worked out, so turning
+the knob up buys extra turns rather than stretching the same ones thinner. The bob always runs an even number
+of legs, so it finishes back at the apex — the exact height the fall starts from.</p>
+
+<div class="note">
+  <p><strong>Try</strong> Hover Duration <code>2</code>, Hover Spin Multiplier <code>4</code>, Hover Bob
+  Height <code>0.5</code>: a dice that leaps up, spins hard in place while floating, then drops onto its
+  face.</p>
+</div>
+
+<h2 id="jumping">Jumping</h2>
+
+<p><strong>Jump Enabled</strong> off, there is no arc and no bounces — the dice spins where it stands and
+settles on the value. The same call site serves a showy throw and a quiet re-roll in a tight layout:</p>
+
+<pre><code>dice.JumpEnabled = false;
+dice.ToggleJump();          // straight onto a UI Toggle</code></pre>
+
+<p>It is read when a roll <em>starts</em>, so flipping it mid-flight never cuts a running animation short. A
+hover needs air to hang in, so with the jump off it is ignored.</p>
+
+<h2 id="local">Everything local</h2>
+
+<p>Every tween here is <code>DOLocalMove*</code> / <code>DOLocalRotate</code>, and the yaw and tumble
+quaternions are pre-multiplied onto <code>localRotation</code>, which turns them about the
+<strong>parent's</strong> axes rather than the scene's. "The face points up" means up as the parent sees it —
+tilt, spin or scale the parent and the whole roll follows it. There is no axis in the component left pointing
+at the world, which is what lets a dice sit on a board that is itself being moved about.</p>
+
+<h2 id="inspector">The inspector</h2>
+
+<table>
+  <tr><th>Field</th><th>Means</th></tr>
+  <tr><td><code>Face Orientations</code></td><td>The six values and the local euler that puts each one up</td></tr>
+  <tr><td><code>Jump Enabled</code></td><td>The arc and the bounces, on or off</td></tr>
+  <tr><td><code>Jump Height</code></td><td>Apex above the higher of take-off and landing, in local units</td></tr>
+  <tr><td><code>Jump Duration</code></td><td>Rise plus fall. Hover and bounces are added on top</td></tr>
+  <tr><td><code>Landing Offset</code></td><td>Where it lands, relative to where it started the scene</td></tr>
+  <tr><td><code>Landing Scatter</code></td><td>Random horizontal spread around that, so repeated rolls do not stack</td></tr>
+  <tr><td><code>Hover …</code></td><td><a href="#hover">Above</a></td></tr>
+  <tr><td><code>Bounce Count</code>, <code>Bounce Damping</code></td><td>How many bounces and how much height each keeps</td></tr>
+  <tr><td><code>Spin Turns</code></td><td>Whole extra turns per axis, picked at random in this range</td></tr>
+  <tr><td><code>Tumble On Landing</code></td><td>Land a quarter turn short and roll onto the face</td></tr>
+  <tr><td><code>On Roll Complete</code></td><td><code>UnityEvent&lt;int&gt;</code>, given the value it settled on</td></tr>
+  <tr><td><code>Test Value</code></td><td>What the component's <strong>Test Roll</strong> context menu item throws</td></tr>
+</table>
+
+<h2 id="code">From code</h2>
+
+<table>
+  <tr><th>Member</th><th>Does</th></tr>
+  <tr><td><code>Roll(value, onComplete = null)</code></td><td>Rolls, hovering for whatever the inspector says. Returns the <code>Tween</code></td></tr>
+  <tr><td><code>Roll(value, hover, onComplete = null)</code></td><td>The same with the hover given here instead</td></tr>
+  <tr><td><code>SetFace(value)</code></td><td>Puts a face up with no animation</td></tr>
+  <tr><td><code>IsRolling</code></td><td>Whether a roll is playing</td></tr>
+  <tr><td><code>JumpEnabled</code>, <code>ToggleJump()</code></td><td>The jump</td></tr>
+  <tr><td><code>HoverDuration</code>, <code>HoverSpinMultiplier</code></td><td>The hover, at runtime</td></tr>
+</table>
+
+<pre><code>// Guard a re-roll, and pay out on the way down
+if (!dice.IsRolling)
+    dice.Roll(serverValue, 2f, () =&gt; wallet.Add(payouts[serverValue]));</code></pre>
+
+<p>An unconfigured value logs an error and returns <code>null</code> rather than rolling to something
+arbitrary.</p>
+
+<h2 id="notes">Worth knowing</h2>
+
+<ul>
+  <li><strong>A roll cancels the one before it.</strong> <code>Roll</code> kills the running sequence, so a
+  spammed button re-throws rather than stacking tweens on one transform.</li>
+  <li><strong>Disabling mid-flight completes the roll</strong> rather than freezing the dice in the air
+  showing a face nobody asked for. That is <code>Kill(true)</code> in <code>OnDisable</code>; drop the
+  argument if you would rather it hang there.</li>
+  <li><strong>The dice never walks off the table.</strong> Landing is worked out from the position it held at
+  <code>Awake</code>, not from where the last roll left it, so a hundred rolls with a
+  <code>Landing Offset</code> all land in the same place.</li>
+  <li><strong><code>Landing Scatter</code> is horizontal only</strong> — the dice always comes down to the
+  height it started at.</li>
+  <li><strong><code>OnValidate</code> clamps</strong> durations and periods, because a zero or negative one
+  reads as a broken roll rather than as "off".</li>
+</ul>
+
+<h2 id="files">Files</h2>
+
+<table>
+  <tr><th>File</th><th>What</th></tr>
+  <tr><td><code>DiceRoller.cs</code></td><td>The component: the sequence, the faces, the guarantee</td></tr>
+  <tr><td><code>DiceRollerExample.cs</code></td><td>Keys 1–6, Space, H, J and A driving all of it</td></tr>
+  <tr><td><code>README.md</code></td><td>This, as text</td></tr>
+</table>
+
+</main>
+</div>
+</body>
+</html>
