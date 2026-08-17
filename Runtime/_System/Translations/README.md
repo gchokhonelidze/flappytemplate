@@ -127,6 +127,10 @@ Lower case, `area.thing`. The package ships these:
 | `bet_info` | `title`, `profit`, `bet`, `payout`, `player`, `bet_id`, `game`, `time`, `details`, `verify` |
 | `fairness` | `title`, `new_client_seed`, `randomize`, `current_pair`, `previous_pair`, `server_sha512`, `bets_made` |
 | `statistics` | `title`, `current`, `overall`, `total_wagered`, `counts`, `revenue`, `total_profit`, `luck` |
+| `game_history` | `title`, `total_bet_count`, `total_bet_amount`, `total_profit`, `no_bets` |
+| `hotkeys` | `title`, `on`, `off`, `none` |
+| `sound` | `title`, `effects`, `music` |
+| `navbar` | `home` — its other captions are the `title` keys above, since a button named one thing and the dialog it opens named another read as two features |
 
 A word that reads the same in two windows is one key under `common`, so a better wording for it is a one-line
 change rather than a hunt.

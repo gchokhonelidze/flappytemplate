@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sound — FlappyBet Template</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --ink: #1c1f24;
+    --soft: #5b6472;
+    --line: #dfe3e8;
+    --accent: #3f6fd8;
+    --code-bg: #f2f4f7;
+    --note-bg: #eef4ff;
+    --note-line: #6f9bea;
+    --warn-bg: #fff6e5;
+    --warn-line: #e6a23c;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --panel: #1d2025;
+      --ink: #e4e7ec;
+      --soft: #9aa3b0;
+      --line: #2c3038;
+      --accent: #7aa2f7;
+      --code-bg: #12141a;
+      --note-bg: #161d2b;
+      --note-line: #4a6ea8;
+      --warn-bg: #2c2415;
+      --warn-line: #b98330;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 28px 96px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 64px; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 14px;
+    border-left: 2px solid var(--line);
+    padding-left: 16px;
+  }
+  nav.toc strong { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--soft); }
+  nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+  nav.toc a.home {
+    color: var(--ink);
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  header.title { margin-bottom: 28px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 44px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  p { margin: 12px 0; max-width: 74ch; }
+  a { color: var(--accent); }
+  .lede { color: var(--soft); }
+  .stamp { color: var(--soft); font-size: 13.5px; font-style: italic; }
+  ul, ol { max-width: 74ch; }
+
+  code, pre { font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 4px; font-size: 0.86em; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--soft); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td:first-child { white-space: nowrap; }
+
+  .note, .warn {
+    border-left: 3px solid var(--note-line);
+    background: var(--note-bg);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+  .warn { border-left-color: var(--warn-line); background: var(--warn-bg); }
+  .note p, .warn p { margin: 0; max-width: none; }
+  .note p + p, .warn p + p { margin-top: 10px; }
+
+  /* --- the dialog, drawn --- */
+  .stage {
+    background: #171429;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 22px;
+    margin: 18px 0;
+    overflow-x: auto;
+  }
+  .stage .why { margin: 0 0 14px; color: #9a93b8; font-size: 13px; max-width: none; }
+
+  .dialog {
+    width: 460px;
+    max-width: 100%;
+    background: #3d3163;
+    border-radius: 14px;
+    padding: 16px;
+    font-size: 13px;
+  }
+  .dialog h4 {
+    margin: 2px 0 14px;
+    text-align: center;
+    color: #fff;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+  }
+
+  /* one channel: a caption and a switch, a slider and its percentage */
+  .card {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .card:last-child { margin-bottom: 0; }
+  .card.off { background: rgba(255, 255, 255, 0.05); }
+
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .head b { color: #fff; font-size: 16px; }
+  .card.off .head b { color: rgba(255, 255, 255, 0.45); }
+
+  .sw {
+    position: relative;
+    flex: 0 0 auto;
+    width: 78px;
+    height: 40px;
+    border-radius: 20px;
+    background: #73c27f;
+  }
+  .card.off .sw { background: #c9c7d4; }
+  .sw i {
+    position: absolute;
+    top: 4px;
+    left: 42px;
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
+    background: #fff;
+  }
+  .card.off .sw i { left: 4px; }
+
+  .bar { display: flex; align-items: center; gap: 14px; margin-top: 10px; height: 34px; }
+  .track {
+    position: relative;
+    flex: 1 1 auto;
+    height: 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.18);
+  }
+  .track u {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 8px;
+    border-radius: 4px;
+    background: #e8c55a;
+  }
+  .card.off .track u { background: rgba(232, 197, 90, 0.3); }
+  .track i {
+    position: absolute;
+    top: -8px;
+    width: 24px;
+    height: 24px;
+    margin-left: -12px;
+    border-radius: 12px;
+    background: #fff;
+  }
+  .card.off .track i { background: rgba(255, 255, 255, 0.45); }
+  .pct {
+    flex: 0 0 62px;
+    text-align: right;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 15px;
+  }
+  .card.off .pct { color: rgba(255, 255, 255, 0.35); }
+
+  /* the navbar's note glyph */
+  .glyphrow { display: flex; gap: 34px; align-items: center; flex-wrap: wrap; }
+  .glyphrow figure { margin: 0; text-align: center; }
+  .glyphrow figcaption { margin-top: 10px; color: #9a93b8; font-size: 12.5px; }
+  .nbtn {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: #90e49a;
+    position: relative;
+    flex: 0 0 auto;
+  }
+  .nbtn.active { background: #facc14; }
+  .glyph {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 28px;
+    height: 28px;
+    transform: translate(-50%, -50%);
+  }
+  .glyph > * { position: absolute; background: #1c1a4a; }
+  .g-head { width: 34%; height: 34%; left: 19%; top: 58%; border-radius: 50%; }
+  .g-stem { width: 7.5%; height: 66%; left: 49%; top: 8%; border-radius: 4px; }
+  .g-flag { width: 7.5%; height: 34%; left: 58%; top: 4%; border-radius: 4px; transform: rotate(32deg); }
+  .big { width: 96px; height: 96px; border-radius: 26px; }
+  .big .glyph { width: 52px; height: 52px; }
+
+  .tree {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font: 13px/1.7 "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre;
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc">
+  <a class="home" href="../../../README.html">&#8592; All documentation</a>
+  <strong>Contents</strong>
+  <a href="#settings">The four settings</a>
+  <a href="#start">Quick start</a>
+  <a href="#playing">Playing</a>
+  <a href="#music">Music</a>
+  <a href="#webgl">WebGL</a>
+  <a href="#bank">Sound Bank</a>
+  <a href="#window">The window</a>
+  <a href="#navbar">The navbar button</a>
+  <a href="#editor">In the editor</a>
+  <a href="#api">From code</a>
+  <a href="#notes">Worth knowing</a>
+  <a href="#files">Files</a>
+</nav>
+
+<main>
+
+<header class="title">
+  <h1>Sound</h1>
+  <p class="lede">Playing a sound, with the player's own switches and volumes already applied. One line plays
+  one — there is no manager to put in the scene, no mixer to author and no <code>AudioSource</code> to wire up.
+  Nothing here asks whether sound is on: the four settings are applied inside <code>Play</code>, so a muted
+  channel plays nothing and there is no second copy of the rule to fall out of step. The dialog moves those
+  settings; the socket remembers them.</p>
+  <p class="stamp">Describes package 1.0.82. Update this file with the code — and README.md beside it.</p>
+  <p><strong>Add Component → Audio → Sound Bank</strong> to name clips from the inspector, or
+  <code>Sounds.Play</code> from code. The dialog is <strong>GameObject → UI (Canvas) → FlappyBet → Sound
+  Window</strong>.</p>
+</header>
+
+<div class="stage">
+  <p class="why">The window: a card per channel, a switch on each and a volume under it. Effects are on at 70%;
+  music is switched off, so its card, its slider and its number all fade — a slider that still looked live under
+  a muted channel would read as a control that does nothing.</p>
+  <div class="dialog">
+    <h4>Sound</h4>
+    <div class="card">
+      <div class="head"><b>Sound effects</b><span class="sw"><i></i></span></div>
+      <div class="bar">
+        <span class="track"><u style="width: 70%"></u><i style="left: 70%"></i></span>
+        <span class="pct">70%</span>
+      </div>
+    </div>
+    <div class="card off">
+      <div class="head"><b>Music</b><span class="sw"><i></i></span></div>
+      <div class="bar">
+        <span class="track"><u style="width: 45%"></u><i style="left: 45%"></i></span>
+        <span class="pct">45%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<pre><code>Sounds.Play(clickClip);                // a one-shot on the sound channel
+Sounds.Play("coin");                   // the same, by a name a Sound Bank registered
+Sounds.PlayMusic(themeClip);           // the one looping bed under everything</code></pre>
+
+<h2 id="settings">The four settings</h2>
+
+<table>
+  <thead><tr><th>Setting</th><th>What it is</th><th>Default</th><th>Whose</th></tr></thead>
+  <tbody>
+    <tr><td><code>sound</code></td><td>Effects on or off</td><td>on</td><td>The server's, defaulted there</td></tr>
+    <tr><td><code>music</code></td><td>Music on or off</td><td>on</td><td>The server's, defaulted there</td></tr>
+    <tr><td><code>soundvolume</code></td><td>Effects level, <code>0</code>–<code>100</code></td><td>100</td><td>This package's</td></tr>
+    <tr><td><code>musicvolume</code></td><td>Music level, <code>0</code>–<code>100</code></td><td>100</td><td>This package's</td></tr>
+  </tbody>
+</table>
+
+<p>The first two are the same two the web front keeps for the same player, so <strong>a player who muted the
+music there arrives here with it muted</strong>. The volumes are new and free-form as far as the server is
+concerned — it keeps a session's settings as a flat table of strings and takes whatever it is sent.</p>
+
+<div class="note">
+  <p>Volumes are stored as a <strong>percentage</strong>, not a fraction, for that reason: <code>"70"</code>
+  survives a round trip through a string table, a JSON number and a web front reading it back, while
+  <code>"0.7"</code> is one comma-decimal locale away from being seven. The API is <code>0</code>–<code>1</code>
+  throughout and the conversion happens in one place, in <code>Sounds</code>.</p>
+</div>
+
+<p>Changing one writes it into <code>MainState.Settings</code> <strong>at once</strong> — so a switch answers
+the press rather than the round trip — and emits <code>SETTING</code>, so the choice follows the player to their
+next session and to the web front. A change made anywhere else the same player is signed in arrives back as
+<code>ON_SETTING</code> and is picked up the same frame.</p>
+
+<h2 id="start">Quick start</h2>
+
+<p><strong>Add Component → Audio → Sound Bank</strong>, drop your clips in the list, and play them by name from
+anywhere:</p>
+
+<pre><code>Sounds.Play("coin");</code></pre>
+
+<p>A button can play one <strong>without a line of script</strong>: put the bank's <code>Play</code> in the
+button's On Click and type the name. The dialog the player changes it all from is <strong>GameObject → UI
+(Canvas) → FlappyBet → Sound Window</strong>, or the <a href="../Ui/Navbar/README.html">navbar</a>'s Sound
+button, which finds one in the scene or builds it.</p>
+
+<h2 id="playing">Playing</h2>
+
+<pre><code>Sounds.Play(clip);                          // once, on the sound channel
+Sounds.Play(clip, 0.6f);                    // quieter, against the player's own level
+Sounds.Play(clip, 1f, Random.Range(.95f, 1.05f));   // with a little pitch spread
+
+var engine = Sounds.Loop(engineClip, 0.5f); // until something stops it
+Sounds.Stop(engine);</code></pre>
+
+<p><code>Play</code> hands back the voice it borrowed, or <strong>null</strong> — the channel is off, the clip
+is missing, or the game is not running. A caller that wants to hold on to a voice has to check; a caller that
+just wanted a click can ignore it.</p>
+
+<p>Effects are played on real <code>AudioSource</code>s from a pool rather than as one-shots, and that is what
+makes muting instant: a one-shot cannot be stopped, cannot be looped and cannot have its volume moved once it is
+away, so a player muting the game in the middle of a three-second sound would go on hearing it.
+<code>Sounds.Voices</code> is how many may sound at once — past that the longest-running one is taken back,
+which is the right answer for a click spammed twenty times a second.</p>
+
+<div class="warn">
+  <p><strong>A loop nobody stops holds a voice for the rest of the session.</strong> That is the one way to leak
+  anything here.</p>
+</div>
+
+<h2 id="music">Music</h2>
+
+<pre><code>Sounds.PlayMusic(theme);              // faded in over whatever was playing
+Sounds.PlayMusic(theme, 0.8f, 1.2f);  // quieter, over a longer cross
+Sounds.StopMusic();</code></pre>
+
+<p>One clip at a time, looped, and <strong>faded rather than cut</strong> when it changes. Asking for the clip
+that is already playing does nothing but take the new volume, so this is safe to call from a scene's
+<code>Start</code> without checking — and the bed carries on across a scene change, because the object it plays
+on does.</p>
+
+<p>Turning the music setting off <strong>stops</strong> the source rather than turning it down to nothing: a
+muted bed that carries on playing is a decoded stream and a voice spent on silence, and on WebGL both cost more
+than the place in the track that is being kept. Turning it back on starts the clip again from the beginning.</p>
+
+<h2 id="webgl">WebGL</h2>
+
+<p>A browser will not start audio until the player has done something — a click, a key, a touch. Music asked for
+before that is <strong>not queued by the browser</strong>; it is played to a muted output and is thirty seconds
+in by the time the sound arrives. So music asked for early is held here instead, and started on the first
+gesture:</p>
+
+<pre><code>Sounds.WaitForGesture = false;   // start it immediately anyway
+Sounds.Unlock();                 // or: say a gesture has happened, from your own first interaction</code></pre>
+
+<p>The gesture is spotted through the old Input Manager, the same backend
+<a href="../Ui/Hotkeys/README.html">Hotkeys</a> reads. With Active Input Handling on <strong>Input System
+Package (New)</strong> there is nothing to read, so the wait is dropped and a warning is logged once — a game on
+that backend should call <code>Sounds.Unlock()</code> from its own first interaction.</p>
+
+<div class="note">
+  <p><strong>There is no <code>AudioMixer</code> anywhere in this component</strong>, and that is deliberate:
+  mixer groups and DSP effects are the part of Unity audio that WebGL supports worst. Volume here is a
+  multiplier on an <code>AudioSource</code>, which every platform does the same way.</p>
+</div>
+
+<p>Two more things worth setting on the clips themselves, in the import settings rather than here:</p>
+
+<table>
+  <tbody>
+    <tr><td><strong>Load Type</strong></td><td><em>Decompress On Load</em> for short effects — a compressed clip decoded on the first press is a click that arrives late.</td></tr>
+    <tr><td><strong>Preload Audio Data</strong></td><td>On for anything that has to be instant. WebGL has no streaming worth the name.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="bank">Sound Bank</h2>
+
+<p>The component that fills the registry from the inspector, and the shortest way into sound with no code at
+all.</p>
+
+<table>
+  <tbody>
+    <tr><td><strong>Clips</strong></td><td>Name and clip per row. An empty name uses the clip's own asset name.</td></tr>
+    <tr><td><strong>Volume</strong>, <strong>Pitch</strong></td><td>What this bank's own <code>Play</code> uses. The pitch is picked between the two numbers on every press.</td></tr>
+    <tr><td><strong>Music</strong>, <strong>Play Music</strong></td><td>The bed to put on when the object wakes, and whether to.</td></tr>
+    <tr><td><strong>Clear On Disable</strong></td><td>Off — a bank in the first scene covers the whole game. On takes its names away with it.</td></tr>
+  </tbody>
+</table>
+
+<p>Names are matched <strong>without regard to case</strong>, and the registry is static: it outlives the scene,
+so one bank at the start of a game covers all of it, and a bank in a scene loaded later adds to it rather than
+replacing it.</p>
+
+<p>A name nothing is registered under is logged <strong>once</strong> rather than silently doing nothing — a
+sound that never plays because it was spelled two ways is otherwise a very quiet bug.</p>
+
+<h2 id="window">The window</h2>
+
+<p><code>Sound Window</code> is the dialog drawn at the top of this page: one card per channel, a switch on each
+and a slider under it. It reads and writes <code>Sounds</code>, which is the same thing the game plays through,
+so a slider moved there is heard on the next click. It is documented with the other dialogs in
+<a href="../Ui/Window/README.html">Window</a>.</p>
+
+<div class="note">
+  <p><strong>A slider sends once, not per frame.</strong> Dragging one moves the volume immediately — that is
+  the point of a volume slider — but the <code>SETTING</code> that keeps the choice is held until the drag has
+  been still for <code>Send Delay</code>, and flushed when the window closes. Sixty messages a second up a
+  socket for one finger movement is the thing that exists to avoid.</p>
+</div>
+
+<h2 id="navbar">The navbar button</h2>
+
+<div class="stage">
+  <p class="why">The bar's Sound button, and the same glyph enlarged. A quaver rather than a speaker cone — a
+  cone is a triangle, and every glyph here is drawn out of rounded rectangles, so a diamond standing in for one
+  reads as a diamond. It is also the truer sign for what the button opens: a dialog with the music in it as well
+  as the effects. The gold one is how it looks while the window is open.</p>
+  <div class="glyphrow">
+    <figure>
+      <span class="nbtn"><span class="glyph"><span class="g-head"></span><span class="g-stem"></span><span class="g-flag"></span></span></span>
+      <figcaption>closed</figcaption>
+    </figure>
+    <figure>
+      <span class="nbtn active"><span class="glyph"><span class="g-head"></span><span class="g-stem"></span><span class="g-flag"></span></span></span>
+      <figcaption>open</figcaption>
+    </figure>
+    <figure>
+      <span class="nbtn big"><span class="glyph"><span class="g-head"></span><span class="g-stem"></span><span class="g-flag"></span></span></span>
+      <figcaption>the glyph at four times the size</figcaption>
+    </figure>
+  </div>
+</div>
+
+<pre><code>navbar.ShowSound();          // open it, or close it again
+var window = navbar.Sound;   // the one in the scene, or one built under the canvas</code></pre>
+
+<h2 id="editor">In the editor</h2>
+
+<p>With no template running there are no settings to read, so both channels are <strong>on</strong> and both
+volumes <strong>full</strong> — the same defaults the server would send. A sound tried out in the editor is
+heard, and the dialog can be laid out and styled from a menu rather than from a running game.</p>
+
+<p>Nothing is audible without an <code>AudioListener</code> in the scene, which a canvas-only game built from an
+empty scene can easily be missing. The first sound checks and says so once.</p>
+
+<h2 id="api">From code</h2>
+
+<table>
+  <tbody>
+    <tr><td><code>Sounds.Play(clip, volume, pitch)</code></td><td>One-shot on the sound channel. Hands back the voice, or null.</td></tr>
+    <tr><td><code>Sounds.Play(name, volume, pitch)</code></td><td>The same, by registered name.</td></tr>
+    <tr><td><code>Sounds.Loop(clip, volume, pitch)</code></td><td>Loops until stopped.</td></tr>
+    <tr><td><code>Sounds.Stop(source)</code></td><td>Stops one voice and frees it. Safe on null.</td></tr>
+    <tr><td><code>Sounds.StopAll()</code></td><td>Every effect. Music is left alone.</td></tr>
+    <tr><td><code>Sounds.PlayMusic(clip, volume, fade)</code></td><td>The bed, faded in. Null clip is the same as stopping.</td></tr>
+    <tr><td><code>Sounds.StopMusic(fade)</code></td><td>Fades it out.</td></tr>
+    <tr><td><code>Sounds.Playing</code>, <code>Sounds.MusicSource</code></td><td>What is playing, and what it is playing on.</td></tr>
+    <tr><td><code>Sounds.Register(name, clip)</code></td><td>Names a clip. <code>Clip(name)</code>, <code>Has(name)</code>, <code>Names</code>, <code>Clear()</code> beside it.</td></tr>
+    <tr><td><code>Sounds.SoundOn</code>, <code>Sounds.MusicOn</code></td><td>The switches. Setting one emits <code>SETTING</code>.</td></tr>
+    <tr><td><code>Sounds.SoundVolume</code>, <code>Sounds.MusicVolume</code></td><td><code>0</code>–<code>1</code>. Setting one emits <code>SETTING</code>.</td></tr>
+    <tr><td><code>Sounds.On(channel)</code>, <code>Volume(channel)</code>, <code>Level(channel)</code></td><td>The same by channel. <code>Level</code> is the volume, or nothing while the channel is off.</td></tr>
+    <tr><td><code>Sounds.Set(channel, on)</code>, <code>Toggle(channel)</code></td><td>Switch a channel.</td></tr>
+    <tr><td><code>Sounds.Preview(channel, volume)</code></td><td>Applies a volume <strong>without</strong> sending it. What a slider being dragged calls.</td></tr>
+    <tr><td><code>Sounds.Commit(channel)</code></td><td>Sends whatever the volume now is. The other half of <code>Preview</code>.</td></tr>
+    <tr><td><code>Sounds.Voices</code></td><td>How many effects may sound at once. 12.</td></tr>
+    <tr><td><code>Sounds.WaitForGesture</code>, <code>IsUnlocked</code>, <code>Unlock()</code></td><td>The browser's rule about starting audio.</td></tr>
+    <tr><td><code>Sounds.OnChanged</code></td><td>A switch or a volume moved, whoever moved it. What a settings window repaints on.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="notes">Worth knowing</h2>
+
+<ul>
+  <li><strong><code>Play</code> returns null when the channel is off.</strong> Not a failure — the player is
+  allowed to have muted the game — but code that keeps the voice has to expect it.</li>
+  <li><strong>Volumes are percentages on the wire and fractions in the API.</strong> A setting written by hand as
+  <code>0.7</code> reads as 0.7% here, not 70%.</li>
+  <li><strong><code>Preview</code> does not send.</strong> A slider that only ever calls <code>Preview</code>
+  moves the volume for this session and is forgotten by the next one. Pair it with <code>Commit</code>.</li>
+  <li><strong>Music restarts rather than resumes</strong> when the channel is switched off and on again. The
+  stop is deliberate; see <a href="#music">Music</a>.</li>
+  <li><strong>The driver is hidden.</strong> <code>HideAndDontSave</code> keeps it out of the hierarchy and out
+  of the scene file, so there is nothing to find in the Inspector and nothing to accidentally save into a
+  scene.</li>
+  <li><strong>Settings arrive after the scene loads.</strong> Anything reading <code>Sounds.SoundOn</code> in
+  <code>Awake</code> is reading the default, not the player's choice. Listen to <code>Sounds.OnChanged</code>
+  rather than asking once.</li>
+</ul>
+
+<h2 id="files">Files</h2>
+
+<table>
+  <tbody>
+    <tr><td><code>Sounds.cs</code></td><td>The whole public surface: the four settings, the clip registry and every way to play something.</td></tr>
+    <tr><td><code>SoundDriver.cs</code></td><td>The hidden object it plays through: the voice pool, the music source, the fades, and the browser's gesture.</td></tr>
+    <tr><td><code>SoundBank.cs</code></td><td>The component that names clips from the inspector and starts the bed.</td></tr>
+    <tr><td><code>ESoundChannel.cs</code></td><td>Effects or music — the two things the player has switches for.</td></tr>
+    <tr><td><code>SoundsExample.cs</code></td><td>A worked scene: a bank, a bed, keys that play things and the dialog that mutes them.</td></tr>
+    <tr><td><code>../States/SettingStore.cs</code></td><td>How a setting is read and written. Shared with <a href="../Ui/Hotkeys/README.html">Hotkeys</a>.</td></tr>
+    <tr><td><code>../Ui/Window/Sound/SoundWindow.cs</code></td><td>The dialog. Documented in <a href="../Ui/Window/README.html">Window</a>.</td></tr>
+  </tbody>
+</table>
+
+</main>
+</div>
+</body>
+</html>

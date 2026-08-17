@@ -23,6 +23,10 @@ namespace FlappyTemplate
         /// that turns them on. See <see cref="Hotkeys"/>.</summary>
         Hotkeys,
 
+        /// <summary>Opens the sound window, or closes it again: a switch and a volume for effects, and the
+        /// same pair for the music. See <see cref="Sounds"/>.</summary>
+        Sound,
+
         /// <summary>Nothing of its own: an empty button that fires <see cref="UiNavbar.OnPressed"/> and the
         /// slot's own event, for whatever the game wants in the row.</summary>
         Custom,

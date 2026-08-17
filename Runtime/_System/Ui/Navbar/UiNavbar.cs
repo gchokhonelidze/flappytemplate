@@ -6,8 +6,8 @@ using UnityEngine.UI;
 
 namespace FlappyTemplate
 {
-    // The row of buttons over the game: home, statistics, fairness, hotkeys, and whatever the game adds beside
-    // them.
+    // The row of buttons over the game: home, statistics, fairness, hotkeys, sound, and whatever the game adds
+    // beside them.
     //
     //     var navbar = UiNavbar.Create(canvas);
     //
@@ -27,14 +27,15 @@ namespace FlappyTemplate
     //   direct link. A Home button that led nowhere would be worse than no button, and the address arrives
     //   after the scene has loaded rather than with it, so this is watched rather than decided once.
     //
-    // - **Statistics**, **Fairness** and **Hotkeys** open the windows of those names, and close them again on a
-    //   second press. Each is found in the scene if it is already there and built if it is not, so a bar dropped
-    //   into an empty canvas works on its own; a window built by hand and dragged into the slot is used
-    //   instead. While one is open its button takes the style's active colour, so a player can see which
+    // - **Statistics**, **Fairness**, **Hotkeys** and **Sound** open the windows of those names, and close them
+    //   again on a second press. Each is found in the scene if it is already there and built if it is not, so a
+    //   bar dropped into an empty canvas works on its own; a window built by hand and dragged into the slot is
+    //   used instead. While one is open its button takes the style's active colour, so a player can see which
     //   dialog they are looking at from the bar rather than from the dialog.
     //
-    //   The hotkeys one needs nothing said to it: it reads the hotkey registry, so a key bound anywhere in the
-    //   game is in the list. See Ui/Hotkeys.
+    //   The last two need nothing said to them: hotkeys reads the key registry, so a key bound anywhere in the
+    //   game is in the list, and sound reads the player's own four settings, which is the same thing the game
+    //   plays through. See Ui/Hotkeys and Audio.
     //
     // - **Custom** does nothing of its own: it fires the slot's event and the bar's, for a button of the
     //   game's own. Adding a *built-in* one later is four cases - a value on ENavbarButton, a glyph in
@@ -72,6 +73,7 @@ namespace FlappyTemplate
             new NavbarButton(ENavbarButton.Statistics, "Statistics"),
             new NavbarButton(ENavbarButton.Fairness, "Fairness"),
             new NavbarButton(ENavbarButton.Hotkeys, "Hotkeys"),
+            new NavbarButton(ENavbarButton.Sound, "Sound"),
         };
 
         [Header("Layout")]
@@ -107,6 +109,9 @@ namespace FlappyTemplate
 
         [SerializeField]
         private HotkeysWindow hotkeysWindow;
+
+        [SerializeField]
+        private SoundWindow soundWindow;
 
         [Tooltip("Build a window that is neither wired up nor already in the scene. Off leaves the button doing nothing but firing its event, for a game that opens its own dialogs.")]
         [SerializeField]
@@ -302,6 +307,21 @@ namespace FlappyTemplate
             }
         }
 
+        /// <summary>The sound window this bar opens, found or built the same way. Like the hotkeys one there is
+        /// nothing to hand it: its switches and sliders are the player's own settings, which
+        /// <see cref="Sounds"/> already reads and writes.</summary>
+        public SoundWindow Sound
+        {
+            get
+            {
+                if (soundWindow == null)
+                    soundWindow = Resolve<SoundWindow>(parent => SoundWindow.Create(parent));
+
+                Watch(soundWindow != null ? soundWindow.Window : null);
+                return soundWindow;
+            }
+        }
+
         /// <summary>Whether the parts exist yet.</summary>
         public bool IsBuilt => built;
 
@@ -485,6 +505,9 @@ namespace FlappyTemplate
                 case ENavbarButton.Hotkeys:
                     ShowHotkeys();
                     break;
+                case ENavbarButton.Sound:
+                    ShowSound();
+                    break;
                 default:
                     // Custom. The slot's own event has already gone out.
                     break;
@@ -522,6 +545,9 @@ namespace FlappyTemplate
         // Worth binding to a key of its own, which is the shape of joke the feature earns:
         // Hotkeys.Bind(KeyCode.H, "Hotkeys", navbar.ShowHotkeys).
         public void ShowHotkeys() => Toggle(Hotkeys != null ? Hotkeys.Window : null);
+
+        /// <summary>Opens the sound window, or closes it again.</summary>
+        public void ShowSound() => Toggle(Sound != null ? Sound.Window : null);
 
         private void Toggle(UiWindow window)
         {
@@ -970,6 +996,8 @@ namespace FlappyTemplate
                     return fairnessWindow != null && fairnessWindow.Window != null && fairnessWindow.Window.IsOpen;
                 case ENavbarButton.Hotkeys:
                     return hotkeysWindow != null && hotkeysWindow.Window != null && hotkeysWindow.Window.IsOpen;
+                case ENavbarButton.Sound:
+                    return soundWindow != null && soundWindow.Window != null && soundWindow.Window.IsOpen;
                 default:
                     return false;
             }

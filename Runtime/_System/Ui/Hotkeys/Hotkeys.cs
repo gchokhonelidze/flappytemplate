@@ -95,11 +95,10 @@ namespace FlappyTemplate
         {
             get
             {
-                var settings = Settings();
-                if (settings == null)
+                if (!SettingStore.Available)
                     return local;
 
-                return settings.TryGetValue(Setting, out var token) && Truthy(token);
+                return SettingStore.TryFlag(Setting, out var on) && on;
             }
             set
             {
@@ -107,10 +106,11 @@ namespace FlappyTemplate
                     return;
 
                 local = value;
-                Write(value);
 
-                if (Emitter.Inst != null)
-                    Emitter.Inst.OnSettingSet(new SettingDto { Name = Setting, Value = value ? 1 : 0 });
+                // Written into the state as well as sent, so everything reading the setting agrees before the
+                // server has answered. The socket's own ON_SETTING merges over this a moment later and says
+                // the same thing.
+                SettingStore.Set(Setting, value);
 
                 Changed();
             }
@@ -415,51 +415,5 @@ namespace FlappyTemplate
             return selected.GetComponent<InputField>() != null;
         }
 
-        // ------------------------------------------------------------------ the setting
-
-        private static Dictionary<string, JToken> Settings()
-        {
-            var manager = StateManager.Inst;
-            if (manager == null || manager.MainState == null)
-                return null;
-
-            return manager.MainState.Settings;
-        }
-
-        // Written into the state as well as sent, so everything reading the setting agrees before the server
-        // has answered. The socket's own ON_SETTING merges over this a moment later and says the same thing.
-        private static void Write(bool value)
-        {
-            var manager = StateManager.Inst;
-            if (manager == null || manager.MainState == null)
-                return;
-
-            manager.MainState.Settings[Setting] = new JValue(value ? 1 : 0);
-            manager.MainState._Settings[Setting] = value ? "1" : "0";
-        }
-
-        // The server sends settings as strings - "1" and "0" - the web front writes numbers, and a hand-written
-        // one may well be a bool. All three mean the same thing here, and a setting that arrives in the shape
-        // nobody expected should read as off rather than throw.
-        private static bool Truthy(JToken token)
-        {
-            if (token == null || token.Type == JTokenType.Null)
-                return false;
-
-            switch (token.Type)
-            {
-                case JTokenType.Boolean:
-                    return token.Value<bool>();
-                case JTokenType.Integer:
-                case JTokenType.Float:
-                    return token.Value<double>() != 0d;
-                case JTokenType.String:
-                    var text = token.Value<string>();
-                    return !string.IsNullOrEmpty(text) && text != "0"
-                        && !text.Equals("false", StringComparison.OrdinalIgnoreCase);
-                default:
-                    return false;
-            }
-        }
     }
 }

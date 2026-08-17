@@ -14,20 +14,21 @@ Inside, the caption and the body are two rows of a [`UiGrid`](../Grid/), and the
 content is taller than the screen has room for — so a dialog is bounded by what it is drawn on rather than by
 what its author guessed.
 
-Five windows built on it live in folders of their own beside it, and are worked examples of filling one in:
+Six windows built on it live in folders of their own beside it, and are worked examples of filling one in:
 `Statistics/` — the two-tab panel reading `MainState.Statistics`; `BetInfo/` — the dialog that asks the server
 for one bet and lays out what came back; `GameHistory/` — the same for a whole shared round, everybody who bet
 on it included; `Fairness/` — the seed pair the game is rolling from, and the two ways a player may change it;
-and `Hotkeys/` — which keys are bound to what, drawn on a keyboard, and the switch that turns them on.
+`Hotkeys/` — which keys are bound to what, drawn on a keyboard, and the switch that turns them on; and
+`Sound/` — a switch and a volume for the effects, and the same pair for the music.
 
-Every caption in all five, and the title of any window, is **translated** — see
+Every caption in all six, and the title of any window, is **translated** — see
 [Translations](#translations) below.
 
-*Describes package 1.0.81. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.82. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the windows drawn rather than described.*
 
 **GameObject → UI (Canvas) → FlappyBet → Window**, and **Statistics Window**, **Bet Info Window**, **Game
-History Window**, **Fairness Window** and **Hotkeys Window** beside it. Each makes a canvas if the scene has none, drops the window under whatever was
+History Window**, **Fairness Window**, **Hotkeys Window** and **Sound Window** beside it. Each makes a canvas if the scene has none, drops the window under whatever was
 right-clicked, and builds the whole thing on the spot so it arrives looking like a window rather than as an
 empty rect waiting for play mode. Everything else this template adds is in that same **FlappyBet** group —
 Rounded Box, Grid, History and [Navbar](../Navbar/), which is the row of buttons that opens three of the
@@ -753,6 +754,57 @@ With no socket at all — a scene with no `StateManager` — the window shows **
 laid out and styled from a menu rather than from a running game. They are rows of text bound to nothing. A real
 game never sees them: the moment anything is bound, only the real list is shown.
 
+## Sound
+
+**GameObject → UI (Canvas) → FlappyBet → Sound Window**, or Add Component → UI → Sound Window on a `UiWindow`,
+or the whole thing in one line:
+
+```csharp
+var sound = SoundWindow.Create(canvas);
+sound.Window.Open();
+```
+
+One card per channel — effects and music — each with a switch on the right of its caption and a volume slider
+under it. **Nothing is filled in here** either: every control reads and writes [`Sounds`](../../Audio/), which
+is the same thing the game plays through, so a slider moved here is heard on the next click and there is no way
+for the dialog and the game to disagree about how loud anything is.
+
+Four settings sit behind those four controls — `sound`, `music`, `soundvolume` and `musicvolume`. The first two
+are the server's own, defaulted to on, and the same two the web front keeps for the same player; the volumes are
+the package's, stored as a percentage. Moving anything writes it into `MainState.Settings` at once and emits
+`SETTING`, so the choice follows the player to their next session and to the web front, and a change made in
+another tab arrives back as `ON_SETTING` and moves the controls here.
+
+**A slider sends once, not per frame.** Dragging one moves the volume immediately — that is the point of a
+volume slider — but the `SETTING` is held until the drag has been still for `Send Delay` and flushed when the
+window closes. Sixty messages a second up a socket for one finger movement is what that delay exists to avoid.
+
+A switched-off channel fades its whole card: the caption, the fill and the number. A slider that still looked
+live under a muted channel would read as a control that does nothing.
+
+| Call | Does |
+| --- | --- |
+| `Toggle(channel)` | Switches a channel on or off, and emits `SETTING`. What a switch does. |
+| `Refresh()` | Reads the settings again and writes them onto the controls. |
+| `Tint()` | Recolours both cards and nothing else. What a press calls. |
+| `Flush()` | Sends a volume a slider has moved and not yet reported. Called for you when the window closes. |
+| `Layout()` · `Rebuild()` | Lay out again, build again. |
+| `SoundButton` · `MusicButton` · `SoundSlider` · `MusicSlider` | The parts, for a game that would rather drive them itself. |
+
+| Field | What it does |
+| --- | --- |
+| Style | The cards, the switches and the sliders. The panel around them is styled on its own parts. |
+| Labels | The two captions. Both go through the translator, so leaving them as they came still translates. |
+| Show Sound / Music / Sliders | The two cards, and whether either has a volume under its switch. |
+| Follow State | Move the controls when a setting changes somewhere else. |
+| Fit Window Height | Resize the window to exactly the cards it is showing. |
+| Send Delay | Seconds a slider has to be still before the choice is sent. |
+
+`OnSoundToggled` and `OnMusicToggled` are UnityEvents carrying what each switch has just been set to.
+
+With no socket at all the dialog runs on the local defaults — both channels on, both at full — so it can be
+laid out and styled from a menu rather than from a running game, and a sound tried out in the editor is heard.
+
 ## Translations
 
 The windows follow `MainState.Locale` on their own. Nothing has to be set up for it and no field changes
@@ -930,10 +982,13 @@ itself.
 | `Hotkeys/HotkeysWindowStyle.cs` | What it looks like. |
 | `Hotkeys/HotkeyKeyboard.cs` | The drawn keyboard inside it. Internal. |
 | [`../Hotkeys/`](../Hotkeys/) | The registry the dialog reads, and the two components that bind a key. |
-| `Editor/Window/UiWindowMenu.cs` | The six GameObject → UI (Canvas) → FlappyBet entries. |
+| `Sound/SoundWindow.cs` | The sound dialog: two cards, two switches, two volumes. |
+| `Sound/SoundWindowStyle.cs` | What it looks like. |
+| [`../../Audio/`](../../Audio/) | `Sounds`, which that dialog reads and the game plays through. |
+| `Editor/Window/UiWindowMenu.cs` | The seven GameObject → UI (Canvas) → FlappyBet entries. |
 | [`../../Translations/`](../../Translations/) | `Translator.Label`, which every caption above is written through. |
 | `Editor/FlappyBetMenu.cs` | The one group they all go in, path and priority. Internal. |
 | `../RoundedBox/` | Every panel here is one. |
 | `../Grid/` | What lays the bet info card and the game history list out. |
 | `../History/` | The strip that opens the bet info and game history dialogs. |
-| `../Navbar/` | The bar whose Statistics, Fairness and Hotkeys buttons open three of these. |
+| `../Navbar/` | The bar whose Statistics, Fairness, Hotkeys and Sound buttons open four of these. |

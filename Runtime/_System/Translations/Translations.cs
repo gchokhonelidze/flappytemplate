@@ -371,9 +371,37 @@ namespace FlappyTemplate
                 fil_PH: "Walang nakatakdang hotkey", ur_PK: "کوئی شارٹ کٹ مقرر نہیں", fa_IR: "میان‌بری تعریف نشده", ms_MY: "Tiada kekunci pintas ditetapkan",
                 ka_GE: "ცხელი კლავიშები არ არის მითითებული", hy_AM: "Թեժ ստեղներ նշանակված չեն");
 
-            // Navbar. Its other three captions are statistics.title, fairness.title and hotkeys.title above -
-            // the bar opens those windows, and a button named one thing while the dialog it opens is named
-            // another reads as two features.
+            // Sound. Two cards, each a switch and a volume, and nothing else to say: the number beside a slider
+            // is a percentage, which needs no wording, and the switch says which way it stands by being green
+            // or grey rather than by carrying a caption.
+
+            Row("sound.title",
+                en_US: "Sound", ru_RU: "Звук", fr_FR: "Son", bn_BD: "শব্দ",
+                de_DE: "Ton", es_ES: "Sonido", id_ID: "Suara", pt_PT: "Som",
+                tr_TR: "Ses", vi_VN: "Âm thanh", ar_AE: "الصوت", hi_IN: "ध्वनि",
+                th_TH: "เสียง", ja_JP: "サウンド", ko_KR: "사운드", zh_CN: "声音",
+                fil_PH: "Tunog", ur_PK: "آواز", fa_IR: "صدا", ms_MY: "Bunyi",
+                ka_GE: "ხმა", hy_AM: "Ձայն");
+
+            Row("sound.effects",
+                en_US: "Sound effects", ru_RU: "Звуковые эффекты", fr_FR: "Effets sonores", bn_BD: "সাউন্ড এফেক্ট",
+                de_DE: "Soundeffekte", es_ES: "Efectos de sonido", id_ID: "Efek suara", pt_PT: "Efeitos sonoros",
+                tr_TR: "Ses efektleri", vi_VN: "Hiệu ứng âm thanh", ar_AE: "المؤثرات الصوتية", hi_IN: "ध्वनि प्रभाव",
+                th_TH: "เอฟเฟกต์เสียง", ja_JP: "効果音", ko_KR: "효과음", zh_CN: "音效",
+                fil_PH: "Mga sound effect", ur_PK: "صوتی اثرات", fa_IR: "جلوه‌های صوتی", ms_MY: "Kesan bunyi",
+                ka_GE: "ხმოვანი ეფექტები", hy_AM: "Ձայնային էֆեկտներ");
+
+            Row("sound.music",
+                en_US: "Music", ru_RU: "Музыка", fr_FR: "Musique", bn_BD: "সঙ্গীত",
+                de_DE: "Musik", es_ES: "Música", id_ID: "Musik", pt_PT: "Música",
+                tr_TR: "Müzik", vi_VN: "Nhạc nền", ar_AE: "الموسيقى", hi_IN: "संगीत",
+                th_TH: "เพลง", ja_JP: "音楽", ko_KR: "음악", zh_CN: "音乐",
+                fil_PH: "Musika", ur_PK: "موسیقی", fa_IR: "موسیقی", ms_MY: "Muzik",
+                ka_GE: "მუსიკა", hy_AM: "Երաժշտություն");
+
+            // Navbar. Its other four captions are statistics.title, fairness.title, hotkeys.title and
+            // sound.title above - the bar opens those windows, and a button named one thing while the dialog it
+            // opens is named another reads as two features.
 
             Row("navbar.home",
                 en_US: "Home", ru_RU: "На главную", fr_FR: "Accueil", bn_BD: "হোম",

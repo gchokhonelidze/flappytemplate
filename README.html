@@ -190,7 +190,7 @@
   <p class="lede">Every readme in the package, in one place. Each card opens the browser copy of a component's
   documentation; a <code>README.md</code> twin sits beside every one of them in the same folder, with the same
   content for reading in an editor or on a repository page.</p>
-  <p class="stamp">Package 1.0.81. Update this file when a readme is added or removed — and the version badges
+  <p class="stamp">Package 1.0.82. Update this file when a readme is added or removed — and the version badges
   below when one is brought up to date. <strong>README.md</strong> beside it is the same content as Markdown,
   which is the copy a GitLab or GitHub page can render — this one is for reading locally, in a browser, with
   every component drawn.</p>
@@ -202,15 +202,16 @@
 
 <ul>
   <li><strong>Putting a dialog or a bar on screen.</strong> Start with <a href="Runtime/_System/Ui/Window/README.html">Window</a>
-  — it is the component the four built-in dialogs are made from — then <a href="Runtime/_System/Ui/Navbar/README.html">Navbar</a>,
-  the row of buttons that opens three of them.</li>
+  — it is the component the six built-in dialogs are made from — then <a href="Runtime/_System/Ui/Navbar/README.html">Navbar</a>,
+  the row of buttons that opens four of them.</li>
   <li><strong>Drawing something of your own.</strong> <a href="Runtime/_System/Ui/RoundedBox/README.html">Rounded Box</a>
   is the panel everything here is built out of, and <a href="Runtime/_System/Ui/Grid/README.html">Ui Grid</a> is
   what arranges it.</li>
   <li><strong>Wiring the game to the server.</strong> There is no readme for the socket yet — see
   <a href="#undocumented">Not documented yet</a> — but <a href="Runtime/_System/Translations/README.html">Translations</a>
-  covers every string the player reads, and <a href="Runtime/_System/Ui/Hotkeys/README.html">Hotkeys</a> is a
-  worked example of a feature that reads a setting, emits one, and follows the socket both ways.</li>
+  covers every string the player reads, and <a href="Runtime/_System/Ui/Hotkeys/README.html">Hotkeys</a> and
+  <a href="Runtime/_System/Audio/README.html">Sound</a> are worked examples of a feature that reads a setting,
+  emits one, and follows the socket both ways.</li>
 </ul>
 
 <h2 id="chrome">Game chrome</h2>
@@ -220,16 +221,16 @@
 <div class="cards">
 
   <a class="card" href="Runtime/_System/Ui/Window/README.html">
-    <div class="top"><span class="name">Window</span><span class="ver">1.0.81</span></div>
+    <div class="top"><span class="name">Window</span><span class="ver">1.0.82</span></div>
     <p class="what">A dialog that is one component rather than a prefab: panel, caption, close button, drag, an
-    animated opening, and a body that scrolls when the content outgrows the screen. Five windows built on it —
-    Statistics, Bet info, Game history, Fairness and Hotkeys — are documented here too.</p>
+    animated opening, and a body that scrolls when the content outgrows the screen. Six windows built on it —
+    Statistics, Bet info, Game history, Fairness, Hotkeys and Sound — are documented here too.</p>
     <p class="where">Runtime/_System/Ui/Window/</p>
   </a>
 
   <a class="card" href="Runtime/_System/Ui/Navbar/README.html">
-    <div class="top"><span class="name">Ui Navbar</span><span class="ver">1.0.81</span></div>
-    <p class="what">The row of buttons over the game: home, statistics, fairness, hotkeys, and whatever the game
+    <div class="top"><span class="name">Ui Navbar</span><span class="ver">1.0.82</span></div>
+    <p class="what">The row of buttons over the game: home, statistics, fairness, hotkeys, sound, and whatever the game
     adds beside them. Home leaves for the address the server sent — taking the whole page, not the iframe — and
     hides itself while there is none. The rest find their windows, or build them.</p>
     <p class="where">Runtime/_System/Ui/Navbar/</p>
@@ -244,7 +245,7 @@
   </a>
 
   <a class="card" href="Runtime/_System/Ui/Hotkeys/README.html">
-    <div class="top"><span class="name">Hotkeys</span><span class="ver">1.0.81</span></div>
+    <div class="top"><span class="name">Hotkeys</span><span class="ver stale">1.0.81</span></div>
     <p class="what">Keys bound to things the game does, and the dialog that tells the player about them. One line
     binds a key; the window reads the registry, so there is no list to keep in step. Gated on the player's own
     <code>keyboard</code> setting, which the socket remembers.</p>
@@ -315,6 +316,14 @@ the server has already given.</p>
 
 <div class="cards">
 
+  <a class="card" href="Runtime/_System/Audio/README.html">
+    <div class="top"><span class="name">Sound</span><span class="ver">1.0.82</span></div>
+    <p class="what">Playing a clip with the player's own switches and volumes already applied — one line, no
+    manager in the scene, no mixer. A named bank fills itself from the inspector, music is one clip faded rather
+    than cut, and the four settings behind it are the same ones the web front keeps.</p>
+    <p class="where">Runtime/_System/Audio/</p>
+  </a>
+
   <a class="card" href="Runtime/_System/Translations/README.html">
     <div class="top"><span class="name">Translations</span><span class="ver stale">1.0.68</span></div>
     <p class="what">Every word the player reads, in the language <code>MainState.Locale</code> names. No file to
@@ -328,7 +337,7 @@ the server has already given.</p>
 <h2 id="versions">Which are current</h2>
 
 <p>Every readme carries the package version it was last checked against. The badges above repeat it, and the ones
-marked in amber describe a version older than the current <strong>1.0.81</strong> — so they are the pages to
+marked in amber describe a version older than the current <strong>1.0.82</strong> — so they are the pages to
 distrust first if something on them does not match the code.</p>
 
 <div class="note">
@@ -340,7 +349,8 @@ distrust first if something on them does not match the code.</p>
 <table>
   <thead><tr><th>Describes</th><th>Pages</th></tr></thead>
   <tbody>
-    <tr><td><strong>1.0.81</strong> — current</td><td>Window, Ui Navbar, Hotkeys</td></tr>
+    <tr><td><strong>1.0.82</strong> — current</td><td>Window, Ui Navbar, Sound</td></tr>
+    <tr><td>1.0.81</td><td>Hotkeys</td></tr>
     <tr><td>1.0.80</td><td>Ui History</td></tr>
     <tr><td>1.0.79</td><td>Transform Constraints</td></tr>
     <tr><td>1.0.78</td><td>Sprite Gradient</td></tr>
@@ -400,7 +410,7 @@ links within itself: <code>.html</code> back to <code>README.html</code>, <code>
   <p>The back-link is <code>&lt;a class="home" href="../../../../README.html"&gt;</code> in the HTML and
   <code>[&#8592; All documentation](../../../../)</code> in the Markdown, with as many
   <code>../</code> as the folder is deep — four from anything under <code>Ui/</code> or
-  <code>Components/</code>, three from <code>Translations/</code>.</p>
+  <code>Components/</code>, three from <code>Translations/</code> or <code>Audio/</code>.</p>
   <p><strong>Markdown links point at the folder, never at its <code>README.md</code>.</strong> GitHub and GitLab
   both render a folder's readme underneath its file listing, so <code>Runtime/_System/Ui/Window/</code> lands on
   the rendered page — the <code>/tree/</code> view — while <code>…/README.md</code> lands on the plain file view,

@@ -4,8 +4,8 @@ using UnityEngine.UI;
 
 namespace FlappyTemplate.Editor
 {
-    // Puts Window, Statistics Window, Bet Info Window, Game History Window, Fairness Window and Hotkeys Window in
-    // GameObject > UI (Canvas) >
+    // Puts Window, Statistics Window, Bet Info Window, Game History Window, Fairness Window, Hotkeys Window and
+    // Sound Window in GameObject > UI (Canvas) >
     // FlappyBet, and makes them behave like Panel: a canvas and an EventSystem appear if the scene has none,
     // the object lands under whatever was right-clicked, and one undo takes the whole lot back out.
     //
@@ -26,6 +26,7 @@ namespace FlappyTemplate.Editor
         private static readonly Vector2 GameHistorySize = new Vector2(560f, 700f);
         private static readonly Vector2 FairnessSize = new Vector2(480f, 620f);
         private static readonly Vector2 HotkeysSize = new Vector2(660f, 780f);
+        private static readonly Vector2 SoundSize = new Vector2(460f, 340f);
 
         [MenuItem(FlappyBetMenu.Group + "Window", false, MenuPriority)]
         private static void CreateWindow(MenuCommand command)
@@ -106,6 +107,21 @@ namespace FlappyTemplate.Editor
             created.GetComponent<HotkeysWindow>().Rebuild();
 
             Undo.SetCurrentGroupName("Create Hotkeys Window");
+            Selection.activeGameObject = created;
+        }
+
+        [MenuItem(FlappyBetMenu.Group + "Sound Window", false, MenuPriority + 6)]
+        private static void CreateSoundWindow(MenuCommand command)
+        {
+            var created = Create("Sound", SoundSize, command, out var window, typeof(SoundWindow));
+            window.Title = "Sound";
+
+            // The two cards, their switches and their sliders. With no game running there are no settings to
+            // read, so the dialog arrives on the local defaults - both channels on, both at full - which is a
+            // dialog that can be styled rather than an empty panel.
+            created.GetComponent<SoundWindow>().Rebuild();
+
+            Undo.SetCurrentGroupName("Create Sound Window");
             Selection.activeGameObject = created;
         }
 

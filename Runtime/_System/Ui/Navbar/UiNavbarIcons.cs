@@ -44,6 +44,9 @@ namespace FlappyTemplate
                 case ENavbarButton.Hotkeys:
                     Hotkeys(holder, span, ink, hole);
                     break;
+                case ENavbarButton.Sound:
+                    Sound(holder, span, ink);
+                    break;
                 default:
                     // Custom, which draws nothing at all: the game either drops a sprite on the slot or
                     // puts whatever it likes under the button itself.
@@ -65,6 +68,8 @@ namespace FlappyTemplate
                     return "Fair ";
                 case ENavbarButton.Hotkeys:
                     return "Keys ";
+                case ENavbarButton.Sound:
+                    return "Note ";
                 default:
                     return string.Empty;
             }
@@ -186,6 +191,31 @@ namespace FlappyTemplate
             // The spacebar, which is the one shape that says keyboard rather than calculator.
             var space = Part(holder, "Keys Space", new Vector2(0.46f * span, cap), new Vector2(0f, -0.20f * span), 0f);
             Paint(space, hole, cap * 0.3f);
+        }
+
+        // A quaver: a round head, a stem up its right side and a flag off the top of it. A note rather than the
+        // speaker cone the glyph might have been, and for a plain reason - a cone is a triangle, and everything
+        // here is drawn out of rounded rectangles. A diamond standing in for one reads as a diamond.
+        //
+        // It is also the truer sign for what the button opens: a dialog with the music in it as well as the
+        // effects, rather than a mute switch.
+        private static void Sound(RectTransform holder, float span, Color ink)
+        {
+            float head = 0.34f * span;
+            float stem = 0.075f * span;
+
+            var body = Part(holder, "Note Head", new Vector2(head, head), new Vector2(-0.14f * span, -0.24f * span), 0f);
+            Paint(body, ink, head * 0.5f);
+
+            // From the top of the head to the top of the square, up the right of it. Half a stroke of overlap
+            // with the head, so the join is a join rather than a seam at small sizes.
+            var post = Part(holder, "Note Stem", new Vector2(stem, 0.66f * span), new Vector2(0.005f * span, 0.09f * span), 0f);
+            Paint(post, ink, stem * 0.5f);
+
+            // The flag, leaning off the top of the stem. One rather than the two a quaver-and-a-half would
+            // have: at twenty-eight pixels the second is a smudge against the first.
+            var flag = Part(holder, "Note Flag", new Vector2(stem, 0.34f * span), new Vector2(0.11f * span, 0.29f * span), -32f);
+            Paint(flag, ink, stem * 0.5f);
         }
 
         // One box of the glyph, placed in the middle of the square and turned. Rotation is written every
