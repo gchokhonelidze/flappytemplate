@@ -1,6 +1,6 @@
 # Navbar
 
-[← All documentation](../../../../README.md)
+[← All documentation](../../../../)
 
 The row of buttons over the game: **home**, **statistics**, **fairness**, **hotkeys**, and whatever the game
 adds beside them. Like the [windows](../Window/) next door it is one component on an empty RectTransform — the strip, the

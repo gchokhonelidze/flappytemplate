@@ -1,6 +1,6 @@
 # Translations
 
-[← All documentation](../../../README.md)
+[← All documentation](../../../)
 
 Every word the player reads, in the language `MainState.Locale` names. One call:
 

@@ -1,6 +1,6 @@
 # Window
 
-[← All documentation](../../../../README.md)
+[← All documentation](../../../../)
 
 A dialog that is one component rather than a prefab: a rounded panel, a caption, a close button, a drag,
 and an opening that is animated rather than a `SetActive`. Everything it is made of is built from code the

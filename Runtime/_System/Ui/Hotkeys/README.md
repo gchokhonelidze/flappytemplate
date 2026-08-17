@@ -1,6 +1,6 @@
 # Hotkeys
 
-[← All documentation](../../../../README.md)
+[← All documentation](../../../../)
 
 Keys bound to things the game does, and the dialog that tells the player about them. One line binds a key:
 

@@ -1,6 +1,6 @@
 # Transform Constraints
 
-[← All documentation](../../../../README.md)
+[← All documentation](../../../../)
 
 Three components that hold one scene object against others: **Position Constraint**, **Rotation
 Constraint** and **Look At Constraint**. Point one at a target and it follows — every frame, while you edit

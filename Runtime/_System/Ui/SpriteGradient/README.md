@@ -1,6 +1,6 @@
 # Sprite Gradient
 
-[← All documentation](../../../../README.md)
+[← All documentation](../../../../)
 
 A sprite drawn with a gradient painted through it and a border grown around its silhouette, rather than the
 one flat tint an Image can give it. The sprite supplies the shape and the detail; everything else is
@@ -20,7 +20,7 @@ Graphics fighting over it end up with one of them not drawn.
 An Image can be tinted but not outlined, because a sprite is pixels and a border is a path — and nothing in
 a sprite says where its edge is. So the edge is found: the alpha channel is sampled onto a grid and the
 threshold line through it is traced into closed loops, once per sprite and then kept. Once the silhouette is
-a path, a border around it is the same strip of triangles a [Rounded Box](../RoundedBox/README.md) draws
+a path, a border around it is the same strip of triangles a [Rounded Box](../RoundedBox/) draws
 around its own outline, and every way of colouring that strip carries over.
 
 The trace handles more than one loop, so a doughnut, a dotted glyph or a shape with a hole in it gets a

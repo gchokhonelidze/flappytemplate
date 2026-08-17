@@ -398,9 +398,14 @@ links within itself: <code>.html</code> back to <code>README.html</code>, <code>
 
 <div class="note">
   <p>The back-link is <code>&lt;a class="home" href="../../../../README.html"&gt;</code> in the HTML and
-  <code>[&#8592; All documentation](../../../../README.md)</code> in the Markdown, with as many
+  <code>[&#8592; All documentation](../../../../)</code> in the Markdown, with as many
   <code>../</code> as the folder is deep — four from anything under <code>Ui/</code> or
   <code>Components/</code>, three from <code>Translations/</code>.</p>
+  <p><strong>Markdown links point at the folder, never at its <code>README.md</code>.</strong> GitHub and GitLab
+  both render a folder's readme underneath its file listing, so <code>Runtime/_System/Ui/Window/</code> lands on
+  the rendered page — the <code>/tree/</code> view — while <code>…/README.md</code> lands on the plain file view,
+  <code>/blob/</code>. These HTML copies are the exception and keep their filenames: they are opened from disk,
+  where a folder href is a directory listing rather than a page.</p>
 </div>
 
 </main>

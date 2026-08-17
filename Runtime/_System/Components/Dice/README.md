@@ -1,6 +1,6 @@
 # Dice Roller
 
-[← All documentation](../../../../README.md)
+[← All documentation](../../../../)
 
 A dice that rolls to a number you decided beforehand. `Roll(6)` throws the cube in the air, tumbles it,
 drops it, bounces it, and it comes to rest showing 6 — every time, on any frame rate, with no physics

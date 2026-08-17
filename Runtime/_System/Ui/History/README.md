@@ -1,6 +1,6 @@
 # Ui History
 
-[← All documentation](../../../../README.md)
+[← All documentation](../../../../)
 
 The strip of recent bets: the last few rounds as a row of chips over the game, or a column of them down the
 side. It feeds itself from the socket, animates each arrival, drops the oldest when it runs out of room — or
