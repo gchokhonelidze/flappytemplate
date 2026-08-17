@@ -334,9 +334,46 @@ namespace FlappyTemplate
                 fil_PH: "Suwerte", ur_PK: "قسمت", fa_IR: "شانس", ms_MY: "Tuah",
                 ka_GE: "იღბალი", hy_AM: "Հաջողություն");
 
-            // Navbar. Its other two captions are statistics.title and fairness.title above - the bar opens
-            // those windows, and a button named one thing while the dialog it opens is named another reads
-            // as two features.
+            // Hotkeys. The window lists what each bound key does, and the game supplies those labels itself -
+            // so what is here is the dialog's own furniture and the switch along the bottom of it. Its caption
+            // says which way things stand rather than what pressing it would do, which is how the web front's
+            // button reads, so the two clients say the same thing about the same setting.
+
+            Row("hotkeys.title",
+                en_US: "Hotkeys", ru_RU: "Горячие клавиши", fr_FR: "Raccourcis", bn_BD: "হটকি",
+                de_DE: "Tastenkürzel", es_ES: "Atajos", id_ID: "Tombol cepat", pt_PT: "Atalhos",
+                tr_TR: "Kısayollar", vi_VN: "Phím nóng", ar_AE: "مفاتيح الاختصار", hi_IN: "हॉटकी",
+                th_TH: "ปุ่มลัด", ja_JP: "ショートカット", ko_KR: "단축키", zh_CN: "快捷键",
+                fil_PH: "Mga hotkey", ur_PK: "شارٹ کٹ کیز", fa_IR: "کلیدهای میان‌بر", ms_MY: "Kekunci pintas",
+                ka_GE: "ცხელი კლავიშები", hy_AM: "Թեժ ստեղներ");
+
+            Row("hotkeys.on",
+                en_US: "Hotkeys on", ru_RU: "Клавиши включены", fr_FR: "Raccourcis activés", bn_BD: "হটকি চালু",
+                de_DE: "Kürzel ein", es_ES: "Atajos activados", id_ID: "Tombol cepat aktif", pt_PT: "Atalhos ativados",
+                tr_TR: "Kısayollar açık", vi_VN: "Phím nóng bật", ar_AE: "الاختصارات مفعّلة", hi_IN: "हॉटकी चालू",
+                th_TH: "เปิดปุ่มลัด", ja_JP: "ショートカット オン", ko_KR: "단축키 켜짐", zh_CN: "快捷键已开启",
+                fil_PH: "Bukás ang hotkeys", ur_PK: "شارٹ کٹ آن", fa_IR: "میان‌برها روشن", ms_MY: "Kekunci pintas hidup",
+                ka_GE: "ცხელი კლავიშები ჩართულია", hy_AM: "Թեժ ստեղները միացված են");
+
+            Row("hotkeys.off",
+                en_US: "Hotkeys off", ru_RU: "Клавиши отключены", fr_FR: "Raccourcis désactivés", bn_BD: "হটকি বন্ধ",
+                de_DE: "Kürzel aus", es_ES: "Atajos desactivados", id_ID: "Tombol cepat nonaktif", pt_PT: "Atalhos desativados",
+                tr_TR: "Kısayollar kapalı", vi_VN: "Phím nóng tắt", ar_AE: "الاختصارات معطّلة", hi_IN: "हॉटकी बंद",
+                th_TH: "ปิดปุ่มลัด", ja_JP: "ショートカット オフ", ko_KR: "단축키 꺼짐", zh_CN: "快捷键已关闭",
+                fil_PH: "Sarado ang hotkeys", ur_PK: "شارٹ کٹ آف", fa_IR: "میان‌برها خاموش", ms_MY: "Kekunci pintas mati",
+                ka_GE: "ცხელი კლავიშები გამორთულია", hy_AM: "Թեժ ստեղները անջատված են");
+
+            Row("hotkeys.none",
+                en_US: "No hotkeys bound", ru_RU: "Клавиши не назначены", fr_FR: "Aucun raccourci défini", bn_BD: "কোনো হটকি নির্ধারিত নেই",
+                de_DE: "Keine Kürzel belegt", es_ES: "Ningún atajo asignado", id_ID: "Belum ada tombol cepat", pt_PT: "Nenhum atalho definido",
+                tr_TR: "Atanmış kısayol yok", vi_VN: "Chưa gán phím nóng", ar_AE: "لا توجد اختصارات معيّنة", hi_IN: "कोई हॉटकी सेट नहीं",
+                th_TH: "ยังไม่ได้ตั้งปุ่มลัด", ja_JP: "ショートカットは未設定", ko_KR: "지정된 단축키 없음", zh_CN: "尚未设置快捷键",
+                fil_PH: "Walang nakatakdang hotkey", ur_PK: "کوئی شارٹ کٹ مقرر نہیں", fa_IR: "میان‌بری تعریف نشده", ms_MY: "Tiada kekunci pintas ditetapkan",
+                ka_GE: "ცხელი კლავიშები არ არის მითითებული", hy_AM: "Թեժ ստեղներ նշանակված չեն");
+
+            // Navbar. Its other three captions are statistics.title, fairness.title and hotkeys.title above -
+            // the bar opens those windows, and a button named one thing while the dialog it opens is named
+            // another reads as two features.
 
             Row("navbar.home",
                 en_US: "Home", ru_RU: "На главную", fr_FR: "Accueil", bn_BD: "হোম",

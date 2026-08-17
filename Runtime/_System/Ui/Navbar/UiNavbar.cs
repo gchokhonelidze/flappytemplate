@@ -6,7 +6,8 @@ using UnityEngine.UI;
 
 namespace FlappyTemplate
 {
-    // The row of buttons over the game: home, statistics, fairness, and whatever the game adds beside them.
+    // The row of buttons over the game: home, statistics, fairness, hotkeys, and whatever the game adds beside
+    // them.
     //
     //     var navbar = UiNavbar.Create(canvas);
     //
@@ -26,16 +27,20 @@ namespace FlappyTemplate
     //   direct link. A Home button that led nowhere would be worse than no button, and the address arrives
     //   after the scene has loaded rather than with it, so this is watched rather than decided once.
     //
-    // - **Statistics** and **Fairness** open the windows of those names, and close them again on a second
-    //   press. Either is found in the scene if it is already there and built if it is not, so a bar dropped
+    // - **Statistics**, **Fairness** and **Hotkeys** open the windows of those names, and close them again on a
+    //   second press. Each is found in the scene if it is already there and built if it is not, so a bar dropped
     //   into an empty canvas works on its own; a window built by hand and dragged into the slot is used
     //   instead. While one is open its button takes the style's active colour, so a player can see which
     //   dialog they are looking at from the bar rather than from the dialog.
     //
+    //   The hotkeys one needs nothing said to it: it reads the hotkey registry, so a key bound anywhere in the
+    //   game is in the list. See Ui/Hotkeys.
+    //
     // - **Custom** does nothing of its own: it fires the slot's event and the bar's, for a button of the
-    //   game's own. Adding a *built-in* one later is three lines - a value on ENavbarButton, a glyph in
-    //   UiNavbarIcons.Draw and a case in Press - and that is the shape the switch to a vertical or
-    //   horizontal game mode is meant to arrive in.
+    //   game's own. Adding a *built-in* one later is four cases - a value on ENavbarButton, a glyph in
+    //   UiNavbarIcons.Draw with its name in Prefix beside it, and a case in Press. One that opens a window of
+    //   its own wants three more: a slot for it, a resolve property, and a case in Active so the button lights
+    //   while it is open - which is exactly what Hotkeys below was.
     //
     // The bar itself runs either way round - Flow, a row or a column - and pins itself to a corner or an
     // edge of whatever it is drawn in. That is the bar's own direction and has nothing to do with the game
@@ -66,6 +71,7 @@ namespace FlappyTemplate
             new NavbarButton(ENavbarButton.Home, "Home"),
             new NavbarButton(ENavbarButton.Statistics, "Statistics"),
             new NavbarButton(ENavbarButton.Fairness, "Fairness"),
+            new NavbarButton(ENavbarButton.Hotkeys, "Hotkeys"),
         };
 
         [Header("Layout")]
@@ -98,6 +104,9 @@ namespace FlappyTemplate
 
         [SerializeField]
         private FairnessWindow fairnessWindow;
+
+        [SerializeField]
+        private HotkeysWindow hotkeysWindow;
 
         [Tooltip("Build a window that is neither wired up nor already in the scene. Off leaves the button doing nothing but firing its event, for a game that opens its own dialogs.")]
         [SerializeField]
@@ -276,6 +285,20 @@ namespace FlappyTemplate
 
                 Watch(fairnessWindow != null ? fairnessWindow.Window : null);
                 return fairnessWindow;
+            }
+        }
+
+        /// <summary>The hotkeys window this bar opens, found or built the same way. It fills itself in from the
+        /// hotkey registry, so there is nothing to hand it - a key bound anywhere in the game is in it.</summary>
+        public HotkeysWindow Hotkeys
+        {
+            get
+            {
+                if (hotkeysWindow == null)
+                    hotkeysWindow = Resolve<HotkeysWindow>(parent => HotkeysWindow.Create(parent));
+
+                Watch(hotkeysWindow != null ? hotkeysWindow.Window : null);
+                return hotkeysWindow;
             }
         }
 
@@ -459,6 +482,9 @@ namespace FlappyTemplate
                 case ENavbarButton.Fairness:
                     ShowFairness();
                     break;
+                case ENavbarButton.Hotkeys:
+                    ShowHotkeys();
+                    break;
                 default:
                     // Custom. The slot's own event has already gone out.
                     break;
@@ -491,6 +517,11 @@ namespace FlappyTemplate
 
         /// <summary>Opens the fairness window, or closes it again.</summary>
         public void ShowFairness() => Toggle(Fairness != null ? Fairness.Window : null);
+
+        /// <summary>Opens the hotkeys window, or closes it again.</summary>
+        // Worth binding to a key of its own, which is the shape of joke the feature earns:
+        // Hotkeys.Bind(KeyCode.H, "Hotkeys", navbar.ShowHotkeys).
+        public void ShowHotkeys() => Toggle(Hotkeys != null ? Hotkeys.Window : null);
 
         private void Toggle(UiWindow window)
         {
@@ -937,6 +968,8 @@ namespace FlappyTemplate
                     return statisticsWindow != null && statisticsWindow.Window != null && statisticsWindow.Window.IsOpen;
                 case ENavbarButton.Fairness:
                     return fairnessWindow != null && fairnessWindow.Window != null && fairnessWindow.Window.IsOpen;
+                case ENavbarButton.Hotkeys:
+                    return hotkeysWindow != null && hotkeysWindow.Window != null && hotkeysWindow.Window.IsOpen;
                 default:
                     return false;
             }

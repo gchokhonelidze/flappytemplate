@@ -69,6 +69,13 @@
   nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
   nav.toc a:hover { color: var(--accent); }
   nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+  nav.toc a.home {
+    color: var(--ink);
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
 
   header.title { margin-bottom: 28px; }
   h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
@@ -204,6 +211,67 @@
   .modal .win { width: 200px; }
   .drag { border: 2px dashed rgba(255, 255, 255, .45); border-radius: 23px 23px 0 0; }
 
+  /* ---- the hotkeys dialog, same idea ---- */
+
+  .win.keys { width: 300px; }
+  .board { background: #fff; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 3px; }
+  .krow { display: flex; gap: 3px; }
+  .k {
+    flex: 1 1 0;
+    height: 18px;
+    border-radius: 3px;
+    background: #fff;
+    border: 1px solid #cbc7d9;
+    color: #4a4066;
+    font: 8px/16px "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    text-align: center;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  /* bound, and bound-and-held: the two colours the window asks a player to learn */
+  .k.reg { background: #e8c55a; border-color: #e8c55a; color: #33285a; font-weight: 700; }
+  .k.on { background: #fde488; border-color: #fde488; color: #241b45; font-weight: 700; }
+  .k.u15 { flex-grow: 1.5; } .k.u175 { flex-grow: 1.75; }
+  .k.u2 { flex-grow: 2; } .k.u225 { flex-grow: 2.25; } .k.space { flex-grow: 12; }
+
+  .binds { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .bind {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: rgba(255, 255, 255, .12);
+    border-radius: 7px;
+    padding: 7px 9px;
+  }
+  .bind b { font-size: 12px; }
+  .bind .keycap {
+    min-width: 46px;
+    text-align: center;
+    background: #e8c55a;
+    color: #33285a;
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-weight: 800;
+    font-size: 13px;
+  }
+  .bind .keycap.on { background: #fde488; }
+  .bind.off { background: rgba(255, 255, 255, .05); }
+  .bind.off b { color: rgba(255, 255, 255, .45); }
+  .bind.off .keycap { background: rgba(232, 197, 90, .35); }
+
+  .foot {
+    margin-top: 10px;
+    text-align: center;
+    border-radius: 8px;
+    padding: 9px;
+    background: #c9c7d4;
+    color: #29233f;
+    font-weight: 800;
+    font-size: 12px;
+  }
+  .foot.on { background: #73c27f; }
+
   /* ---- the bet info dialog, same idea ---- */
 
   .win.info { width: 268px; }
@@ -280,6 +348,7 @@
 <div class="page">
 
 <nav class="toc">
+  <a class="home" href="../../../../README.html">&#8592; All documentation</a>
   <strong>Contents</strong>
   <a href="#look">What it looks like</a>
   <a href="#window">The window</a>
@@ -308,6 +377,7 @@
   <a class="sub" href="#shared">Shared and multiplayer</a>
   <a class="sub" href="#previous">The previous pair</a>
   <a class="sub" href="#box">The box</a>
+  <a href="#hotkeys">Hotkeys</a>
   <a href="#ontop">Drawing over the game</a>
   <a class="sub" href="#stack">Windows in front of each other</a>
   <a href="#translations">Translations</a>
@@ -327,15 +397,15 @@
   <p class="lede">The window owns where things go, not what they look like: Panel, Caption, Title, Close,
   Scrollbar and the sheet behind it are ordinary RoundedBox and TextMeshPro objects — select one and style it
   as you would any other. Nothing here paints over it afterwards.</p>
-  <p class="stamp">Describes package 1.0.80. Update this file with the code — and README.md beside it.</p>
+  <p class="stamp">Describes package 1.0.81. Update this file with the code — and README.md beside it.</p>
   <p><strong>GameObject → UI (Canvas) → FlappyBet → Window</strong>, which makes a canvas if the scene has
   none, drops the window under whatever was right-clicked, and builds the whole thing on the spot so it
   arrives looking like a window rather than as an empty rect waiting for play mode. <strong>Statistics
-  Window</strong>, <strong>Bet Info Window</strong>, <strong>Game History Window</strong> and <strong>Fairness
-  Window</strong> sit beside it in that same group, along with everything else this template adds — Rounded
-  Box, Grid, History and Navbar, the row of buttons that opens two of the windows here. Each of the four
-  keeps its own files in a folder of its own: <code>Statistics/</code>, <code>BetInfo/</code>,
-  <code>GameHistory/</code>, <code>Fairness/</code>.</p>
+  Window</strong>, <strong>Bet Info Window</strong>, <strong>Game History Window</strong>, <strong>Fairness
+  Window</strong> and <strong>Hotkeys Window</strong> sit beside it in that same group, along with everything
+  else this template adds — Rounded Box, Grid, History and Navbar, the row of buttons that opens three of the
+  windows here. Each of the five keeps its own files in a folder of its own: <code>Statistics/</code>,
+  <code>BetInfo/</code>, <code>GameHistory/</code>, <code>Fairness/</code>, <code>Hotkeys/</code>.</p>
   <p>Adding the component by hand instead, it belongs on an <strong>empty RectTransform</strong>, not a UI
   Panel: the window draws its own panel, so a Panel's Image leaves two backgrounds stacked, and anything
   already inside that Panel ends up beside the caption rather than under <code>Content</code>. Or one chain
@@ -1248,6 +1318,103 @@ somewhere.</p>
   One reference compare per frame while a window is open, and nothing at all while none is.</p>
 </div>
 
+<h2 id="hotkeys">Hotkeys</h2>
+
+<p><strong>GameObject &rarr; UI (Canvas) &rarr; FlappyBet &rarr; Hotkeys Window</strong>, or Add Component
+&rarr; UI &rarr; Hotkeys Window on a <code>UiWindow</code>, or the whole thing in one line:</p>
+
+<pre><code>var keys = HotkeysWindow.Create(canvas);
+keys.Window.Open();</code></pre>
+
+<div class="specimen">
+  <p class="why">The drawn keyboard with the bound caps picked out and <code>D</code> held down, the list of what
+  each key does, and the switch. <code>B</code> is bound but disabled &mdash; a cash-out key between rounds
+  &mdash; so it is greyed rather than gone.</p>
+  <div class="stage wide">
+    <div class="win keys">
+      <div class="x">&#10005;</div>
+      <div class="cap">Hotkeys</div>
+      <div class="body">
+          <div class="board">
+            <div class="krow"><i class="k">`</i><i class="k">1</i><i class="k">2</i><i class="k">3</i><i class="k">4</i><i class="k">5</i><i class="k">6</i><i class="k">7</i><i class="k">8</i><i class="k">9</i><i class="k">0</i><i class="k">-</i><i class="k">=</i><i class="k u2">bksp</i></div>
+            <div class="krow"><i class="k u15">tab</i><i class="k reg">q</i><i class="k reg">w</i><i class="k reg">e</i><i class="k reg">r</i><i class="k">t</i><i class="k">y</i><i class="k">u</i><i class="k">i</i><i class="k">o</i><i class="k">p</i><i class="k">[</i><i class="k">]</i><i class="k">\</i></div>
+            <div class="krow"><i class="k u175">caps</i><i class="k reg">a</i><i class="k reg">s</i><i class="k on">d</i><i class="k">f</i><i class="k">g</i><i class="k">h</i><i class="k">j</i><i class="k">k</i><i class="k">l</i><i class="k">;</i><i class="k">'</i><i class="k u225">enter</i></div>
+            <div class="krow"><i class="k u225">shift</i><i class="k">z</i><i class="k">x</i><i class="k">c</i><i class="k">v</i><i class="k reg">b</i><i class="k">n</i><i class="k">m</i><i class="k">,</i><i class="k">.</i><i class="k">/</i><i class="k u225">shift</i></div>
+            <div class="krow"><i class="k space">space</i></div>
+          </div>
+          <div class="binds">
+            <div class="bind"><b>Min</b><span class="keycap on">D</span></div>
+            <div class="bind"><b>Half the amount</b><span class="keycap">A</span></div>
+            <div class="bind"><b>Double the amount</b><span class="keycap">S</span></div>
+            <div class="bind off"><b>Cash out</b><span class="keycap">B</span></div>
+          </div>
+          <div class="foot">Hotkeys off</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p>Which keys are bound to what, and the switch that turns them on. <strong>Nothing is filled in here</strong>
+&mdash; the window reads the <a href="../Hotkeys/README.html">hotkey registry</a>, so a key bound anywhere in the
+game is in its list the moment it is bound and gone the moment it is dropped. There is no list to keep in step,
+and no way for the dialog and the game to disagree about what <code>D</code> does.</p>
+
+<p>Three blocks, top to bottom:</p>
+
+<ul>
+  <li><strong>The drawn keyboard.</strong> Every cap in <code>HotkeyCaps.Rows</code>, with the bound ones in the
+  accent colour and whichever is held down lit. It is what turns a list of key names into something a player
+  reads at a glance &mdash; <em>the gold ones do something, and the one under my finger is the one I pressed</em>.
+  Built once and repainted rather than rebuilt: sixty caps is sixty boxes and sixty labels, and a key going down
+  happens in the middle of a round. It catches no clicks &mdash; it is a picture of a keyboard, not a
+  keyboard.</li>
+  <li><strong>The list.</strong> A caption and a key cap per binding, in the order the game bound them. It
+  scrolls on its own past <code>List Max Height</code>, which is what keeps the button below it on screen. A
+  binding whose <code>Enabled</code> is off stays in the list, greyed &mdash; a player who has learned
+  <code>B</code> should see the key still exists and is simply not doing anything yet.</li>
+  <li><strong>The switch.</strong> Pressing it emits <code>SETTING</code>, so the choice follows the player to
+  their next session and to the web front. Its caption says <strong>which way things stand</strong> rather than
+  what pressing it would do &mdash; <code>Hotkeys off</code> while they are off &mdash; which is how the web
+  front's own button reads, so a player who has used one recognises the other.</li>
+</ul>
+
+<div class="warn">
+  <p><strong>Hotkeys are off until the player presses that button.</strong> The server defaults the
+  <code>keyboard</code> setting to <code>0</code>, so a game that binds keys and never puts this dialog anywhere
+  has bound keys that never fire. That is the one thing to know before wiring the feature up.</p>
+</div>
+
+<p>Pressing a bound key while the window is open lights its cap in both the picture and the list. That is the
+other half of what the dialog is for: a player who cannot tell whether the game heard them can hold a key and
+watch.</p>
+
+<table>
+  <tr><th>Call</th><th>Does</th></tr>
+  <tr><td><code>Toggle()</code></td><td>Switches hotkeys on or off, and emits <code>SETTING</code>. What the footer button does.</td></tr>
+  <tr><td><code>Refresh()</code></td><td>Reads the bindings again. Called for you by everything the window watches.</td></tr>
+  <tr><td><code>Tint()</code></td><td>Recolours the caps and nothing else. What a key press calls.</td></tr>
+  <tr><td><code>Layout()</code> &middot; <code>Rebuild()</code></td><td>Lay out again, build again.</td></tr>
+  <tr><td><code>ToggleButton</code> &middot; <code>Scroller</code></td><td>The parts, for a game that would rather drive them itself.</td></tr>
+</table>
+
+<table>
+  <tr><th>Field</th><th>What it does</th></tr>
+  <tr><td>Style</td><td>The keyboard, the list and the button. The panel around them is styled on its own parts.</td></tr>
+  <tr><td>Labels</td><td>The footer's two captions and the empty-list line. Nothing here is translated.</td></tr>
+  <tr><td>Show Keyboard / List / Toggle</td><td>The three blocks. Turning the toggle off leaves the player no way to enable hotkeys, so only do it if the game offers that somewhere else.</td></tr>
+  <tr><td>Follow Bindings</td><td>Rebuild when a key is bound or dropped, and repaint when one is pressed.</td></tr>
+  <tr><td>Fit Window Height</td><td>Resize the window to exactly the blocks it is showing.</td></tr>
+</table>
+
+<p><code>OnToggled</code> is a UnityEvent carrying what hotkeys have just been switched to.</p>
+
+<div class="note">
+  <p>With no socket at all &mdash; a scene with no <code>StateManager</code> &mdash; the window shows
+  <strong>four sample bindings</strong> so it can be laid out and styled from a menu rather than from a running
+  game. They are rows of text bound to nothing. A real game never sees them: the moment anything is bound, only
+  the real list is shown.</p>
+</div>
+
 <h2 id="translations">Translations</h2>
 
 <p>The windows follow <code>MainState.Locale</code> on their own. Nothing has to be set up for it and no field
@@ -1382,7 +1549,11 @@ yet.</p>
   <tr><td><code>GameHistory/GameHistoryWindowStyle.cs</code></td><td>What it looks like.</td></tr>
   <tr><td><code>Fairness/FairnessWindow.cs</code></td><td>The fairness dialog.</td></tr>
   <tr><td><code>Fairness/FairnessWindowStyle.cs</code></td><td>What it looks like.</td></tr>
-  <tr><td><code>Editor/Window/UiWindowMenu.cs</code></td><td>The five GameObject → UI (Canvas) → FlappyBet entries.</td></tr>
+  <tr><td><code>Hotkeys/HotkeysWindow.cs</code></td><td>The hotkeys dialog: the drawn keyboard, the list, and the switch.</td></tr>
+  <tr><td><code>Hotkeys/HotkeysWindowStyle.cs</code></td><td>What it looks like.</td></tr>
+  <tr><td><code>Hotkeys/HotkeyKeyboard.cs</code></td><td>The drawn keyboard inside it. Internal.</td></tr>
+  <tr><td><code><a href="../Hotkeys/README.html">../Hotkeys/</a></code></td><td>The registry the dialog reads, and the two components that bind a key.</td></tr>
+  <tr><td><code>Editor/Window/UiWindowMenu.cs</code></td><td>The six GameObject → UI (Canvas) → FlappyBet entries.</td></tr>
   <tr><td><code>../../Translations/</code></td><td><code>Translator.Label</code>, which every caption above is written through.</td></tr>
   <tr><td><code>Editor/FlappyBetMenu.cs</code></td><td>The one group they all go in, path and priority. Internal.</td></tr>
   <tr><td><code>../RoundedBox/</code></td><td>Every panel here is one.</td></tr>

@@ -4,7 +4,8 @@ using UnityEngine.UI;
 
 namespace FlappyTemplate.Editor
 {
-    // Puts Window, Statistics Window, Bet Info Window, Game History Window and Fairness Window in GameObject > UI (Canvas) >
+    // Puts Window, Statistics Window, Bet Info Window, Game History Window, Fairness Window and Hotkeys Window in
+    // GameObject > UI (Canvas) >
     // FlappyBet, and makes them behave like Panel: a canvas and an EventSystem appear if the scene has none,
     // the object lands under whatever was right-clicked, and one undo takes the whole lot back out.
     //
@@ -24,6 +25,7 @@ namespace FlappyTemplate.Editor
         private static readonly Vector2 BetInfoSize = new Vector2(560f, 620f);
         private static readonly Vector2 GameHistorySize = new Vector2(560f, 700f);
         private static readonly Vector2 FairnessSize = new Vector2(480f, 620f);
+        private static readonly Vector2 HotkeysSize = new Vector2(660f, 780f);
 
         [MenuItem(FlappyBetMenu.Group + "Window", false, MenuPriority)]
         private static void CreateWindow(MenuCommand command)
@@ -89,6 +91,21 @@ namespace FlappyTemplate.Editor
             created.GetComponent<FairnessWindow>().Rebuild();
 
             Undo.SetCurrentGroupName("Create Fairness Window");
+            Selection.activeGameObject = created;
+        }
+
+        [MenuItem(FlappyBetMenu.Group + "Hotkeys Window", false, MenuPriority + 5)]
+        private static void CreateHotkeysWindow(MenuCommand command)
+        {
+            var created = Create("Hotkeys", HotkeysSize, command, out var window, typeof(HotkeysWindow));
+            window.Title = "Hotkeys";
+
+            // The drawn keyboard, the list and the switch along the bottom. Nothing is bound in the editor - there
+            // is no game running to have bound it - so the list fills itself from a few sample keys, and the
+            // dialog arrives looking like the dialog rather than as an empty panel.
+            created.GetComponent<HotkeysWindow>().Rebuild();
+
+            Undo.SetCurrentGroupName("Create Hotkeys Window");
             Selection.activeGameObject = created;
         }
 

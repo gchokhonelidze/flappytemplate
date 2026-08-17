@@ -1,5 +1,7 @@
 # Window
 
+[← All documentation](../../../../README.md)
+
 A dialog that is one component rather than a prefab: a rounded panel, a caption, a close button, a drag,
 and an opening that is animated rather than a `SetActive`. Everything it is made of is built from code the
 first time it is needed, so there is no hierarchy to keep in step and nothing to assemble by hand.
@@ -12,23 +14,23 @@ Inside, the caption and the body are two rows of a [`UiGrid`](../Grid/), and the
 content is taller than the screen has room for — so a dialog is bounded by what it is drawn on rather than by
 what its author guessed.
 
-Four windows built on it live in folders of their own beside it, and are worked examples of filling one in:
+Five windows built on it live in folders of their own beside it, and are worked examples of filling one in:
 `Statistics/` — the two-tab panel reading `MainState.Statistics`; `BetInfo/` — the dialog that asks the server
 for one bet and lays out what came back; `GameHistory/` — the same for a whole shared round, everybody who bet
-on it included; and `Fairness/` — the seed pair the game is rolling from, and the two ways a player may change
-it.
+on it included; `Fairness/` — the seed pair the game is rolling from, and the two ways a player may change it;
+and `Hotkeys/` — which keys are bound to what, drawn on a keyboard, and the switch that turns them on.
 
-Every caption in all four, and the title of any window, is **translated** — see
+Every caption in all five, and the title of any window, is **translated** — see
 [Translations](#translations) below.
 
-*Describes package 1.0.80. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.81. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the windows drawn rather than described.*
 
 **GameObject → UI (Canvas) → FlappyBet → Window**, and **Statistics Window**, **Bet Info Window**, **Game
-History Window** and **Fairness Window** beside it. Each makes a canvas if the scene has none, drops the window under whatever was
+History Window**, **Fairness Window** and **Hotkeys Window** beside it. Each makes a canvas if the scene has none, drops the window under whatever was
 right-clicked, and builds the whole thing on the spot so it arrives looking like a window rather than as an
 empty rect waiting for play mode. Everything else this template adds is in that same **FlappyBet** group —
-Rounded Box, Grid, History and [Navbar](../Navbar/), which is the row of buttons that opens two of the
+Rounded Box, Grid, History and [Navbar](../Navbar/), which is the row of buttons that opens three of the
 windows below.
 
 Adding the component by hand instead, it belongs on an **empty RectTransform**, not a UI Panel: the window
@@ -690,6 +692,67 @@ the moment there is an `Emitter`, the buttons only ever send.
 Like the bet info dialog, the window is fitted **twice over, and again on the next two frames** — a SHA-512
 wraps to three lines, and a label only reports the height it needs at the width the first pass gave it.
 
+## Hotkeys
+
+**GameObject → UI (Canvas) → FlappyBet → Hotkeys Window**, or Add Component → UI → Hotkeys Window on a
+`UiWindow`, or the whole thing in one line:
+
+```csharp
+var keys = HotkeysWindow.Create(canvas);
+keys.Window.Open();
+```
+
+Which keys are bound to what, and the switch that turns them on. **Nothing is filled in here** — the window
+reads the [hotkey registry](../Hotkeys/), so a key bound anywhere in the game is in its list the moment it is
+bound and gone the moment it is dropped. There is no list to keep in step, and no way for the dialog and the
+game to disagree about what `D` does.
+
+Three blocks, top to bottom:
+
+- **The drawn keyboard.** Every cap in `HotkeyCaps.Rows`, with the bound ones in the accent colour and
+  whichever is held down lit. It is what turns a list of key names into something a player reads at a
+  glance — *the gold ones do something, and the one under my finger is the one I pressed*. Built once and
+  repainted rather than rebuilt: sixty caps is sixty boxes and sixty labels, and a key going down happens in
+  the middle of a round. It catches no clicks — it is a picture of a keyboard, not a keyboard.
+- **The list.** A caption and a key cap per binding, in the order the game bound them. It scrolls on its own
+  past `List Max Height`, which is what keeps the button below it on screen. A binding whose `Enabled` is off
+  stays in the list, greyed — a player who has learned `B` should see the key still exists and is simply not
+  doing anything yet.
+- **The switch.** Pressing it emits `SETTING`, so the choice follows the player to their next session and to
+  the web front. Its caption says **which way things stand** rather than what pressing it would do —
+  `Hotkeys off` while they are off — which is how the web front's own button reads, so a player who has used
+  one recognises the other.
+
+**Hotkeys are off until the player presses that button.** The server defaults the `keyboard` setting to `0`,
+so a game that binds keys and never puts this dialog anywhere has bound keys that never fire. That is the one
+thing to know before wiring the feature up.
+
+Pressing a bound key while the window is open lights its cap in both the picture and the list. That is the
+other half of what the dialog is for: a player who cannot tell whether the game heard them can hold a key and
+watch.
+
+| Call | Does |
+| --- | --- |
+| `Toggle()` | Switches hotkeys on or off, and emits `SETTING`. What the footer button does. |
+| `Refresh()` | Reads the bindings again. Called for you by everything the window watches. |
+| `Tint()` | Recolours the caps and nothing else. What a key press calls. |
+| `Layout()` · `Rebuild()` | Lay out again, build again. |
+| `ToggleButton` · `Scroller` | The parts, for a game that would rather drive them itself. |
+
+| Field | What it does |
+| --- | --- |
+| Style | The keyboard, the list and the button. The panel around them is styled on its own parts. |
+| Labels | The footer's two captions and the empty-list line. Nothing here is translated. |
+| Show Keyboard / List / Toggle | The three blocks. Turning the toggle off leaves the player no way to enable hotkeys, so only do it if the game offers that somewhere else. |
+| Follow Bindings | Rebuild when a key is bound or dropped, and repaint when one is pressed. |
+| Fit Window Height | Resize the window to exactly the blocks it is showing. |
+
+`OnToggled` is a UnityEvent carrying what hotkeys have just been switched to.
+
+With no socket at all — a scene with no `StateManager` — the window shows **four sample bindings** so it can be
+laid out and styled from a menu rather than from a running game. They are rows of text bound to nothing. A real
+game never sees them: the moment anything is bound, only the real list is shown.
+
 ## Translations
 
 The windows follow `MainState.Locale` on their own. Nothing has to be set up for it and no field changes
@@ -863,9 +926,14 @@ itself.
 | `GameHistory/GameHistoryWindowStyle.cs` | What it looks like. |
 | `Fairness/FairnessWindow.cs` | The fairness dialog. |
 | `Fairness/FairnessWindowStyle.cs` | What it looks like. |
-| `Editor/Window/UiWindowMenu.cs` | The five GameObject → UI (Canvas) → FlappyBet entries. |
+| `Hotkeys/HotkeysWindow.cs` | The hotkeys dialog: the drawn keyboard, the list, and the switch. |
+| `Hotkeys/HotkeysWindowStyle.cs` | What it looks like. |
+| `Hotkeys/HotkeyKeyboard.cs` | The drawn keyboard inside it. Internal. |
+| [`../Hotkeys/`](../Hotkeys/) | The registry the dialog reads, and the two components that bind a key. |
+| `Editor/Window/UiWindowMenu.cs` | The six GameObject → UI (Canvas) → FlappyBet entries. |
 | [`../../Translations/`](../../Translations/) | `Translator.Label`, which every caption above is written through. |
 | `Editor/FlappyBetMenu.cs` | The one group they all go in, path and priority. Internal. |
 | `../RoundedBox/` | Every panel here is one. |
 | `../Grid/` | What lays the bet info card and the game history list out. |
 | `../History/` | The strip that opens the bet info and game history dialogs. |
+| `../Navbar/` | The bar whose Statistics, Fairness and Hotkeys buttons open three of these. |

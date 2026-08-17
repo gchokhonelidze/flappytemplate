@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hotkeys — FlappyBet Template</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --ink: #1c1f24;
+    --soft: #5b6472;
+    --line: #dfe3e8;
+    --accent: #3f6fd8;
+    --code-bg: #f2f4f7;
+    --note-bg: #eef4ff;
+    --note-line: #6f9bea;
+    --warn-bg: #fff6e5;
+    --warn-line: #e6a23c;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --panel: #1d2025;
+      --ink: #e4e7ec;
+      --soft: #9aa3b0;
+      --line: #2c3038;
+      --accent: #7aa2f7;
+      --code-bg: #12141a;
+      --note-bg: #161d2b;
+      --note-line: #4a6ea8;
+      --warn-bg: #2c2415;
+      --warn-line: #b98330;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 28px 96px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 64px; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 14px;
+    border-left: 2px solid var(--line);
+    padding-left: 16px;
+  }
+  nav.toc strong { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--soft); }
+  nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+  nav.toc a.home {
+    color: var(--ink);
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  header.title { margin-bottom: 28px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 44px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  p { margin: 12px 0; max-width: 74ch; }
+  a { color: var(--accent); }
+  .lede { color: var(--soft); }
+  .stamp { color: var(--soft); font-size: 13.5px; font-style: italic; }
+  ul, ol { max-width: 74ch; }
+
+  code, pre { font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 4px; font-size: 0.86em; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--soft); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td:first-child { white-space: nowrap; }
+
+  .note, .warn {
+    border-left: 3px solid var(--note-line);
+    background: var(--note-bg);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+  .warn { border-left-color: var(--warn-line); background: var(--warn-bg); }
+  .note p, .warn p { margin: 0; max-width: none; }
+  .note p + p, .warn p + p { margin-top: 10px; }
+
+  /* --- the window, drawn --- */
+  .stage {
+    background: #171429;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 22px;
+    margin: 18px 0;
+    overflow-x: auto;
+  }
+  .stage .why { margin: 0 0 14px; color: #9a93b8; font-size: 13px; max-width: none; }
+
+  .dialog {
+    width: 420px;
+    max-width: 100%;
+    background: #3d3163;
+    border-radius: 14px;
+    padding: 16px;
+    font-size: 13px;
+  }
+  .dialog h4 {
+    margin: 2px 0 14px;
+    text-align: center;
+    color: #fff;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+  }
+
+  /* the drawn keyboard: rows of caps, weighted by width in cap units */
+  .board {
+    background: #fff;
+    border-radius: 9px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .krow { display: flex; gap: 4px; }
+  .k {
+    flex: 1 1 0;
+    height: 26px;
+    border-radius: 4px;
+    background: #fff;
+    border: 1px solid #cbc7d9;
+    color: #4a4066;
+    font: 11px/24px "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    text-align: center;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  /* bound, and bound-and-held: the two colours the window asks a player to learn */
+  .k.reg { background: #e8c55a; border-color: #e8c55a; color: #33285a; font-weight: 700; }
+  .k.on  { background: #fde488; border-color: #fde488; color: #241b45; font-weight: 700; }
+  /* wider caps, in cap units */
+  .k.u15 { flex-grow: 1.5; }
+  .k.u175 { flex-grow: 1.75; }
+  .k.u2 { flex-grow: 2; }
+  .k.u225 { flex-grow: 2.25; }
+  .k.space { flex-grow: 12; }
+
+  /* the list of bindings */
+  .binds { margin-top: 12px; display: flex; flex-direction: column; gap: 7px; }
+  .bind {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 9px 11px;
+  }
+  .bind b { color: #fff; font-size: 14px; }
+  .bind .cap {
+    min-width: 62px;
+    text-align: center;
+    background: #e8c55a;
+    color: #33285a;
+    border-radius: 7px;
+    padding: 7px 10px;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .bind .cap.on { background: #fde488; }
+  .bind.off { background: rgba(255, 255, 255, 0.05); }
+  .bind.off b { color: rgba(255, 255, 255, 0.45); }
+  .bind.off .cap { background: rgba(232, 197, 90, 0.35); }
+
+  .foot {
+    margin-top: 12px;
+    text-align: center;
+    border-radius: 9px;
+    padding: 12px;
+    background: #c9c7d4;
+    color: #29233f;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .foot.on { background: #73c27f; }
+
+  /* the badge in the corner of a button */
+  .glyphrow { display: flex; gap: 34px; align-items: center; flex-wrap: wrap; }
+  .glyphrow figure { margin: 0; text-align: center; }
+  .glyphrow figcaption { margin-top: 10px; color: #9a93b8; font-size: 12.5px; }
+  .control {
+    position: relative;
+    width: 168px;
+    height: 58px;
+    border-radius: 12px;
+    background: #90e49a;
+    color: #1c1a4a;
+    font: 700 15px/58px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    text-align: center;
+  }
+  .mark {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    min-width: 22px;
+    height: 20px;
+    border-radius: 6px;
+    background: #e8c55a;
+    color: #33285a;
+    font: 700 12px/20px "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    padding: 0 5px;
+  }
+  .mark.on { background: #fde488; }
+
+  /* the navbar's keyboard glyph */
+  .nbtn {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: #90e49a;
+    position: relative;
+    flex: 0 0 auto;
+  }
+  .nbtn.active { background: #facc14; }
+  .glyph {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 28px;
+    height: 28px;
+    transform: translate(-50%, -50%);
+  }
+  .glyph > * { position: absolute; background: #1c1a4a; }
+  .g-kbody { width: 94%; height: 66%; left: 3%; top: 17%; border-radius: 9%; }
+  /* the caps and the spacebar are painted in the button's own colour, not cut out */
+  .g-kcap { width: 13%; height: 13%; background: #90e49a; border-radius: 1px; }
+  .active .g-kcap, .active .g-kspace { background: #facc14; }
+  .g-kspace { width: 46%; height: 13%; left: 27%; top: 66%; background: #90e49a; border-radius: 1px; }
+  .r1 { top: 28%; } .r2 { top: 47%; }
+  .c1 { left: 24%; } .c2 { left: 43.5%; } .c3 { left: 63%; }
+  .big { width: 96px; height: 96px; border-radius: 26px; }
+  .big .glyph { width: 52px; height: 52px; }
+
+  .tree {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font: 13px/1.7 "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre;
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc">
+  <a class="home" href="../../../../README.html">&#8592; All documentation</a>
+  <strong>Contents</strong>
+  <a href="#start">Quick start</a>
+  <a href="#ways">The three ways in</a>
+  <a class="sub" href="#code-bind">From code</a>
+  <a class="sub" href="#inspector">From the inspector</a>
+  <a class="sub" href="#button-bind">Pressing a button</a>
+  <a href="#onekey">One key does one thing</a>
+  <a href="#edges">Down, up, held</a>
+  <a href="#enabled">Enabled, and unbound</a>
+  <a href="#setting">The setting</a>
+  <a href="#typing">While the player is typing</a>
+  <a href="#backend">Which input backend</a>
+  <a href="#mark">The badge on a button</a>
+  <a href="#window">The window</a>
+  <a href="#names">Key names</a>
+  <a href="#watches">What it watches</a>
+  <a href="#editor">In the editor</a>
+  <a href="#api">From code</a>
+  <a href="#notes">Worth knowing</a>
+  <a href="#files">Files</a>
+</nav>
+
+<main>
+
+<header class="title">
+  <h1>Hotkeys</h1>
+  <p class="lede">Keys bound to things the game does, and the dialog that tells the player about them. One line
+  binds a key — there is no manager to put in the scene, no asset to author and nothing to add to the window,
+  because the window reads the registry rather than a list somebody kept in step with it. Bindings are gated on
+  the player's own <code>keyboard</code> setting, which the window's footer button flips and the socket
+  remembers, so the choice follows them to their next session and to the web front.</p>
+  <p class="stamp">Describes package 1.0.81. Update this file with the code — and README.md beside it.</p>
+  <p><strong>Add Component → UI → Ui Hotkey</strong> to bind from the inspector, or
+  <code>Hotkeys.Bind</code> from code. The dialog is <strong>GameObject → UI (Canvas) → FlappyBet → Hotkeys
+  Window</strong>.</p>
+</header>
+
+<div class="stage">
+  <p class="why">The window: the drawn keyboard with the bound caps picked out and <code>D</code> held down, the
+  list of what each key does, and the switch along the bottom. <code>B</code> is bound but disabled — a
+  cash-out key between rounds — so it is greyed rather than gone.</p>
+  <div class="dialog">
+    <h4>Hotkeys</h4>
+    <div class="board">
+      <div class="krow">
+        <i class="k">`</i><i class="k">1</i><i class="k">2</i><i class="k">3</i><i class="k">4</i><i class="k">5</i><i class="k">6</i><i class="k">7</i><i class="k">8</i><i class="k">9</i><i class="k">0</i><i class="k">-</i><i class="k">=</i><i class="k u2">backspace</i>
+      </div>
+      <div class="krow">
+        <i class="k u15">tab</i><i class="k reg">q</i><i class="k reg">w</i><i class="k reg">e</i><i class="k reg">r</i><i class="k">t</i><i class="k">y</i><i class="k">u</i><i class="k">i</i><i class="k">o</i><i class="k">p</i><i class="k">[</i><i class="k">]</i><i class="k">\</i>
+      </div>
+      <div class="krow">
+        <i class="k u175">caps</i><i class="k reg">a</i><i class="k reg">s</i><i class="k on">d</i><i class="k">f</i><i class="k">g</i><i class="k">h</i><i class="k">j</i><i class="k">k</i><i class="k">l</i><i class="k">;</i><i class="k">'</i><i class="k u225">enter</i>
+      </div>
+      <div class="krow">
+        <i class="k u225">shift</i><i class="k">z</i><i class="k">x</i><i class="k">c</i><i class="k">v</i><i class="k reg">b</i><i class="k">n</i><i class="k">m</i><i class="k">,</i><i class="k">.</i><i class="k">/</i><i class="k u225">shift</i>
+      </div>
+      <div class="krow">
+        <i class="k space">space</i>
+      </div>
+    </div>
+    <div class="binds">
+      <div class="bind"><b>Min</b><span class="cap on">D</span></div>
+      <div class="bind"><b>Half the amount</b><span class="cap">A</span></div>
+      <div class="bind"><b>Double the amount</b><span class="cap">S</span></div>
+      <div class="bind off"><b>Cash out</b><span class="cap">B</span></div>
+    </div>
+    <div class="foot">Hotkeys off</div>
+  </div>
+</div>
+
+<h2 id="start">Quick start</h2>
+
+<pre><code>Hotkeys.Bind(KeyCode.D, "Min", () =&gt; bet.Min());</code></pre>
+
+<p>That is the whole of it. There is no manager to put in the scene, no asset to author and <strong>nothing to
+add to the window</strong> — the hotkeys window reads this registry, so a key bound anywhere in the game
+appears in its list, named, with its cap lit on the drawn keyboard.</p>
+
+<div class="warn">
+  <p><strong>Hotkeys are off until the player switches them on.</strong> The server defaults the
+  <code>keyboard</code> setting to <code>0</code>, so a key bound as above does nothing at all until the button
+  along the bottom of the window is pressed.</p>
+  <p>That is deliberate — a bet game that halves a stake because somebody typed into the wrong panel is a bug
+  report — and it is the reason the window has a switch on it rather than only a list. See
+  <a href="#setting">The setting</a>.</p>
+</div>
+
+<h2 id="ways">The three ways in</h2>
+
+<table>
+  <tbody>
+    <tr><td><code>Hotkeys.Bind(key, label, action)</code></td><td>From code. The ordinary case.</td></tr>
+    <tr><td><code>Ui Hotkey</code> component</td><td>From the inspector. Drop it on a Button, pick a key, done.</td></tr>
+    <tr><td><code>Hotkeys.Bind(key, label, button)</code></td><td>From code, pressing a button that already exists.</td></tr>
+  </tbody>
+</table>
+
+<p>All three land in the same registry and read the same in the window. Pick whichever puts the binding where
+the thing it presses already lives.</p>
+
+<h3 id="code-bind">From code</h3>
+
+<pre><code>Hotkeys.Bind(KeyCode.Q, "Min",               () =&gt; bet.Set(bet.Min));
+Hotkeys.Bind(KeyCode.W, "Half the amount",   () =&gt; bet.Set(bet.Amount / 2));
+Hotkeys.Bind(KeyCode.E, "Double the amount", () =&gt; bet.Set(bet.Amount * 2));
+Hotkeys.Bind(KeyCode.B, "Cash out",          CashOut);</code></pre>
+
+<p>The <strong>label is what the window prints</strong> beside the key cap, and it goes through
+<code>Translator.Label</code> — so <code>Cash out</code> is the en_US wording of a key and comes back in the
+player's language, while a wording nothing knows is printed as it was typed.</p>
+
+<p><code>Bind</code> hands back a <code>Hotkey</code>. Keep it if the binding comes and goes, and drop it
+through that:</p>
+
+<pre><code>var cashout = Hotkeys.Bind(KeyCode.B, "Cash out", CashOut);
+...
+cashout.Dispose();                 // or Hotkeys.Unbind(KeyCode.B)</code></pre>
+
+<div class="note">
+  <p>Bindings <strong>outlive the scene</strong> — the registry is static and does not reload with it — so
+  anything bound by an object that goes away has to go with it. <code>Dispose</code> is safe to call twice and
+  safe on a binding that was already replaced, which is what makes <code>OnDisable</code> the right place for
+  it.</p>
+</div>
+
+<h3 id="inspector">From the inspector</h3>
+
+<p><strong>Add Component → UI → Ui Hotkey</strong>, on the button the key should press:</p>
+
+<table>
+  <tbody>
+    <tr><td>Key</td><td>The key. <code>None</code> binds nothing, which is what an unfinished slot should do rather than taking a key it was not given.</td></tr>
+    <tr><td>Label</td><td>What the window prints. Empty falls back to the key's own name, so a slot somebody forgot to caption reads as <code>D</code> rather than as a blank row.</td></tr>
+    <tr><td>Button</td><td>Clicked on the press. Empty finds the Button on this object — the usual case, and nothing to wire.</td></tr>
+    <tr><td>Press Button</td><td>Off ignores any button and raises only the events.</td></tr>
+    <tr><td>On Down / On Up / On Held</td><td>Like any other <code>UnityEvent</code>.</td></tr>
+  </tbody>
+</table>
+
+<p>The binding is made when the component is enabled and dropped when it is disabled, so a control that comes
+and goes takes its key with it — and the window's list follows, because the list <em>is</em> the registry
+rather than a copy of it.</p>
+
+<h3 id="button-bind">Pressing a button that already exists</h3>
+
+<pre><code>Hotkeys.Bind(KeyCode.B, "Cash out", cashoutButton);</code></pre>
+
+<p>The press does exactly what a click does, and <strong>nothing while the button is hidden or not
+interactable</strong> — asked at the moment of the press rather than at the moment of the bind. A button
+greyed out between rounds is a key that does nothing between rounds, which is what the player sees on screen
+and therefore what they expect. It is also the one form that cannot drift: there is no second copy of what the
+button does.</p>
+
+<h2 id="onekey">One key does one thing</h2>
+
+<p>Binding a key that is already taken <strong>replaces</strong> the first binding rather than joining it. That
+is the rule the web front follows, and it is what lets the window print a flat list instead of having to say
+which of three things <code>S</code> does.</p>
+
+<p>A rebind of the same control — a panel rebuilt, a scene reloaded — is the usual reason to land there and is
+quiet. Two <em>different</em> labels over one key logs a warning, because two controls quietly fighting over
+<code>S</code> is not something a player could ever report usefully:</p>
+
+<pre><code>Hotkeys: S was bound to "Double the amount" and is now "Sound". One key does one thing - the first binding is gone.</code></pre>
+
+<h2 id="edges">Down, up, held</h2>
+
+<pre><code>Hotkeys.Bind(KeyCode.Space, "Charge", StartCharging, ReleaseCharge, WhileCharging);</code></pre>
+
+<table>
+  <tbody>
+    <tr><td><code>down</code></td><td>Once when the key goes down — <strong>not</strong> again while it is held.</td></tr>
+    <tr><td><code>up</code></td><td>When it comes back up. For a control that charges while held.</td></tr>
+    <tr><td><code>held</code></td><td>Every frame the key is down, the press frame included.</td></tr>
+  </tbody>
+</table>
+
+<p>The edges are worked out in the registry rather than read from the keyboard, which is why there is only one
+of each per press however many frames a key is held for.</p>
+
+<div class="note">
+  <p>A binding <strong>taken away mid-press does not deliver its release</strong>. A cash-out on release would
+  cash out, and nobody meant that by unbinding it.</p>
+</div>
+
+<h2 id="enabled">Enabled, and unbound</h2>
+
+<p>Two different things, and the difference shows in the window:</p>
+
+<pre><code>cashout.Enabled = false;    // still in the list, greyed. Not firing.
+cashout.Dispose();          // gone from the list.</code></pre>
+
+<p>Use <code>Enabled</code> for a control that is only available part of the time — a cash-out key during a
+round. A player who has learned <code>B</code> should see that the key still exists and is simply not doing
+anything yet, rather than watching it vanish and wondering whether they have remembered it wrong.</p>
+
+<p><code>Label</code> and <code>Enabled</code> are both writable at any time and <strong>repaint whatever is
+showing the list</strong>, so a control that renames itself mid-round does not need to rebind to be read.</p>
+
+<h2 id="setting">The setting</h2>
+
+<p>The gate is the <code>keyboard</code> setting, the same one the web front uses, and
+<code>Hotkeys.Enabled</code> reads it:</p>
+
+<pre><code>Hotkeys.Enabled = true;     // emits SETTING, so the choice is kept
+Hotkeys.Toggle();           // what the window's footer button does</code></pre>
+
+<p>Setting it does three things: writes the value into <code>MainState.Settings</code> at once, so the window
+answers the press rather than the round trip; emits <code>SETTING</code> through <code>Emitter</code>, so the
+choice follows the player to their next session <strong>and to the web front</strong>; and repaints.</p>
+
+<table>
+  <thead><tr><th>Scene</th><th>What Enabled answers with</th></tr></thead>
+  <tbody>
+    <tr><td>A <code>StateManager</code> in it</td><td>The <code>keyboard</code> setting, and <strong>off</strong> while there is no answer yet — which is the server's own default.</td></tr>
+    <tr><td>No <code>StateManager</code> at all</td><td><strong>On.</strong> A scene being built rather than played in has no socket to have sent a setting over, and keys that cannot be tried out in the editor cannot be laid out either.</td></tr>
+  </tbody>
+</table>
+
+<p>The window follows the setting being changed from somewhere else too — the web front in another tab, a
+second device — because <code>ON_SETTING</code> comes back over the socket like anything else.</p>
+
+<h2 id="typing">While the player is typing</h2>
+
+<p>A press is held while a text field has focus, so somebody typing an amount does not halve it on the way past
+the <code>A</code>. The <code>EventSystem</code>'s selected object is asked, since a field only takes what is
+typed while it holds the selection — that is the same question. <code>TMP_InputField</code> and UGUI's
+<code>InputField</code> both count.</p>
+
+<pre><code>Hotkeys.SuppressWhileTyping = false;   // a game with no text fields anywhere</code></pre>
+
+<h2 id="backend">Which input backend</h2>
+
+<p>The registry reads the <strong>old Input Manager</strong>, because the package has no dependency on the
+Input System package and adding one to a template would put it in every game that installs this.</p>
+
+<p>Everything is read through one delegate — <em>is this key held right now</em> — and the presses, the
+releases, the held keys and the down-state the window paints from are all worked out from it. So a game on
+another input path replaces that one delegate and gets the rest for free:</p>
+
+<pre><code>// Anywhere before the first bind
+Hotkeys.Reader = key =&gt; Keyboard.current[Convert(key)].isPressed;</code></pre>
+
+<p>A gamepad, a row of on-screen buttons on a phone, or a replay driving the game from a recording all fit the
+same shape.</p>
+
+<div class="warn">
+  <p>With <strong>Active Input Handling</strong> on <em>Input System Package (New)</em> and no reader of your
+  own, the old manager throws rather than returning false — so it is not asked at all, and one warning is
+  logged instead of a key that quietly never fires. Set it to <strong>Both</strong>, or give
+  <code>Hotkeys.Reader</code> a delegate.</p>
+</div>
+
+<h2 id="mark">The badge on a button</h2>
+
+<p><strong>Add Component → UI → Ui Hotkey Mark</strong>, in the corner of a control:</p>
+
+<div class="stage">
+  <p class="why">The same control three ways: the key bound, the key held down, and hotkeys switched off — at
+  which point the badge is not there at all.</p>
+  <div class="glyphrow">
+    <figure>
+      <div class="control">Cash out<span class="mark">B</span></div>
+      <figcaption>bound</figcaption>
+    </figure>
+    <figure>
+      <div class="control">Cash out<span class="mark on">B</span></div>
+      <figcaption>held down</figcaption>
+    </figure>
+    <figure>
+      <div class="control">Cash out</div>
+      <figcaption>hotkeys off</figcaption>
+    </figure>
+  </div>
+</div>
+
+<p>It takes the key from a <code>Ui Hotkey</code> above it, so on a button that already has one there is
+nothing to set. It <strong>hides itself while hotkeys are switched off</strong>, and while nothing is bound to
+the key — which is the whole reason it is a component rather than a label somebody typed: a badge saying
+<code>D</code> on a game where <code>D</code> does nothing is worse than no badge, and the setting behind it is
+the player's to change at any moment.</p>
+
+<p>It wants an <strong>empty RectTransform</strong> rather than a Panel — it draws its own cap. Thirty units or
+so square, anchored to a corner.</p>
+
+<h2 id="window">The window</h2>
+
+<p>The dialog is <code>HotkeysWindow</code>, and it fills itself in from this registry:</p>
+
+<pre><code>var keys = HotkeysWindow.Create(canvas);
+keys.Window.Open();</code></pre>
+
+<p>Or leave it to the navbar, whose <strong>Hotkeys</strong> button finds one in the scene or builds one:</p>
+
+<div class="stage">
+  <p class="why">The bar's keyboard glyph, drawn from boxes like the rest of them — the caps and the spacebar
+  are painted in the button's own colour rather than cut out. Active on the right, which is what says the
+  dialog is on screen.</p>
+  <div class="glyphrow">
+    <figure>
+      <div class="nbtn"><span class="glyph"><i class="g-kbody"></i><i class="g-kcap r1 c1"></i><i class="g-kcap r1 c2"></i><i class="g-kcap r1 c3"></i><i class="g-kcap r2 c1"></i><i class="g-kcap r2 c2"></i><i class="g-kcap r2 c3"></i><i class="g-kspace"></i></span></div>
+      <figcaption>Hotkeys</figcaption>
+    </figure>
+    <figure>
+      <div class="nbtn active"><span class="glyph"><i class="g-kbody"></i><i class="g-kcap r1 c1"></i><i class="g-kcap r1 c2"></i><i class="g-kcap r1 c3"></i><i class="g-kcap r2 c1"></i><i class="g-kcap r2 c2"></i><i class="g-kcap r2 c3"></i><i class="g-kspace"></i></span></div>
+      <figcaption>open</figcaption>
+    </figure>
+    <figure>
+      <div class="nbtn big"><span class="glyph"><i class="g-kbody"></i><i class="g-kcap r1 c1"></i><i class="g-kcap r1 c2"></i><i class="g-kcap r1 c3"></i><i class="g-kcap r2 c1"></i><i class="g-kcap r2 c2"></i><i class="g-kcap r2 c3"></i><i class="g-kspace"></i></span></div>
+      <figcaption>drawn larger</figcaption>
+    </figure>
+  </div>
+</div>
+
+<p>Three parts, top to bottom: the <strong>drawn keyboard</strong>, with every bound cap in the accent colour
+and whichever is held down lit; the <strong>list</strong> of what each key does, which scrolls past
+<code>List Max Height</code> so the button below stays on screen; and the <strong>switch</strong>. Its caption
+says which way things stand rather than what pressing it would do — <code>Hotkeys off</code> while they are
+off — which is how the web front's button reads, so a player who has used one recognises the other.</p>
+
+<div class="tree">Hotkeys           UiWindow + RoundedBox + HotkeysWindow
+├─ Caption        the title and the drag strip
+├─ Close
+└─ Viewport
+   └─ Clip
+      └─ Content
+         ├─ Keyboard   RoundedBox + UiGrid — a row of caps per row of the table
+         │  ├─ Row 0
+         │  │  └─ Cap 0_0 …
+         │  └─ Row 1 …
+         ├─ Bindings   ScrollRect + RectMask2D
+         │  └─ Rows
+         │     ├─ Row 0    Caption + Cap
+         │     └─ Row 1 …
+         └─ Toggle     RoundedBox + Button</div>
+
+<div class="note">
+  <p>A scene with no template running in it shows a few <strong>sample bindings</strong>, so the window can be
+  laid out and styled from a menu rather than from a running game. They are four rows of text bound to nothing.
+  A real game never sees them: the moment anything is bound, or a <code>StateManager</code> exists, only the
+  real list is shown.</p>
+</div>
+
+<p>And the joke the feature earns:</p>
+
+<pre><code>Hotkeys.Bind(KeyCode.H, "Hotkeys", navbar.ShowHotkeys);</code></pre>
+
+<h2 id="names">Key names</h2>
+
+<p>Two different names, read in two different places. The <strong>face</strong> is what is printed on the drawn
+keyboard — lower case, <code>backspace</code>, <code>caps</code>, the way the key is actually engraved. The
+<strong>name</strong> is what a list row and a badge say: <code>D</code>, <code>1</code>, <code>Enter</code>,
+<code>Shift</code>, <code>Num 5</code>, <code>Page Up</code>. The face comes from the layout table; the name is
+worked out from the <code>KeyCode</code>, so it is right for every key there is rather than only for the
+hundred on the picture.</p>
+
+<p>The keyboard is one plain table in <code>HotkeyCaps.Rows</code> — five rows of caps, each with a width in
+cap units. A game that wants a numpad or an arrow cluster on the picture adds rows to it and the window draws
+them: nothing counts on there being five rows or on any particular key being in them.</p>
+
+<h2 id="watches">What it watches</h2>
+
+<table>
+  <tbody>
+    <tr><td><code>Hotkeys.OnChanged</code></td><td>A binding added, dropped, renamed or enabled — or the gate flipped. What the window rebuilds its rows on.</td></tr>
+    <tr><td><code>Hotkeys.OnPressed</code></td><td>A bound key went down (<code>true</code>) or came back up (<code>false</code>). What the window repaints the caps on, and a fair place for a game to play a click.</td></tr>
+    <tr><td><code>OnSettings</code></td><td>The setting arrives over the socket after the scene has loaded rather than with it, and can be changed from another tab.</td></tr>
+    <tr><td><code>Translator.OnLocaleChanged</code></td><td>The captions are written through <code>Translator.Label</code>.</td></tr>
+  </tbody>
+</table>
+
+<p>The window's <strong>Follow Bindings</strong> off drops the first two; it then shows whatever it was last
+told.</p>
+
+<h2 id="editor">In the editor</h2>
+
+<p>Nothing is bound outside play mode — <code>Ui Hotkey</code> binds on enable, and enable is a play-mode
+event — so the window and the badge both draw themselves from what they were given instead:</p>
+
+<ul>
+  <li><strong>The window shows sample bindings</strong> while there is no <code>StateManager</code>, so it can
+  be styled.</li>
+  <li><strong>The badge draws the key it was given</strong>, so it can be placed and coloured. A badge that can
+  never be seen cannot be laid out.</li>
+</ul>
+
+<p>A game never reaches either, because a game is playing.</p>
+
+<h2 id="api">From code</h2>
+
+<table>
+  <tbody>
+    <tr><td><code>Hotkeys.Bind(key, label, down, up, held)</code></td><td>Binds a key. Hands back a <code>Hotkey</code>.</td></tr>
+    <tr><td><code>Hotkeys.Bind(key, label, button)</code></td><td>Binds a key to a button that already exists.</td></tr>
+    <tr><td><code>Hotkeys.Unbind(key)</code> / <code>Unbind(hotkey)</code></td><td>Drops one. False if there was nothing to drop.</td></tr>
+    <tr><td><code>Hotkeys.UnbindAll()</code></td><td>Drops the lot. For a game changing modes.</td></tr>
+    <tr><td><code>Hotkeys.Find(key)</code></td><td>What is bound to a key, or null.</td></tr>
+    <tr><td><code>Hotkeys.IsBound(key)</code> / <code>IsDown(key)</code></td><td></td></tr>
+    <tr><td><code>Hotkeys.Bindings</code> / <code>Count</code></td><td>Every binding, in the order they were bound.</td></tr>
+    <tr><td><code>Hotkeys.Enabled</code> / <code>Toggle()</code></td><td>The <code>keyboard</code> setting. Setting it emits <code>SETTING</code>.</td></tr>
+    <tr><td><code>Hotkeys.Reader</code></td><td>How a key's held state is read. Replace for another input path.</td></tr>
+    <tr><td><code>Hotkeys.SuppressWhileTyping</code></td><td></td></tr>
+    <tr><td><code>Hotkeys.OnChanged</code> / <code>OnPressed</code></td><td></td></tr>
+    <tr><td><code>Hotkey.Label</code> / <code>Enabled</code></td><td>Writable, and repaint the list.</td></tr>
+    <tr><td><code>Hotkey.Key</code> / <code>IsDown</code> / <code>IsBound</code></td><td></td></tr>
+    <tr><td><code>Hotkey.Dispose()</code></td><td>Drops it. Safe twice.</td></tr>
+    <tr><td><code>HotkeysWindow.Create(parent, name, title)</code></td><td>Builds the dialog under a parent.</td></tr>
+    <tr><td><code>HotkeysWindow.Toggle()</code></td><td>What the footer button does.</td></tr>
+    <tr><td><code>UiHotkey.Key</code> / <code>Label</code> / <code>Button</code> / <code>Binding</code></td><td>Setting the first three rebinds.</td></tr>
+    <tr><td><code>UiHotkey.Rebind()</code> / <code>Drop()</code></td><td></td></tr>
+    <tr><td><code>UiHotkeyMark.Key</code> / <code>Refresh()</code></td><td></td></tr>
+  </tbody>
+</table>
+
+<h2 id="notes">Worth knowing</h2>
+
+<ul>
+  <li><strong>Bindings outlive the scene.</strong> The registry is static and its driver survives a scene
+  change, so anything bound by an object that goes away has to be dropped by that object. <code>UiHotkey</code>
+  does it for you.</li>
+  <li><strong>Nothing polls a key nothing is bound to.</strong> The frame loop runs over the bindings, not over
+  the keyboard, so an unbound game pays for one empty <code>Update</code>.</li>
+  <li><strong>The driver is made on the first bind</strong>, on a hidden object that is not in the scene file
+  and not in the hierarchy. A game that binds nothing never gets one.</li>
+  <li><strong>A press may bind, unbind, or open a window.</strong> The list is copied before the callbacks run,
+  and a binding dropped by an earlier press in the same frame does not fire.</li>
+  <li><strong>The keyboard picture catches no clicks.</strong> It is a picture of a keyboard, not a keyboard —
+  a cap that took a press would look like a button that does nothing.</li>
+  <li><strong>Statics are cleared at subsystem registration</strong>, so a play session started with the editor
+  set to skip the domain reload does not begin holding the last one's bindings.</li>
+</ul>
+
+<h2 id="files">Files</h2>
+
+<table>
+  <tbody>
+    <tr><td><code>Hotkeys.cs</code></td><td>The registry: binding, the frame loop, and the setting.</td></tr>
+    <tr><td><code>Hotkey.cs</code></td><td>One binding, and the handle that drops it.</td></tr>
+    <tr><td><code>HotkeyCaps.cs</code></td><td>What a key is called, and the shape of the drawn keyboard.</td></tr>
+    <tr><td><code>HotkeyInput.cs</code></td><td>Whether a key is held, read from the old Input Manager.</td></tr>
+    <tr><td><code>HotkeyDriver.cs</code></td><td>The hidden object that gives the registry a frame.</td></tr>
+    <tr><td><code>UiHotkey.cs</code></td><td>Binding a key from the inspector.</td></tr>
+    <tr><td><code>UiHotkeyMark.cs</code></td><td>The badge in the corner of a button.</td></tr>
+    <tr><td><code>UiHotkeysExample.cs</code></td><td>Eight bindings covering every form. Read as much as run.</td></tr>
+    <tr><td><code>../Window/Hotkeys/HotkeysWindow.cs</code></td><td>The dialog.</td></tr>
+    <tr><td><code>../Window/Hotkeys/HotkeysWindowStyle.cs</code></td><td>What it looks like.</td></tr>
+    <tr><td><code>../Window/Hotkeys/HotkeyKeyboard.cs</code></td><td>The drawn keyboard inside it.</td></tr>
+    <tr><td><code>../Navbar/UiNavbar.cs</code></td><td>The bar's <strong>Hotkeys</strong> button.</td></tr>
+  </tbody>
+</table>
+
+</main>
+</div>
+</body>
+</html>

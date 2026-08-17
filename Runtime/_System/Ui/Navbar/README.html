@@ -71,6 +71,13 @@
   nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
   nav.toc a:hover { color: var(--accent); }
   nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+  nav.toc a.home {
+    color: var(--ink);
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
 
   header.title { margin-bottom: 28px; }
   h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
@@ -188,6 +195,14 @@
   .g-tick-b { width: 40%; height: 11%; left: 40%; top: 46%; transform: rotate(-45deg); background: #90e49a; border-radius: 9px; }
   .active .g-tick-a, .active .g-tick-b { background: #facc14; }
 
+  /* hotkeys: a wide body with two rows of caps and a spacebar painted on */
+  .g-kbody { width: 94%; height: 66%; left: 3%; top: 17%; border-radius: 9%; }
+  .g-kcap { width: 13%; height: 13%; background: #90e49a; border-radius: 1px; }
+  .g-kspace { width: 46%; height: 13%; left: 27%; top: 66%; background: #90e49a; border-radius: 1px; }
+  .active .g-kcap, .active .g-kspace { background: #facc14; }
+  .kr1 { top: 28%; } .kr2 { top: 47%; }
+  .kc1 { left: 24%; } .kc2 { left: 43.5%; } .kc3 { left: 63%; }
+
   .glyphrow { display: flex; gap: 34px; align-items: center; flex-wrap: wrap; }
   .glyphrow figure { margin: 0; text-align: center; }
   .glyphrow figcaption { margin-top: 10px; color: #9a93b8; font-size: 12.5px; }
@@ -210,6 +225,7 @@
 <div class="page">
 
 <nav class="toc">
+  <a class="home" href="../../../../README.html">&#8592; All documentation</a>
   <strong>Contents</strong>
   <a href="#start">Quick start</a>
   <a href="#buttons">The buttons</a>
@@ -232,13 +248,13 @@
 
 <header class="title">
   <h1>Ui Navbar</h1>
-  <p class="lede">The row of buttons over the game: home, statistics, fairness, and whatever the game adds
+  <p class="lede">The row of buttons over the game: home, statistics, fairness, hotkeys, and whatever the game adds
   beside them. One component on an empty RectTransform — the strip, the buttons and the glyphs in them are all
   built from code, so there is no prefab to keep in step. It knows two things the game would otherwise have to
   be told: Home leaves for the address the server sent, taking the whole page with it rather than the iframe
-  the build is drawn in, and hides itself while there is no such address; Statistics and Fairness find their
+  the build is drawn in, and hides itself while there is no such address; Statistics, Fairness and Hotkeys find their
   windows in the scene, or build them, and light up while the one they opened is on screen.</p>
-  <p class="stamp">Describes package 1.0.71. Update this file with the code — and README.md beside it.</p>
+  <p class="stamp">Describes package 1.0.81. Update this file with the code — and README.md beside it.</p>
   <p><strong>GameObject → UI (Canvas) → FlappyBet → Navbar</strong>, or Add Component → UI → Ui Navbar.</p>
 </header>
 
@@ -278,6 +294,7 @@ corner, and it sizes itself to whatever is showing in it.</p>
     <tr><td>Home</td><td>Leaves the game for <code>SystemDto.ReturnUrl</code>. <strong>Hides itself while there is no such address</strong>, which is the usual case for a demo or a direct link.</td></tr>
     <tr><td>Statistics</td><td>Opens the statistics window, and closes it again on a second press.</td></tr>
     <tr><td>Fairness</td><td>Opens the fairness window, the same way.</td></tr>
+    <tr><td>Hotkeys</td><td>Opens the hotkeys window: which keys are bound to what, and the switch that turns them on. It reads the hotkey registry, so there is nothing to hand it.</td></tr>
     <tr><td>Custom</td><td>Nothing of its own: it fires the slot's event and the bar's. For a button of the game's own.</td></tr>
   </tbody>
 </table>
@@ -297,10 +314,12 @@ navbar.Rebuild();          // the list changed, so the bar builds the button now
 lot, where a game wants to play a click or close something else first.</p>
 
 <div class="note">
-  <p>Adding a <strong>built-in</strong> button later is three lines: a value on <code>ENavbarButton</code>, a
-  glyph in <code>UiNavbarIcons.Draw</code>, and a case in <code>UiNavbar.Press</code>. That is the shape a
-  switch between a horizontal and a vertical game mode is meant to arrive in; until it does,
-  <code>Custom</code> plus a listener is the same button without the package having an opinion about it.</p>
+  <p>Adding a <strong>built-in</strong> button later is four cases: a value on <code>ENavbarButton</code>, a
+  glyph in <code>UiNavbarIcons.Draw</code> with its name in <code>Prefix</code> beside it, and a case in
+  <code>UiNavbar.Press</code>. One that opens a window of its own wants three more — a slot for it, a resolve
+  property, and a case in <code>Active</code> so the button lights while it is open — which is exactly what
+  Hotkeys was. Until a game needs that, <code>Custom</code> plus a listener is the same button without the
+  package having an opinion about it.</p>
 </div>
 
 <h3 id="glyphs">The glyphs</h3>
@@ -321,6 +340,10 @@ lot, where a game wants to play a click or close something else first.</p>
     <figure>
       <div class="nbtn big"><span class="glyph"><i class="g-shield"></i><i class="g-tick-a"></i><i class="g-tick-b"></i></span></div>
       <figcaption>Fairness — a badge with a round foot, and a tick painted over it</figcaption>
+    </figure>
+    <figure>
+      <div class="nbtn big"><span class="glyph"><i class="g-kbody"></i><i class="g-kcap kr1 kc1"></i><i class="g-kcap kr1 kc2"></i><i class="g-kcap kr1 kc3"></i><i class="g-kcap kr2 kc1"></i><i class="g-kcap kr2 kc2"></i><i class="g-kcap kr2 kc3"></i><i class="g-kspace"></i></span></div>
+      <figcaption>Hotkeys — a body with two rows of caps and a spacebar painted on</figcaption>
     </figure>
   </div>
 </div>
@@ -388,11 +411,11 @@ own:</p>
 
 <h2 id="windows">The windows</h2>
 
-<p>Statistics and Fairness need a window each, and the bar will find one three ways, in this order:</p>
+<p>Statistics, Fairness and Hotkeys need a window each, and the bar will find one three ways, in this order:</p>
 
 <ol>
-  <li><strong>The one in the slot.</strong> Drag a window from the scene into Statistics Window or Fairness
-  Window, and that is the one opened — styled, placed and sized however it was built.</li>
+  <li><strong>The one in the slot.</strong> Drag a window from the scene into Statistics Window, Fairness
+  Window or Hotkeys Window, and that is the one opened — styled, placed and sized however it was built.</li>
   <li><strong>The one in the scene.</strong> Left empty, the bar looks for a window of that type, switched off
   ones included — which every closed window is.</li>
   <li><strong>One it builds.</strong> Nothing found, it builds one under the canvas. Not under the bar: a
@@ -401,7 +424,7 @@ own:</p>
   button firing its event and nothing more, for a game that opens its own dialogs.</li>
 </ol>
 
-<p>Neither window is built until its button is first pressed, so a bar in a scene that never opens one costs
+<p>No window is built until its button is first pressed, so a bar in a scene that never opens one costs
 nothing. While a window is open its button takes <code>ButtonActiveFill</code>, so a player can see which
 dialog they are looking at from the bar rather than from the dialog. <strong>Toggle Windows</strong> off makes
 a second press leave it open instead of closing it.</p>
@@ -544,8 +567,9 @@ what a scene built to look at the bar rather than to play in wants.</p>
 <p>The captions go through <code>Translator.Label</code>, the same as every other caption the package draws. A
 key is translated, the en_US wording of a key is translated, and a word of your own is printed as it was typed
 — which is why the defaults are <code>Home</code>, <code>Statistics</code> and <code>Fairness</code> and they
-still come out in the player's language. <code>Home</code> is <code>navbar.home</code>; the other two are
-<code>statistics.title</code> and <code>fairness.title</code>, shared with the windows they open, since a
+still come out in the player's language. <code>Home</code> is <code>navbar.home</code>; the other three are
+<code>statistics.title</code>, <code>fairness.title</code> and <code>hotkeys.title</code>, shared with the
+windows they open, since a
 button named one thing and a dialog named another read as two features.</p>
 
 <h2 id="code">From code</h2>
@@ -558,8 +582,8 @@ button named one thing and a dialog named another read as two features.</p>
     <tr><td><code>Flow</code>, <code>Align</code>, <code>FitToButtons</code>, <code>Docked</code>, <code>DockTo</code>, <code>DockOffset</code></td><td>Each lays the bar out again as it is set.</td></tr>
     <tr><td><code>Press(kind)</code></td><td>Does whatever the kind says, and fires the events. For driving the bar from a key.</td></tr>
     <tr><td><code>GoHome()</code></td><td>Leaves for the return address. False means there was nowhere to go.</td></tr>
-    <tr><td><code>ShowStatistics()</code><br><code>ShowFairness()</code></td><td>Open the window, or close it again.</td></tr>
-    <tr><td><code>Statistics</code><br><code>Fairness</code></td><td>The windows themselves — found or built on the first read.</td></tr>
+    <tr><td><code>ShowStatistics()</code><br><code>ShowFairness()</code><br><code>ShowHotkeys()</code></td><td>Open the window, or close it again.</td></tr>
+    <tr><td><code>Statistics</code><br><code>Fairness</code><br><code>Hotkeys</code></td><td>The windows themselves — found or built on the first read.</td></tr>
     <tr><td><code>Destination</code><br><code>CanReturn</code></td><td>Where Home would go, and whether it would go anywhere.</td></tr>
     <tr><td><code>DockHost()</code></td><td>The rect the dock corner is measured on: the parent, or the nearest sized thing above it.</td></tr>
     <tr><td><code>Rebuild()</code></td><td>Builds the buttons from scratch. After changing the list.</td></tr>
@@ -593,7 +617,7 @@ button named one thing and a dialog named another read as two features.</p>
   <tbody>
     <tr><td><code>UiNavbar.cs</code></td><td>The component: building, placing, painting, and what each press does.</td></tr>
     <tr><td><code>UiNavbarStyle.cs</code></td><td>Everything it looks like.</td></tr>
-    <tr><td><code>UiNavbarIcons.cs</code></td><td>The house, the bars and the shield, drawn from boxes.</td></tr>
+    <tr><td><code>UiNavbarIcons.cs</code></td><td>The house, the bars, the shield and the keyboard, drawn from boxes.</td></tr>
     <tr><td><code>NavbarButton.cs</code></td><td>One slot: kind, caption, sprite, event.</td></tr>
     <tr><td><code>ENavbarButton.cs</code></td><td>What a button does.</td></tr>
     <tr><td><code>ENavbarFlow.cs</code></td><td>A row or a column.</td></tr>

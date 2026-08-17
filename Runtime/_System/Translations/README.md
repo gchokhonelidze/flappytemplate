@@ -1,5 +1,7 @@
 # Translations
 
+[← All documentation](../../../README.md)
+
 Every word the player reads, in the language `MainState.Locale` names. One call:
 
 ```csharp

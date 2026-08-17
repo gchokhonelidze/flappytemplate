@@ -1,16 +1,18 @@
 # Navbar
 
-The row of buttons over the game: **home**, **statistics**, **fairness**, and whatever the game adds beside
-them. Like the [windows](../Window/) next door it is one component on an empty RectTransform — the strip, the
+[← All documentation](../../../../README.md)
+
+The row of buttons over the game: **home**, **statistics**, **fairness**, **hotkeys**, and whatever the game
+adds beside them. Like the [windows](../Window/) next door it is one component on an empty RectTransform — the strip, the
 buttons and the glyphs in them are all built from code the first time they are needed, so there is no prefab
 to keep in step and no hierarchy to rebuild when a game decides its chrome looks different after all.
 
 It knows two things the game would otherwise have to be told. **Home** leaves for the address the server sent,
 taking the whole page with it rather than the iframe the build is drawn in — and hides itself while there is
-no such address. **Statistics** and **Fairness** find their windows in the scene, or build them, and light up
-while the one they opened is on screen.
+no such address. **Statistics**, **Fairness** and **Hotkeys** find their windows in the scene, or build them,
+and light up while the one they opened is on screen.
 
-*Describes package 1.0.71. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.81. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the bar and its glyphs drawn rather than described.*
 
 **GameObject → UI (Canvas) → FlappyBet → Navbar**, or Add Component → UI → Ui Navbar. It belongs on an
@@ -31,6 +33,7 @@ and it sizes itself to whatever is showing in it.
 | Home | Leaves the game for `SystemDto.ReturnUrl`. **Hides itself while there is no such address**, which is the usual case for a demo or a direct link — see [Leaving the game](#leaving-the-game). |
 | Statistics | Opens the [statistics window](../Window/), and closes it again on a second press. |
 | Fairness | Opens the [fairness window](../Window/), the same way. |
+| Hotkeys | Opens the [hotkeys window](../Hotkeys/): which keys are bound to what, and the switch that turns them on. It reads the hotkey registry, so there is nothing to hand it. |
 | Custom | Nothing of its own: it fires the slot's event and the bar's. For a button of the game's own. |
 
 Each slot in the **Buttons** list carries its kind, a caption, an optional sprite, an **Enabled** tick and a
@@ -48,10 +51,11 @@ navbar.Rebuild();          // the list changed, so the bar builds the button now
 Every press also fires the bar's own `OnPressed`, which carries the kind — one listener for the lot, where a
 game wants to play a click or close something else first.
 
-Adding a **built-in** button later is three lines: a value on `ENavbarButton`, a glyph in
-`UiNavbarIcons.Draw`, and a case in `UiNavbar.Press`. That is the shape a switch between a horizontal and a
-vertical game mode is meant to arrive in; until it does, `Custom` plus a listener is the same button without
-the package having an opinion about it.
+Adding a **built-in** button later is four cases: a value on `ENavbarButton`, a glyph in
+`UiNavbarIcons.Draw` with its name in `Prefix` beside it, and a case in `UiNavbar.Press`. One that opens a
+window of its own wants three more — a slot for it, a resolve property, and a case in `Active` so the button
+lights while it is open — which is exactly what Hotkeys was. Until a game needs that, `Custom` plus a listener
+is the same button without the package having an opinion about it.
 
 ## Leaving the game
 
@@ -99,10 +103,10 @@ the bar. A build leaves it empty.
 
 ## The windows
 
-Statistics and Fairness need a window each, and the bar will find one three ways, in this order:
+Statistics, Fairness and Hotkeys need a window each, and the bar will find one three ways, in this order:
 
-1. **The one in the slot.** Drag a window from the scene into Statistics Window or Fairness Window, and that
-   is the one opened — styled, placed and sized however it was built.
+1. **The one in the slot.** Drag a window from the scene into Statistics Window, Fairness Window or Hotkeys
+   Window, and that is the one opened — styled, placed and sized however it was built.
 2. **The one in the scene.** Left empty, the bar looks for a window of that type, switched off ones included
    — which every closed window is.
 3. **One it builds.** Nothing found, it builds one under the canvas. Not under the bar: a window parented
@@ -110,7 +114,7 @@ Statistics and Fairness need a window each, and the bar will find one three ways
    Parent** overrides where it goes; **Create Windows** off leaves the button firing its event and nothing
    more, for a game that opens its own dialogs.
 
-Neither window is built until its button is first pressed, so a bar in a scene that never opens one costs
+No window is built until its button is first pressed, so a bar in a scene that never opens one costs
 nothing. While a window is open its button takes `ButtonActiveFill`, so a player can see which dialog they
 are looking at from the bar rather than from the dialog. **Toggle Windows** off makes a second press leave it
 open instead of closing it.
@@ -236,8 +240,9 @@ built to look at the bar rather than to play in wants.
 The captions go through `Translator.Label`, the same as every other caption the package draws. A key is
 translated, the en_US wording of a key is translated, and a word of your own is printed as it was typed —
 which is why the defaults are `Home`, `Statistics` and `Fairness` and they still come out in the player's
-language. `Home` is `navbar.home`; the other two are `statistics.title` and `fairness.title`, shared with the
-windows they open, since a button named one thing and a dialog named another read as two features.
+language. `Home` is `navbar.home`; the other three are `statistics.title`, `fairness.title` and
+`hotkeys.title`, shared with the windows they open, since a button named one thing and a dialog named another
+read as two features.
 
 See [Translations](../../Translations/) for adding a caption of your own.
 
@@ -251,8 +256,8 @@ See [Translations](../../Translations/) for adding a caption of your own.
 | `Flow`, `Align`, `FitToButtons`, `Docked`, `DockTo`, `DockOffset` | Each lays the bar out again as it is set. |
 | `Press(kind)` | Does whatever the kind says, and fires the events. For driving the bar from a key. |
 | `GoHome()` | Leaves for the return address. False means there was nowhere to go. |
-| `ShowStatistics()` / `ShowFairness()` | Open the window, or close it again. |
-| `Statistics` / `Fairness` | The windows themselves — found or built on the first read. |
+| `ShowStatistics()` / `ShowFairness()` / `ShowHotkeys()` | Open the window, or close it again. |
+| `Statistics` / `Fairness` / `Hotkeys` | The windows themselves — found or built on the first read. |
 | `Destination` / `CanReturn` | Where Home would go, and whether it would go anywhere. |
 | `DockHost()` | The rect the dock corner is measured on: the parent, or the nearest sized thing above it. |
 | `Rebuild()` | Builds the buttons from scratch. After changing the list. |
@@ -280,7 +285,7 @@ See [Translations](../../Translations/) for adding a caption of your own.
 | --- | --- |
 | `UiNavbar.cs` | The component: building, placing, painting, and what each press does. |
 | `UiNavbarStyle.cs` | Everything it looks like. |
-| `UiNavbarIcons.cs` | The house, the bars and the shield, drawn from boxes. |
+| `UiNavbarIcons.cs` | The house, the bars, the shield and the keyboard, drawn from boxes. |
 | `NavbarButton.cs` | One slot: kind, caption, sprite, event. |
 | `ENavbarButton.cs` | What a button does. |
 | `ENavbarFlow.cs` | A row or a column. |

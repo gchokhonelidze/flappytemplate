@@ -41,6 +41,9 @@ namespace FlappyTemplate
                 case ENavbarButton.Fairness:
                     Fairness(holder, span, ink, hole, stroke);
                     break;
+                case ENavbarButton.Hotkeys:
+                    Hotkeys(holder, span, ink, hole);
+                    break;
                 default:
                     // Custom, which draws nothing at all: the game either drops a sprite on the slot or
                     // puts whatever it likes under the button itself.
@@ -60,6 +63,8 @@ namespace FlappyTemplate
                     return "Stat ";
                 case ENavbarButton.Fairness:
                     return "Fair ";
+                case ENavbarButton.Hotkeys:
+                    return "Keys ";
                 default:
                     return string.Empty;
             }
@@ -149,6 +154,38 @@ namespace FlappyTemplate
 
             var longArm = Part(holder, "Fair Tick B", new Vector2(0.40f * span, stroke), new Vector2(0.06f * span, 0.02f * span), 45f);
             Paint(longArm, hole, stroke);
+        }
+
+        // A keyboard seen from above: a wide body with two rows of caps punched out of it and a spacebar under
+        // them. Like the house's door and the shield's tick, the caps are painted in the button's own colour
+        // rather than cut out - so this is one to look at again before a gradient goes on a button.
+        //
+        // Three by two rather than the ten by five a keyboard really has: at twenty-eight pixels the extra caps
+        // are grey mush, and what has to read is "keyboard", not "keyboard with a Q on it".
+        private static void Hotkeys(RectTransform holder, float span, Color ink, Color hole)
+        {
+            float width = 0.94f * span;
+            float height = 0.66f * span;
+
+            var body = Part(holder, "Keys Body", new Vector2(width, height), Vector2.zero, 0f);
+            Paint(body, ink, span * 0.09f);
+
+            // Measured off the body rather than the square, so the caps stay inside it whatever the body is.
+            float cap = 0.13f * span;
+            float gapX = 0.20f * span;
+            float top = 0.14f * span;
+
+            for (int i = 0; i < 3; i++)
+            {
+                float x = (i - 1) * gapX;
+
+                Paint(Part(holder, "Keys Cap A" + i, new Vector2(cap, cap), new Vector2(x, top), 0f), hole, cap * 0.3f);
+                Paint(Part(holder, "Keys Cap B" + i, new Vector2(cap, cap), new Vector2(x, -0.03f * span), 0f), hole, cap * 0.3f);
+            }
+
+            // The spacebar, which is the one shape that says keyboard rather than calculator.
+            var space = Part(holder, "Keys Space", new Vector2(0.46f * span, cap), new Vector2(0f, -0.20f * span), 0f);
+            Paint(space, hole, cap * 0.3f);
         }
 
         // One box of the glyph, placed in the middle of the square and turned. Rotation is written every

@@ -1,5 +1,7 @@
 # Sprite Gradient
 
+[← All documentation](../../../../README.md)
+
 A sprite drawn with a gradient painted through it and a border grown around its silhouette, rather than the
 one flat tint an Image can give it. The sprite supplies the shape and the detail; everything else is
 geometry, so a single white glyph, badge or coin becomes as many coloured variants as are wanted without
