@@ -4,6 +4,10 @@ The strip of recent bets: the last few rounds as a row of chips over the game, o
 side. It feeds itself from the socket, animates each arrival, drops the oldest when it runs out of room — or
 scrolls instead — and opens the **bet info** dialog on whichever chip is clicked.
 
+On a **shared** game it shows the rounds the room played instead of the player's own bets, and a chip opens the
+**game history** dialog. Which of the two it is comes from the server; a round is drawn through the same element
+as a bet, so nothing about your chip has to know. See [Which history](#which-history).
+
 **It draws nothing of its own.** A bet on screen is your element prefab: what it is made of, how big it is and
 what it says about the round are all decided there, and the strip hands it the whole `HistoryDto` and stays out
 of it. So there is no chip in here to colour, no size to set and no value to format — and no padding either, the
@@ -12,7 +16,7 @@ elements sit in the middle of the strip.
 What is left is the strip: which way it runs, which end the newest bet lands on, what happens when it fills up,
 and the gap between one element and the next.
 
-*Describes package 1.0.63. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.80. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the strips drawn rather than described.*
 
 **GameObject → UI (Canvas) → FlappyBet → History**, or Add Component → UI → Ui History.
@@ -26,7 +30,8 @@ content laid out for a browser, with the strips drawn rather than described.*
    says so once in the console — see [Your own element](#your-own-element) for the cheapest one that works.
 3. Anchor the strip where it belongs. Stretch it if you want it to grow with the screen; the count of chips
    follows the width.
-4. Drag your bet info window into **Bet Info**. Nothing is searched for — see below.
+4. Drag your bet info window into **Bet Info** — and, on a shared game, your game history window into **Game
+   History**. Nothing is searched for — see below.
 5. Press play. The samples are replaced by `MainState.History`, and every `ON_HISTORY` after that arrives with
    a pop.
 6. Click a chip. The dialog opens on that bet.
@@ -131,13 +136,56 @@ not animated: the elements are placed by a grid, and a tween fighting a layout i
 
 ---
 
+## Which history
+
+Two feeds, and **Feed** picks between them:
+
+| Feed | Reads | Listens for | A chip opens |
+|---|---|---|---|
+| **Auto** — the default | whichever of the two the server says the game is | | |
+| **Player** | `MainState.History` | `ON_HISTORY` | the **bet info** window on that bet |
+| **Shared** | `MainState.GameHistory` | `ON_GAME_HISTORY` | the **game history** window on that round |
+
+`Auto` reads `SystemState.GameType`: `SHARED` is the shared feed, anything else the player's own bets. The game
+type arrives with the session and routinely **after** the strip has already subscribed, so the strip keeps
+asking and switches over on the frame the answer changes — off the old event, on to the new one, and filled in
+again from the list that one writes to. Nothing has to be timed against it.
+
+A round is not a bet, and the strip shows it as one anyway: `Id`, the outcome payload, and the two amounts —
+`TotalBetAmountUsd` and `TotalWinAmountUsd`, in dollars, because a shared round is bet on in as many currencies
+as there are players. So **an element written for the player's history draws a round without being changed**,
+and `Outcome("multiplier")` reads the same key out of either.
+
+What will not fit through that mapping is on the element beside `Data`:
+
+```csharp
+public override void Write(HistoryDto data)
+{
+    label.text = Outcome("multiplier") + "x";
+
+    // null on the player's own history; the round it came from on a shared game
+    count.text = Round != null ? Round.TotalBetCount + " bets" : string.Empty;
+}
+```
+
+`UiHistory.RoundFor(id)` is the same thing for code holding an id rather than an element.
+
+> A round carries **no timestamp**, so there is nothing for **Sort By Time** to sort by and it stands aside on
+> the shared feed. The order is the one the server sent: `MainState.GameHistory` is kept newest first, the way
+> the web front keeps it, and the strip turns it round on the way in.
+
+---
+
 ## Clicking
 
-A click raises `OnPicked(HistoryDto)` and then opens the bet info dialog on that bet — `Show(id)`, so the
-dialog asks the server for the whole transaction with its seeds rather than making do with the summary the
-history payload is.
+A click raises `OnPicked(HistoryDto)` and then opens a dialog on what was clicked — `Show(id)`, so the dialog
+asks the server for the whole thing rather than making do with the summary the history payload is.
 
-Which dialog: the one in **Bet Info**, and only that one. **Nothing is searched for**, and that is a decision
+Which dialog is the feed's business: **Bet Info** on the player's own bets, **Game History** on the shared feed.
+A round is handed over whole rather than as an id, so the dialog has the outcome and the totals to draw while
+the transactions are still on their way.
+
+Either way it is the window in that field and only that one. **Nothing is searched for**, and that is a decision
 rather than an omission — a scene holds as many bet info windows as somebody put in it, a game's own plus
 whatever an example or a test built for itself, and a strip that guessed would open one of them off screen about
 half the time. So it is a reference you set, once, and then it is certain.
@@ -162,13 +210,14 @@ brings its own `Button` keeps it — only the listener is added.
 ## Feeding it yourself
 
 **Follow State** on — the default — seeds from `MainState.History` on enable and adds every `ON_HISTORY` after
-that. Off hands the feeding over:
+that, or from `MainState.GameHistory` and `ON_GAME_HISTORY` on the shared feed. Off hands the feeding over:
 
 | Call | Does |
 |---|---|
 | `Add(data)` | The newest bet. Animates, drops the oldest past `Capacity` |
-| `AddRange(values)` | One after another |
-| `Set(values)` | Replaces everything, oldest first. Animates nothing |
+| `Add(round)` | The same for a `GameHistoryDto` — mapped onto a bet, and kept for `Round` |
+| `AddRange(values)` | One after another. Takes either |
+| `Set(values)` | Replaces everything, oldest first. Animates nothing. Takes either |
 | `Remove(id)`, `Clear()` | What they say |
 | `Refresh()` | Writes every element again from the bet it holds — after something outside the bet has changed |
 
@@ -228,7 +277,7 @@ than from a prefab script.
 | **Style** | Strip: gap. Arrival: duration, scale, fade, ease, unscaled, follow duration. Scrolling: sensitivity, inertia, deceleration |
 | **Element** | Element Prefab |
 | **Strip** | Flow, Order, Align, Overflow, Capacity, Clip, Follow Newest |
-| **Behaviour** | Follow State, Dedupe, Sort By Time, Animate Arrivals, Bet Info, Preview, Sample Count |
+| **Behaviour** | Feed, Follow State, Dedupe, Sort By Time, Animate Arrivals, Bet Info, Game History, Preview, Sample Count |
 | **Events** | On Picked, On Element |
 
 That is the whole of it. Everything that used to sit under *Chip*, *Text* and *Value* — colours, border, radius,
@@ -237,7 +286,8 @@ font, size, decimals, format, padding, element size — is the prefab's now.
 **Preview** fills a strip with sample bets when there is no socket running, so the component looks like a
 history strip in the editor rather than like an empty rect. It needs an element prefab like anything else does.
 Sample bets carry a `multiplier` in their outcome, since that is the key most games ask for; an element reading
-some other key shows whatever it makes of an empty string until a real session replaces them.
+some other key shows whatever it makes of an empty string until a real session replaces them. A strip set to
+the shared feed is given sample **rounds** instead, totals and all, so `Round` reads in the editor too.
 
 ---
 
@@ -307,7 +357,9 @@ some other key shows whatever it makes of an empty string until a real session r
 | `UiHistoryExampleElement.cs` | A working element in ten lines — a label, a colour, and a `Write` |
 | `UiHistoryStyle.cs` | The gap, the arrival and the scrolling |
 | `EHistoryFlow.cs`<br>`EHistoryOrder.cs`<br>`EHistoryAlign.cs`<br>`EHistoryOverflow.cs` | Direction, which end is newest, where a part-full strip sits, and what happens when it fills |
-| `UiHistoryExample.cs` | Three strips built from code, elements and all |
+| `EHistoryFeed.cs` | Which history is shown: the player's own bets, or a shared game's rounds |
+| `UiHistoryExample.cs` | Four strips built from code, elements and all — the last one on the shared feed |
 | `Editor/History/UiHistoryMenu.cs` | The GameObject menu entry |
 | `../Grid/` | `UiGrid`, which places the elements |
-| `../Window/BetInfoWindow.cs` | The dialog a click opens |
+| `../Window/BetInfo/BetInfoWindow.cs` | The dialog a click opens on the player's own bets |
+| `../Window/GameHistory/GameHistoryWindow.cs` | The dialog a click opens on the shared feed |

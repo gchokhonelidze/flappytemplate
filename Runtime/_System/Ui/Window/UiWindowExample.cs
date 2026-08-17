@@ -4,15 +4,15 @@ using UnityEngine;
 
 namespace FlappyTemplate
 {
-    // Five windows, built at runtime under whatever this sits on: a plain one, a modal one, the statistics
-    // window, the bet info window and the fairness window. Drop it on an empty RectTransform inside a canvas
-    // and press play, or use Build Now from the component's context menu to see them without leaving the
-    // editor.
+    // Six windows, built at runtime under whatever this sits on: a plain one, a modal one, the statistics
+    // window, the bet info window, the game history window and the fairness window. Drop it on an empty
+    // RectTransform inside a canvas and press play, or use Build Now from the component's context menu to see
+    // them without leaving the editor.
     //
     // It is here to be read as much as run. Each window below is one chain, and between them they cover
     // most of what UiWindowBuilder can say - a caption, a backdrop, a transition, a drag, a close.
     //
-    // The keys are the other half of it: 1 to 5 open the five windows, and Escape closes whatever is open.
+    // The keys are the other half of it: 1 to 6 open the six windows, and Escape closes whatever is open.
     //
     // They are placed to overlap on purpose, because that is the other thing to look at here: open several
     // and each one arrives in front of the last, and clicking any of them - the caption, the body, a button
@@ -28,6 +28,7 @@ namespace FlappyTemplate
         private UiWindow modal;
         private StatisticsWindow statistics;
         private BetInfoWindow betInfo;
+        private GameHistoryWindow gameHistory;
         private FairnessWindow fairness;
 
         void Start()
@@ -52,7 +53,10 @@ namespace FlappyTemplate
             if (Input.GetKeyDown(KeyCode.Alpha4) && betInfo != null)
                 betInfo.Window.Toggle();
 
-            if (Input.GetKeyDown(KeyCode.Alpha5) && fairness != null)
+            if (Input.GetKeyDown(KeyCode.Alpha5) && gameHistory != null)
+                gameHistory.Window.Toggle();
+
+            if (Input.GetKeyDown(KeyCode.Alpha6) && fairness != null)
                 fairness.Window.Toggle();
 
             if (!Input.GetKeyDown(KeyCode.Escape))
@@ -64,6 +68,8 @@ namespace FlappyTemplate
                 modal.Close();
             else if (fairness != null && fairness.Window.IsOpen)
                 fairness.Window.Close();
+            else if (gameHistory != null && gameHistory.Window.IsOpen)
+                gameHistory.Window.Close();
             else if (betInfo != null && betInfo.Window.IsOpen)
                 betInfo.Window.Close();
             else if (statistics != null && statistics.Window.IsOpen)
@@ -134,6 +140,15 @@ namespace FlappyTemplate
             betInfo.OnTransaction.AddListener(ShowRoll);
             ShowRoll(betInfo.Transaction);
 
+            // The game history window is the shared-game half of the bet info one: a round rather than a bet,
+            // everybody who played it rather than one player, and a press on any of them opening the bet info
+            // dialog on that bet - which is why it is handed the one built above rather than finding its own.
+            gameHistory = GameHistoryWindow.Create(transform);
+            gameHistory.Window.Rect.anchoredPosition = new Vector2(0f, -80f);
+            gameHistory.BetInfo = betInfo;
+            gameHistory.OnRound.AddListener(ShowRound);
+            ShowRound(gameHistory.Round);
+
             // The fairness window is the one with something to send rather than only something to show: the
             // two buttons emit RANDOMIZE and RANDOMIZE_CLIENTSALT_ONLY, and it fills itself in from the pair
             // that comes back. With no socket running the buttons roll the sample over instead, so both can
@@ -167,6 +182,25 @@ namespace FlappyTemplate
             betInfo.Refresh();
         }
 
+        // The same thing again for a whole round rather than one bet. A shared game draws what the room got
+        // here - the multiplier it stopped at, the number that came up - and the window grows around it.
+        private void ShowRound(GameHistoryByIdDto data)
+        {
+            if (gameHistory == null || data == null)
+                return;
+
+            var label = UiWindowParts.Label(gameHistory.Outcome, "Roll");
+            label.alignment = TextAlignmentOptions.Center;
+            label.fontSize = 34f;
+            label.fontStyle = FontStyles.Bold;
+            label.color = new Color(0.98f, 0.8f, 0.08f);
+            label.text = data.Outcome != null && data.Outcome.Count > 0
+                ? "Outcome: " + string.Join(", ", data.Outcome.Keys)
+                : "This game draws its own round here";
+
+            gameHistory.Refresh();
+        }
+
         [ContextMenu("Clear")]
         public void Clear()
         {
@@ -187,6 +221,7 @@ namespace FlappyTemplate
             modal = null;
             statistics = null;
             betInfo = null;
+            gameHistory = null;
             fairness = null;
         }
     }

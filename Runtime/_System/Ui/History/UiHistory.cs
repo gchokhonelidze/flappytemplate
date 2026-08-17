@@ -16,6 +16,11 @@ namespace FlappyTemplate
     // That is the whole of the usual case. With nothing else touched it seeds itself from MainState.History,
     // listens for OnHistory, animates each arrival, shows as many bets as fit and drops the oldest.
     //
+    // On a shared game it does the same thing with the rounds instead: MainState.GameHistory, OnGameHistory,
+    // and the game history window on a press rather than the bet info one. Which of the two it is comes from
+    // the server unless Feed says otherwise, and a round is drawn as a bet - same element, same Write, same
+    // Outcome - so nothing about a game's own chip has to know which game it is in. See EHistoryFeed.
+    //
     // The strip draws nothing of its own. What an element is made of, how big it is and what it says about the
     // round are all the prefab's: the strip hands it the whole HistoryDto through UiHistoryElement.Write and
     // stays out of it. So there is no chip in here to colour, no size to set and no value to format - a game
@@ -25,11 +30,11 @@ namespace FlappyTemplate
     // What is left to decide is the strip: which way it runs, which end the newest bet lands on, what happens
     // when it fills up, and the gap between one element and the next.
     //
-    // The one thing it will not do for itself is find a dialog to open. Point Bet Info at the window a click
-    // should open and it opens that one; leave it empty and a click raises OnPicked and nothing else. Nothing is
-    // searched for, and that is a decision rather than an omission: a scene holds as many bet info windows as
-    // somebody put in it - a game's own, plus whatever an example or a test built for itself - and a strip that
-    // guessed would open one of them off screen about half the time.
+    // The one thing it will not do for itself is find a dialog to open. Point Bet Info - or Game History, on the
+    // shared feed - at the window a click should open and it opens that one; leave it empty and a click raises
+    // OnPicked and nothing else. Nothing is searched for, and that is a decision rather than an omission: a
+    // scene holds as many bet info windows as somebody put in it - a game's own, plus whatever an example or a
+    // test built for itself - and a strip that guessed would open one of them off screen about half the time.
     //
     // The layout is a UiGrid with one track per element, and every element the strip is not currently showing
     // is a spare kept in the same grid under a name the layout does not mention. That is not an implementation
@@ -85,6 +90,10 @@ namespace FlappyTemplate
         private bool followNewest = true;
 
         [Header("Behaviour")]
+        [Tooltip("Which history to show: the player's own bets, the rounds of a shared game, or whichever the server says this game is. It settles the event the strip listens to and the dialog a press opens.")]
+        [SerializeField]
+        private EHistoryFeed feed = EHistoryFeed.Auto;
+
         [Tooltip("Seed from MainState.History and fill in as ON_HISTORY arrives. Off leaves the feeding to the game, through Add and Set.")]
         [SerializeField]
         private bool followState = true;
@@ -101,9 +110,13 @@ namespace FlappyTemplate
         [SerializeField]
         private bool animateArrivals = true;
 
-        [Tooltip("The dialog a clicked element opens. Nothing is found for you: a scene has as many bet info windows in it as somebody put there, and a strip that guessed would sometimes open one parked off screen. Leave it empty and a click only raises On Picked.")]
+        [Tooltip("The dialog a clicked element opens while the strip is on the player's own bets. Nothing is found for you: a scene has as many bet info windows in it as somebody put there, and a strip that guessed would sometimes open one parked off screen. Leave it empty and a click only raises On Picked.")]
         [SerializeField]
         private BetInfoWindow betInfo;
+
+        [Tooltip("The dialog a clicked element opens while the strip is on the shared feed - the round, everybody who bet on it, and the seeds it was rolled from. Found no more than the bet info window is, and for the same reason.")]
+        [SerializeField]
+        private GameHistoryWindow gameHistory;
 
         [Tooltip("Fill the strip with made-up bets when there is no socket running, so it looks like a history strip in the editor rather than like an empty rect. Needs an element prefab, the same as a real bet does.")]
         [SerializeField]
@@ -132,6 +145,12 @@ namespace FlappyTemplate
         private bool built;
 
         private readonly List<HistoryDto> items = new List<HistoryDto>();
+
+        // The round each bet on the shared feed was mapped from, by id. Kept beside the bets rather than
+        // instead of them: everything the strip does - sorting, deduping, trimming, choosing what fits - is
+        // written against a bet, and a shared round is shown by mapping it onto one. This is the half of the
+        // round that will not fit through that mapping, and what UiHistoryElement.Round hands back.
+        private readonly Dictionary<string, GameHistoryDto> rounds = new Dictionary<string, GameHistoryDto>();
         private readonly List<HistoryDto> display = new List<HistoryDto>();
         private readonly List<UiHistoryElement> live = new List<UiHistoryElement>();
         private readonly List<UiHistoryElement> spare = new List<UiHistoryElement>();
@@ -148,6 +167,10 @@ namespace FlappyTemplate
         private bool dirty;
         private Vector2 measured;
         private bool listening;
+
+        // Which of the two events the strip is subscribed to, as opposed to which one it would subscribe to
+        // now. See Listen.
+        private bool shared;
         private Tweener follow;
 
         // How big one element is, measured off the prefab once per arrangement: along the flow it is the track,
@@ -269,6 +292,51 @@ namespace FlappyTemplate
             }
         }
 
+        /// <summary>Which history the strip shows. Changing it re-subscribes and fills the strip again from
+        /// whichever list the new feed reads.</summary>
+        public EHistoryFeed Feed
+        {
+            get => feed;
+            set
+            {
+                if (feed == value)
+                    return;
+
+                // Off the old event before the flag moves and onto the new one after it, since Listen asks the
+                // flag which event it is subscribing to.
+                Listen(false);
+                feed = value;
+                warned = false;
+
+                // Emptied whether or not there is anything to fill it with yet: what is on screen belongs to
+                // the feed that was, and a strip left showing the player's bets under a shared press is worse
+                // than an empty one.
+                Clear();
+
+                if (!isActiveAndEnabled)
+                    return;
+
+                Listen(true);
+                Seed();
+            }
+        }
+
+        /// <summary>Whether the strip is showing shared rounds as things stand - which on <see
+        /// cref="EHistoryFeed.Auto"/> is a question for the server, and is answered as Player until it has
+        /// said.</summary>
+        public bool IsShared
+        {
+            get
+            {
+                if (feed != EHistoryFeed.Auto)
+                    return feed == EHistoryFeed.Shared;
+
+                var manager = StateManager.Inst;
+                var system = manager != null && manager.MainState != null ? manager.MainState.SystemState : null;
+                return system != null && system.GameType == EGameType.SHARED;
+            }
+        }
+
         /// <summary>Seed from MainState.History and fill in as bets arrive. Off hands the feeding to the
         /// game.</summary>
         public bool FollowState
@@ -325,6 +393,14 @@ namespace FlappyTemplate
         {
             get => betInfo;
             set => betInfo = value;
+        }
+
+        /// <summary>The dialog a clicked element opens while the strip is on the shared feed. Null opens
+        /// nothing - a click still raises <see cref="OnPicked"/>.</summary>
+        public GameHistoryWindow GameHistory
+        {
+            get => gameHistory;
+            set => gameHistory = value;
         }
 
         /// <summary>Builds a strip under a parent, ready to be given an element and fed.</summary>
@@ -515,6 +591,84 @@ namespace FlappyTemplate
                 Add(value);
         }
 
+        /// <summary>Adds a shared round as the newest one. What OnGameHistory ends in, and what a game feeding
+        /// the shared strip itself calls.</summary>
+        public void Add(GameHistoryDto data)
+        {
+            if (data == null)
+                return;
+
+            if (!string.IsNullOrEmpty(data.Id))
+                rounds[data.Id] = data;
+
+            Add(Map(data));
+        }
+
+        public void AddRange(IEnumerable<GameHistoryDto> values)
+        {
+            if (values == null)
+                return;
+
+            foreach (var value in values)
+                Add(value);
+        }
+
+        /// <summary>Replaces everything with these rounds, oldest first.</summary>
+        public void Set(IEnumerable<GameHistoryDto> values)
+        {
+            rounds.Clear();
+
+            if (values == null)
+            {
+                Set((IEnumerable<HistoryDto>)null);
+                return;
+            }
+
+            var mapped = new List<HistoryDto>();
+
+            foreach (var value in values)
+            {
+                if (value == null)
+                    continue;
+
+                if (!string.IsNullOrEmpty(value.Id))
+                    rounds[value.Id] = value;
+
+                mapped.Add(Map(value));
+            }
+
+            Set(mapped);
+        }
+
+        /// <summary>The round a chip is showing, or null on a strip of the player's own bets. Same thing
+        /// <see cref="UiHistoryElement.Round"/> hands back, for code holding an id rather than an element.</summary>
+        public GameHistoryDto RoundFor(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return null;
+
+            return rounds.TryGetValue(id, out var found) ? found : null;
+        }
+
+        // A round drawn as a bet, which is what lets one strip show either feed and one element prefab draw
+        // both. Everything an element reads off a bet is here: the id it is opened by, the outcome the game
+        // writes its chip from, and the two amounts - in dollars, because a shared round is bet on in as many
+        // currencies as there are players and dollars is the only one they add up in.
+        //
+        // Nothing carries a time: a round has none to carry. That is deliberate rather than missing, and it is
+        // why Sort leaves the shared feed alone - see Sort.
+        private static HistoryDto Map(GameHistoryDto data) => new HistoryDto
+        {
+            Id = data.Id,
+            BetAmount = data.TotalBetAmountUsd,
+            WinAmount = data.TotalWinAmountUsd,
+            Currency = "usd",
+            RateUsd = "1",
+            N = data.TotalBetCount,
+            Outcome = data.Outcome,
+            _Outcome = data._Outcome ?? new GenericDictionary<string, string>(),
+        };
+
         /// <summary>Replaces everything with these, oldest first. Nothing is animated - this is a strip being
         /// filled in, not a bet arriving.</summary>
         public void Set(IEnumerable<HistoryDto> values)
@@ -546,6 +700,7 @@ namespace FlappyTemplate
         public void Clear()
         {
             items.Clear();
+            rounds.Clear();
             arrival = null;
 
             if (built)
@@ -559,6 +714,7 @@ namespace FlappyTemplate
                 return false;
 
             items.RemoveAt(at);
+            rounds.Remove(id);
             Touch();
             return true;
         }
@@ -592,6 +748,12 @@ namespace FlappyTemplate
         /// quick way to see an element without a server.</summary>
         public void Sample(int count)
         {
+            if (IsShared)
+            {
+                SampleRounds(count);
+                return;
+            }
+
             var made = new List<HistoryDto>(Mathf.Max(0, count));
 
             for (int i = 0; i < count; i++)
@@ -625,6 +787,37 @@ namespace FlappyTemplate
             Set(made);
         }
 
+        // The same for the shared feed, so a strip set to it in a scene with no socket running looks like a
+        // strip of rounds rather than like an empty rect. A round carries totals where a bet carries an amount,
+        // and an element that reads either of them has something to read here.
+        private void SampleRounds(int count)
+        {
+            var made = new List<GameHistoryDto>(Mathf.Max(0, count));
+
+            for (int i = 0; i < count; i++)
+            {
+                decimal multiplier = 1.05m + (i * 37 % 91) * 0.11m;
+                decimal wagered = 4m + i * 3m;
+
+                var data = new GameHistoryDto
+                {
+                    Id = "sample-" + (1000 + i * 7).ToString(CultureInfo.InvariantCulture),
+                    TotalBetCount = 2 + i % 5,
+                    TotalBetAmountUsd = wagered.ToString("0.00", CultureInfo.InvariantCulture),
+                    TotalWinAmountUsd = (wagered * multiplier).ToString("0.00", CultureInfo.InvariantCulture),
+                };
+
+                data._Outcome = new GenericDictionary<string, string>
+                {
+                    { SampleKey, multiplier.ToString("0.00", CultureInfo.InvariantCulture) },
+                };
+
+                made.Add(data);
+            }
+
+            Set(made);
+        }
+
         // ------------------------------------------------------------------ clicking
 
         /// <summary>What an element does when it is clicked: raises OnPicked, then opens the bet info dialog on
@@ -637,16 +830,23 @@ namespace FlappyTemplate
 
             OnPicked.Invoke(data);
 
-            if (betInfo == null)
+            // Which dialog a press opens is the feed's business rather than the element's: a bet opens the bet
+            // info window, and a shared round opens the game history window - the round, everybody who bet on
+            // it, and a way through to any one of those bets.
+            bool round = IsShared;
+
+            if (round ? gameHistory == null : betInfo == null)
             {
                 // Said once rather than once a click: a strip wired to OnPicked and nothing else is a perfectly
                 // ordinary thing to build, and a log line per press would be noise. Said at all because the
-                // other reading - a Bet Info field somebody meant to fill in - looks exactly the same from here.
+                // other reading - a field somebody meant to fill in - looks exactly the same from here.
                 if (!warned)
                 {
                     warned = true;
                     Debug.LogWarning(
-                        $"{name}: no bet info window to open - point Bet Info at one. A click still raises OnPicked, so ignore this if the game opens its own.",
+                        round
+                            ? $"{name}: no game history window to open - point Game History at one. A click still raises OnPicked, so ignore this if the game opens its own."
+                            : $"{name}: no bet info window to open - point Bet Info at one. A click still raises OnPicked, so ignore this if the game opens its own.",
                         this
                     );
                 }
@@ -658,7 +858,21 @@ namespace FlappyTemplate
             {
                 // A press that does nothing and says nothing is the worst kind of bug to be handed: it looks
                 // like the click was missed.
-                Debug.LogWarning($"{name}: that bet has no id, so there is nothing to open the bet info window on.", this);
+                Debug.LogWarning($"{name}: that one has no id, so there is nothing to open a window on.", this);
+                return;
+            }
+
+            if (round)
+            {
+                // The summary goes with the id, so the dialog has the outcome and the totals to show while the
+                // transactions are still on their way. Show emits GAME_HISTORY_INFO and opens on a loader.
+                var source = RoundFor(data.Id);
+
+                if (source != null)
+                    gameHistory.Show(source);
+                else
+                    gameHistory.Show(data.Id);
+
                 return;
             }
 
@@ -1133,7 +1347,7 @@ namespace FlappyTemplate
 
         private void Fill(UiHistoryElement element, HistoryDto data)
         {
-            element.Bind(data);
+            element.Bind(data, RoundFor(data != null ? data.Id : null));
             OnElement.Invoke(element);
         }
 
@@ -1207,6 +1421,9 @@ namespace FlappyTemplate
 
         // ------------------------------------------------------------------ the feed
 
+        // Which event is subscribed to is decided once, here, and remembered: a strip that unsubscribed from
+        // whichever event the feed says *now* would leave a listener behind on the other one if the server
+        // announced the game type between the two calls.
         private void Listen(bool on)
         {
             var manager = StateManager.Inst;
@@ -1215,12 +1432,22 @@ namespace FlappyTemplate
 
             if (on && !listening)
             {
-                manager.Events.OnHistory.AddListener(Add);
+                shared = IsShared;
+
+                if (shared)
+                    manager.Events.OnGameHistory.AddListener(Add);
+                else
+                    manager.Events.OnHistory.AddListener(Add);
+
                 listening = true;
             }
             else if (!on && listening)
             {
-                manager.Events.OnHistory.RemoveListener(Add);
+                if (shared)
+                    manager.Events.OnGameHistory.RemoveListener(Add);
+                else
+                    manager.Events.OnHistory.RemoveListener(Add);
+
                 listening = false;
             }
         }
@@ -1228,11 +1455,28 @@ namespace FlappyTemplate
         private void Seed()
         {
             var manager = StateManager.Inst;
-            var history = manager != null && manager.MainState != null ? manager.MainState.History : null;
+            var state = manager != null ? manager.MainState : null;
 
-            if (followState && history != null && history.Count > 0)
+            if (followState && state != null && IsShared)
             {
-                Set(history);
+                // The state keeps the rounds newest first, the way the server sends them and the way the web
+                // front holds them. The strip works oldest first, so they are turned round on the way in - and
+                // it is here rather than in Sort because a round carries no time to sort by.
+                var newest = state.GameHistory;
+
+                if (newest != null && newest.Count > 0)
+                {
+                    var oldest = new List<GameHistoryDto>(newest.Count);
+                    for (int i = newest.Count - 1; i >= 0; i--)
+                        oldest.Add(newest[i]);
+
+                    Set(oldest);
+                    return;
+                }
+            }
+            else if (followState && state != null && state.History != null && state.History.Count > 0)
+            {
+                Set(state.History);
                 return;
             }
 
@@ -1264,7 +1508,9 @@ namespace FlappyTemplate
         // order they arrived in.
         private void Sort()
         {
-            if (!sortByTime)
+            // A shared round carries no time, so there is nothing here to sort by and the order it arrived in
+            // is the only order there is. Seed turns the server's list round on the way in instead.
+            if (!sortByTime || IsShared)
                 return;
 
             for (int i = 1; i < items.Count; i++)
@@ -1288,7 +1534,15 @@ namespace FlappyTemplate
                 return;
 
             while (items.Count > capacity)
+            {
+                // The round goes with the bet that was mapped from it. Left behind, the table would grow for
+                // the whole session on a strip that only ever shows fifteen of them.
+                var dropped = items[0];
+                if (dropped != null && !string.IsNullOrEmpty(dropped.Id))
+                    rounds.Remove(dropped.Id);
+
                 items.RemoveAt(0);
+            }
         }
 
         void LateUpdate()
@@ -1305,6 +1559,19 @@ namespace FlappyTemplate
 
                 if (listening)
                     Seed();
+            }
+            else if (followState && listening && Application.isPlaying && shared != IsShared)
+            {
+                // On Auto, which feed this is depends on a game type the server sends when it is ready - which
+                // is routinely after the strip has subscribed to the other event. So the answer is asked again
+                // each frame, and the one frame it changes on is the one the strip switches over: off the old
+                // event, on to the new one, and filled again from the list that one writes to.
+                Listen(false);
+                Listen(true);
+                warned = false;
+
+                Clear();
+                Seed();
             }
 
             if (dirty)

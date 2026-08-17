@@ -298,6 +298,11 @@
   <a class="sub" href="#amounts">Values</a>
   <a class="sub" href="#seeds">Details and verify</a>
   <a class="sub" href="#pictures">Pictures</a>
+  <a href="#gamehistory">Game history</a>
+  <a class="sub" href="#round">The round itself</a>
+  <a class="sub" href="#list">The list</a>
+  <a class="sub" href="#converted">Amounts</a>
+  <a class="sub" href="#roundseeds">Details and verify</a>
   <a href="#fairness">Fairness</a>
   <a class="sub" href="#locking">Locking</a>
   <a class="sub" href="#shared">Shared and multiplayer</a>
@@ -322,15 +327,15 @@
   <p class="lede">The window owns where things go, not what they look like: Panel, Caption, Title, Close,
   Scrollbar and the sheet behind it are ordinary RoundedBox and TextMeshPro objects — select one and style it
   as you would any other. Nothing here paints over it afterwards.</p>
-  <p class="stamp">Describes package 1.0.69. Update this file with the code — and README.md beside it.</p>
+  <p class="stamp">Describes package 1.0.80. Update this file with the code — and README.md beside it.</p>
   <p><strong>GameObject → UI (Canvas) → FlappyBet → Window</strong>, which makes a canvas if the scene has
   none, drops the window under whatever was right-clicked, and builds the whole thing on the spot so it
   arrives looking like a window rather than as an empty rect waiting for play mode. <strong>Statistics
-  Window</strong>, <strong>Bet Info Window</strong> and <strong>Fairness Window</strong> sit beside it in that
-  same group, along with everything else this template adds — Rounded Box, Grid, History and Navbar, the row
-  of buttons that opens two of the windows here. Each of the three
+  Window</strong>, <strong>Bet Info Window</strong>, <strong>Game History Window</strong> and <strong>Fairness
+  Window</strong> sit beside it in that same group, along with everything else this template adds — Rounded
+  Box, Grid, History and Navbar, the row of buttons that opens two of the windows here. Each of the four
   keeps its own files in a folder of its own: <code>Statistics/</code>, <code>BetInfo/</code>,
-  <code>Fairness/</code>.</p>
+  <code>GameHistory/</code>, <code>Fairness/</code>.</p>
   <p>Adding the component by hand instead, it belongs on an <strong>empty RectTransform</strong>, not a UI
   Panel: the window draws its own panel, so a Panel's Image leaves two backgrounds stacked, and anything
   already inside that Panel ends up beside the caption rather than under <code>Content</code>. Or one chain
@@ -944,6 +949,117 @@ so closing the dialog does not abandon the fetch, and the picture is already the
 way the statistics window shows sample figures. A <code>StateManager</code> that is running but has not been
 sent a transaction shows the loader; a real game never sees invented numbers.</p>
 
+<h2 id="gamehistory">Game history</h2>
+
+<p><strong>GameObject → UI (Canvas) → FlappyBet → Game History Window</strong>, or Add Component → UI → Game
+History Window on a <code>UiWindow</code>, or the whole thing in one line:</p>
+
+<pre><code>var rounds = GameHistoryWindow.Create(canvas);
+rounds.BetInfo = betInfoWindow;      // so a row can be pressed for the bet behind it
+rounds.Show(roundId);</code></pre>
+
+<p>One round of a <strong>shared</strong> game: what the room got, everybody who bet on it, what the round came
+to, and the seeds it was rolled from. It is the shared-game half of the bet info dialog, and the two work
+together — a round lists its transactions, and pressing one opens the bet info window on that bet.</p>
+
+<p><code>Show(id)</code> emits <code>GAME_HISTORY_INFO</code> through <code>Emitter</code> and opens the window
+on a row of pulsing dots; the answer arrives as <code>ON_GAME_HISTORY_ID</code>, which the socket puts in
+<code>MainState.GameHistoryById</code> and announces as <code>OnGameHistoryById</code>, and the window fills
+itself in from that.</p>
+
+<p>Most games never call <code>Show</code> themselves: a <strong>history strip</strong>
+(<code>../History/</code>) on the shared feed opens this dialog on whichever round was clicked, and hands over
+the round it already has so the outcome and the totals are drawn while the transactions are still on their
+way.</p>
+
+<table>
+  <tr><th>Call</th><th>Does</th></tr>
+  <tr><td><code>Show(id)</code></td><td>Asks for that round and opens on the loader. Uses <code>MainState.GameHistoryById</code> at once if it already holds this id.</td></tr>
+  <tr><td><code>Show(summary)</code></td><td>The same, given the <code>GameHistoryDto</code> from the history strip — the totals and the outcome show immediately.</td></tr>
+  <tr><td><code>Show(round)</code></td><td>Opens on a <code>GameHistoryByIdDto</code> the game already has. Nothing is asked.</td></tr>
+  <tr><td><code>Show()</code></td><td>Opens on whatever the state last received.</td></tr>
+  <tr><td><code>Request(id)</code></td><td>Asks without opening anything.</td></tr>
+  <tr><td><code>Clear()</code></td><td>Back to the loader, for a window about to be pointed at another round.</td></tr>
+  <tr><td><code>Pick(betId)</code></td><td>What a row press does: raises <code>OnPicked</code>, then opens the bet info dialog.</td></tr>
+  <tr><td><code>ToggleDetails()</code> · <code>DetailsOpen</code></td><td>The seeds half.</td></tr>
+  <tr><td><code>ToggleCurrency()</code> · <code>UsdView</code></td><td>Every amount in its own currency, or the lot converted to dollars.</td></tr>
+  <tr><td><code>Verify()</code></td><td>Opens the verifier in a browser — the same thing the button does.</td></tr>
+  <tr><td><code>Refresh()</code> · <code>Layout()</code> · <code>Rebuild()</code></td><td>Fill in again, lay out again, build again.</td></tr>
+</table>
+
+<table>
+  <tr><th>Field</th><th>What it does</th></tr>
+  <tr><td>Style</td><td>The list, the rows and the blocks around them. The panel is styled on its own parts.</td></tr>
+  <tr><td>Labels</td><td>Every caption on the dialog, <em>Total bet count</em> to <em>Server SHA-512</em>, plus the two glyphs on the currency toggle. Nothing here is translated.</td></tr>
+  <tr><td>Show Outcome</td><td>The strip across the top the game draws the round into. Laid out only once something is parented into <code>Outcome</code>.</td></tr>
+  <tr><td>Show Currency Toggle</td><td>The button that swaps every amount between its own currency and dollars.</td></tr>
+  <tr><td>Show Transactions</td><td>The list.</td></tr>
+  <tr><td>Show Totals</td><td>The three figures under it: how many bets there were, what they came to, and what the round paid.</td></tr>
+  <tr><td>Show Details / Show Verify</td><td>The two buttons, and the seeds Details opens. Verify appears only on a round the server sent a <code>VerifyUrl</code> with.</td></tr>
+  <tr><td>Usd View</td><td>Start converted to dollars rather than in each bet's own currency.</td></tr>
+  <tr><td>Follow State · Request On Show · Match Requested Id</td><td>As the bet info window, and for the same reasons.</td></tr>
+  <tr><td>Mine First</td><td>Put the player's own row at the top, ahead of the sort.</td></tr>
+  <tr><td>Load Images</td><td>Fetch the currency and avatar pictures the server sends as urls.</td></tr>
+  <tr><td>Fit Window Height · Collapse Details On Close</td><td>As the bet info window.</td></tr>
+  <tr><td>Bet Info</td><td>The dialog a row press opens. Nothing is searched for — the same decision the history strip makes.</td></tr>
+</table>
+
+<p><code>OnRound</code>, <code>OnRequested</code>, <code>OnPicked</code>, <code>OnVerify</code>,
+<code>OnDetailsToggled</code> and <code>OnCurrencyToggled</code> are UnityEvents.</p>
+
+<h3 id="round">The round itself</h3>
+
+<p>What a round <em>was</em> is the game's own: a multiplier, a colour, a card, where the ball fell. So the
+window stops at what every shared round carries and <strong><code>Outcome</code> is a strip across the top that
+the game fills in</strong> — the same container the bet info window has, with the same rules about height.</p>
+
+<pre><code>rounds.OnRound.AddListener(data =&gt;
+{
+    var view = Instantiate(rollPrefab, rounds.Outcome, false);
+    view.Draw(data.Outcome);
+});</code></pre>
+
+<h3 id="list">The list</h3>
+
+<p>One row per transaction: the mark that says it can be pressed, the player, and what they staked over what
+came back. <strong>The whole row is the button</strong> rather than a target the size of a fingernail, and
+pressing it opens the bet info dialog on that bet — a round's transaction is a summary, so the dialog asks the
+server for the rest.</p>
+
+<p>A row is <strong>green from a payout of one</strong> and red below it — the bet came back whole or better —
+and the player's own row is outlined so it can be found in a list of forty. It is the first row too, unless
+<strong>Mine First</strong> is off; the rest are ordered by what they came away with, in dollars, which is the
+order the web front puts them in.</p>
+
+<div class="note">
+  <p>The list is the one block given a height rather than measured: past <strong>List Max Height</strong> it
+  <strong>scrolls inside itself</strong>, which is what keeps the totals and the buttons on screen under it
+  while the window as a whole stays the size it was. Rows are pooled — a round of forty bets and one of two are
+  the same list with a different layout on it.</p>
+</div>
+
+<h3 id="converted">Amounts</h3>
+
+<p>A shared round is bet on in as many currencies as there are players, so the amounts are shown in each bet's
+own currency and the <strong>toggle beside the outcome converts the lot to dollars</strong> at the rate the
+server sent with each transaction. The three totals underneath are always dollars: nothing else adds up.</p>
+
+<p>Money is truncated and trimmed the way the bet info window does it, so the same bet reads the same in both.
+The totals come off the round where the server filled them in and off the history strip's summary where it did
+not — which is exactly what the web front does.</p>
+
+<h3 id="roundseeds">Details and verify</h3>
+
+<p>Details opens the seeds: the salt the round was rolled from, the seed the server kept, and the hash it
+published before the roll. A server seed still in play arrives empty and is printed as <strong>Hidden</strong>.
+Verify sends the browser to <code>VerifyUrl</code> with both seeds base64'd into the query and the house edge —
+<strong>no nonce</strong>, and that is the difference from a single-player bet: a shared round is one roll for
+the whole room, so there is nothing to count.</p>
+
+<p>With no socket at all — a scene with no <code>StateManager</code> — the window shows a sample round with
+three players in it, the same way the bet info window shows a sample bet. A <code>StateManager</code> that is
+running but has not been sent a round shows the loader.</p>
+
 <h2 id="fairness">Fairness</h2>
 
 <p><strong>GameObject → UI (Canvas) → FlappyBet → Fairness Window</strong>, or Add Component → UI → Fairness
@@ -1255,20 +1371,23 @@ yet.</p>
   <tr><td><code>UiWindowDragHandle.cs</code></td><td>The grab. Usable on its own, for a custom header.</td></tr>
   <tr><td><code>UiWindowParts.cs</code></td><td>Making and finding children, and naming them for a grid. Internal.</td></tr>
   <tr><td><code>EWindowTransition.cs</code>, <code>EWindowScroll.cs</code></td><td></td></tr>
-  <tr><td><code>UiWindowExample.cs</code></td><td>Five windows built from code, including a game's own outcome block. Drop it on an empty RectTransform in a canvas.</td></tr>
+  <tr><td><code>UiWindowExample.cs</code></td><td>Six windows built from code, including a game's own outcome block. Drop it on an empty RectTransform in a canvas.</td></tr>
   <tr><td><code>Statistics/StatisticsWindow.cs</code></td><td>The statistics panel.</td></tr>
   <tr><td><code>Statistics/StatisticsWindowStyle.cs</code>, <code>Statistics/StatisticsRow.cs</code></td><td>What it looks like, and what it shows.</td></tr>
   <tr><td><code>Statistics/EStatsTab.cs</code>, <code>Statistics/EStatField.cs</code>, <code>Statistics/EStatTint.cs</code></td><td></td></tr>
   <tr><td><code>BetInfo/BetInfoWindow.cs</code></td><td>The bet info dialog.</td></tr>
   <tr><td><code>BetInfo/BetInfoWindowStyle.cs</code></td><td>What it looks like.</td></tr>
-  <tr><td><code>BetInfo/UiRemoteImage.cs</code></td><td>Sprites from urls, cached for the session. Internal.</td></tr>
+  <tr><td><code>BetInfo/UiRemoteImage.cs</code></td><td>Sprites from urls, cached for the session. Internal. Used by the game history window too.</td></tr>
+  <tr><td><code>GameHistory/GameHistoryWindow.cs</code></td><td>The game history dialog: one shared round and everybody who bet on it.</td></tr>
+  <tr><td><code>GameHistory/GameHistoryWindowStyle.cs</code></td><td>What it looks like.</td></tr>
   <tr><td><code>Fairness/FairnessWindow.cs</code></td><td>The fairness dialog.</td></tr>
   <tr><td><code>Fairness/FairnessWindowStyle.cs</code></td><td>What it looks like.</td></tr>
-  <tr><td><code>Editor/Window/UiWindowMenu.cs</code></td><td>The four GameObject → UI (Canvas) → FlappyBet entries.</td></tr>
+  <tr><td><code>Editor/Window/UiWindowMenu.cs</code></td><td>The five GameObject → UI (Canvas) → FlappyBet entries.</td></tr>
   <tr><td><code>../../Translations/</code></td><td><code>Translator.Label</code>, which every caption above is written through.</td></tr>
   <tr><td><code>Editor/FlappyBetMenu.cs</code></td><td>The one group they all go in, path and priority. Internal.</td></tr>
   <tr><td><code>../RoundedBox/</code></td><td>Every panel here is one.</td></tr>
-  <tr><td><code>../Grid/</code></td><td>What lays the bet info card and the fairness rows out.</td></tr>
+  <tr><td><code>../Grid/</code></td><td>What lays the bet info card, the game history list and the fairness rows out.</td></tr>
+  <tr><td><code>../History/</code></td><td>The strip that opens the bet info and game history dialogs.</td></tr>
 </table>
 
 </main>

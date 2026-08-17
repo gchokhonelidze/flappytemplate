@@ -40,6 +40,7 @@ namespace FlappyTemplate
 
         private UiHistory owner;
         private HistoryDto data;
+        private GameHistoryDto round;
         private bool found;
         private bool wired;
 
@@ -50,6 +51,14 @@ namespace FlappyTemplate
 
         /// <summary>The bet this element is showing, or null while it is spare.</summary>
         public HistoryDto Data => data;
+
+        /// <summary>The shared round this element is showing, or null on a strip of the player's own bets.
+        ///
+        /// A round is drawn through <see cref="Data"/> like everything else - the strip maps it onto a bet, so
+        /// an element written for the player's history draws a shared one without being changed - and this is
+        /// the rest of it: the number of bets on the round and what they came to, which a bet has no room for.
+        /// See <see cref="UiHistory.Feed"/>.</summary>
+        public GameHistoryDto Round => round;
 
         /// <summary>The strip this belongs to. Null on an element that was never handed to one.</summary>
         public UiHistory History => owner;
@@ -157,9 +166,10 @@ namespace FlappyTemplate
             Wire();
         }
 
-        internal void Bind(HistoryDto value)
+        internal void Bind(HistoryDto value, GameHistoryDto source)
         {
             data = value;
+            round = source;
 
             Parts();
             Write(value);
@@ -171,6 +181,7 @@ namespace FlappyTemplate
             Rest();
 
             data = null;
+            round = null;
         }
 
         // Only ever looked for once, and only for what was not filled in on the prefab. GetComponentInChildren

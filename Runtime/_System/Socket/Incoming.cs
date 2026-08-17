@@ -247,26 +247,47 @@ namespace FlappyTemplate
                         var arr = Utils.TryDeserialize<GameHistoryDto[]>(dataJson);
                         if (arr is null || arr.Length == 0)
                             return;
+
                         foreach (var gameHistoryDto in arr)
                         {
-                            gameHistoryDto._Outcome = gameHistoryDto.Outcome?.ToGeneric();
-                            stateManager.MainState.GameHistory.Add(gameHistoryDto);
+                            gameHistoryDto._Outcome =
+                                gameHistoryDto.Outcome?.ToGeneric()
+                                ?? new GenericDictionary<string, string>();
+                        }
+
+                        // Newest first, in the array's own order - the way the server sends a batch and the way
+                        // the web front keeps the list. A round arriving on its own goes to the front rather
+                        // than the back, so the list reads the same whether it was seeded in one go or filled
+                        // in a round at a time.
+                        stateManager.MainState.GameHistory.InsertRange(0, arr);
+
+                        foreach (var gameHistoryDto in arr)
+                        {
                             stateManager.Events.OnGameHistory?.Invoke(gameHistoryDto);
-                            if (stateManager.MainState.History.Count > 99)
-                            {
-                                stateManager.MainState.History.RemoveAt(0);
-                            }
+                        }
+
+                        // The oldest rounds go off the end, which is where they now are. Ninety-nine is what
+                        // the web front holds on to.
+                        while (stateManager.MainState.GameHistory.Count > 99)
+                        {
+                            stateManager.MainState.GameHistory.RemoveAt(
+                                stateManager.MainState.GameHistory.Count - 1
+                            );
                         }
                         break;
                     }
                     case nameof(EGameEvent.ON_GAME_HISTORY_ID):
                     {
                         var dto = Utils.TryDeserialize<GameHistoryByIdDto>(dataJson);
+                        if (dto is null)
+                            return;
+
                         foreach (var (key, value) in dto.Transactions)
                         {
                             dto._Transactions[key] = value;
                         }
-                        dto._Outcome = dto.Outcome?.ToGeneric();
+                        dto._Outcome =
+                            dto.Outcome?.ToGeneric() ?? new GenericDictionary<string, string>();
                         stateManager.MainState.GameHistoryById = dto;
                         stateManager.Events.OnGameHistoryById?.Invoke(dto);
                         break;

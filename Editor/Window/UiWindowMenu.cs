@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace FlappyTemplate.Editor
 {
-    // Puts Window, Statistics Window, Bet Info Window and Fairness Window in GameObject > UI (Canvas) >
+    // Puts Window, Statistics Window, Bet Info Window, Game History Window and Fairness Window in GameObject > UI (Canvas) >
     // FlappyBet, and makes them behave like Panel: a canvas and an EventSystem appear if the scene has none,
     // the object lands under whatever was right-clicked, and one undo takes the whole lot back out.
     //
@@ -22,6 +22,7 @@ namespace FlappyTemplate.Editor
         private static readonly Vector2 DefaultSize = new Vector2(420f, 320f);
         private static readonly Vector2 StatisticsSize = new Vector2(300f, 560f);
         private static readonly Vector2 BetInfoSize = new Vector2(560f, 620f);
+        private static readonly Vector2 GameHistorySize = new Vector2(560f, 700f);
         private static readonly Vector2 FairnessSize = new Vector2(480f, 620f);
 
         [MenuItem(FlappyBetMenu.Group + "Window", false, MenuPriority)]
@@ -63,7 +64,21 @@ namespace FlappyTemplate.Editor
             Selection.activeGameObject = created;
         }
 
-        [MenuItem(FlappyBetMenu.Group + "Fairness Window", false, MenuPriority + 3)]
+        [MenuItem(FlappyBetMenu.Group + "Game History Window", false, MenuPriority + 3)]
+        private static void CreateGameHistoryWindow(MenuCommand command)
+        {
+            var created = Create("Game History", GameHistorySize, command, out var window, typeof(GameHistoryWindow));
+            window.Title = "Game history";
+
+            // Builds the list, the totals and the two buttons, and fills them in from the sample round - the
+            // same reason as above, and the same answer.
+            created.GetComponent<GameHistoryWindow>().Rebuild();
+
+            Undo.SetCurrentGroupName("Create Game History Window");
+            Selection.activeGameObject = created;
+        }
+
+        [MenuItem(FlappyBetMenu.Group + "Fairness Window", false, MenuPriority + 4)]
         private static void CreateFairnessWindow(MenuCommand command)
         {
             var created = Create("Fairness", FairnessSize, command, out var window, typeof(FairnessWindow));

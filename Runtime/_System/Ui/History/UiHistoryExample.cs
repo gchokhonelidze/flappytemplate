@@ -3,17 +3,18 @@ using UnityEngine;
 
 namespace FlappyTemplate
 {
-    // Three history strips built at runtime under whatever this sits on: a plain row, a row of coloured
-    // multipliers, and a scrolling column down the side.
+    // Four history strips built at runtime under whatever this sits on: a plain row, a row of coloured
+    // multipliers, a scrolling column down the side, and a row of a shared game's rounds.
     //
     // It is here to be read as much as run. The first thing it does is the first thing a game does: draw an
     // element. The strip has no chip of its own and no settings for one - a bet's size, its colours and what it
-    // says are all the element's - so an example that skipped that step would build three empty rects.
+    // says are all the element's - so an example that skipped that step would build four empty rects.
     //
-    // Between them the three cover everything that is left to decide: which way the strip runs, which end the
-    // newest bet lands on, and what happens when there are more bets than room.
+    // Between them they cover everything that is left to decide: which way the strip runs, which end the newest
+    // bet lands on, what happens when there are more bets than room, and which history is being shown at all.
+    // The fourth is the last of those: the same element as the second, fed rounds instead of bets.
     //
-    // The keys are the other half of it: Space adds a bet to all three, Backspace clears them, and 1 pushes a
+    // The keys are the other half of it: Space adds a bet to all four, Backspace clears them, and 1 pushes a
     // run of bets in one go so the arrival animation can be seen against a strip that is already full.
     [AddComponentMenu("UI/Ui History Example")]
     [RequireComponent(typeof(RectTransform))]
@@ -25,6 +26,7 @@ namespace FlappyTemplate
         private UiHistory plain;
         private UiHistory multipliers;
         private UiHistory column;
+        private UiHistory shared;
 
         private UiHistoryExampleElement nonceChip;
         private UiHistoryExampleElement valueChip;
@@ -53,6 +55,7 @@ namespace FlappyTemplate
             plain.Clear();
             multipliers.Clear();
             column.Clear();
+            shared.Clear();
         }
 
         [ContextMenu("Build Now")]
@@ -93,6 +96,19 @@ namespace FlappyTemplate
             column.Order = EHistoryOrder.NewestFirst;
             column.Overflow = EHistoryOverflow.Scroll;
             column.Capacity = 0;
+
+            // The shared feed, on the same element as the second strip. That is the whole point of it: a round
+            // is drawn as a bet, so a chip written for the player's own history draws one without being told.
+            // What is different is behind it - the strip listens for ON_GAME_HISTORY instead of ON_HISTORY, and
+            // a press opens the game history window instead of the bet info one.
+            //
+            // Said outright here because there is no server running to say it. A game leaves Feed on Auto and
+            // the server decides.
+            shared = UiHistory.Create(transform, "Round History", 620f, 64f);
+            shared.Rect.anchoredPosition = new Vector2(0f, 20f);
+            shared.ElementPrefab = valueChip;
+            Detach(shared);
+            shared.Feed = EHistoryFeed.Shared;
         }
 
         // What a game draws in the editor instead. A plate, a label in the middle of it, and the component that
@@ -151,6 +167,7 @@ namespace FlappyTemplate
             plain = null;
             multipliers = null;
             column = null;
+            shared = null;
             nonceChip = null;
             valueChip = null;
         }
@@ -191,6 +208,20 @@ namespace FlappyTemplate
                 plain.Add(data);
                 multipliers.Add(Copy(data));
                 column.Add(Copy(data));
+
+                // The shared strip is fed rounds rather than bets: the totals of everybody who played, and the
+                // outcome the room got. It reads the same key out of the payload, which is why the same chip
+                // draws it.
+                var round = new GameHistoryDto
+                {
+                    Id = data.Id,
+                    TotalBetCount = 1 + nonce % 6,
+                    TotalBetAmountUsd = (4m + nonce % 9).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    TotalWinAmountUsd = ((4m + nonce % 9) * payout).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    _Outcome = data._Outcome,
+                };
+
+                shared.Add(round);
             }
         }
 

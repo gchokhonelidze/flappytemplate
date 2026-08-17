@@ -172,6 +172,7 @@
   <a class="sub" href="#clamping">Clamping</a>
   <a class="sub" href="#scrolling">Scrolling</a>
   <a href="#arrivals">Arrivals</a>
+  <a href="#feed">Which history</a>
   <a href="#clicking">Clicking</a>
   <a href="#feeding">Feeding it yourself</a>
   <a class="sub" href="#order">Which end is new</a>
@@ -190,7 +191,10 @@
   of room — or scrolls instead — and opens the bet info dialog on whichever chip is clicked. It draws nothing of
   its own: a bet on screen is your element prefab, and what it is made of, how big it is and what it says about
   the round are all decided there.</p>
-  <p class="stamp">Describes package 1.0.63. Update this file with the code — and README.md beside it.</p>
+  <p class="lede">On a <strong>shared</strong> game it shows the rounds the room played instead of the player's
+  own bets, and a chip opens the game history dialog. Which of the two it is comes from the server; a round is
+  drawn through the same element as a bet, so nothing about your chip has to know.</p>
+  <p class="stamp">Describes package 1.0.80. Update this file with the code — and README.md beside it.</p>
   <p><strong>GameObject → UI (Canvas) → FlappyBet → History</strong>, or Add Component → UI → Ui History.</p>
 </header>
 
@@ -220,7 +224,8 @@
   works.</li>
   <li>Anchor the strip where it belongs. Stretch it if you want it to grow with the screen; the count of chips
   follows the width.</li>
-  <li>Drag your bet info window into <strong>Bet Info</strong>. Nothing is searched for — see below.</li>
+  <li>Drag your bet info window into <strong>Bet Info</strong> — and, on a shared game, your game history
+  window into <strong>Game History</strong>. Nothing is searched for — see below.</li>
   <li>Press play. The samples are replaced by <code>MainState.History</code>, and every <code>ON_HISTORY</code>
   after that arrives with a pop.</li>
   <li>Click a chip. The dialog opens on that bet.</li>
@@ -350,16 +355,62 @@ A prefab that wants to arrive its own way overrides <code>Appear</code>.</p>
 only writes the one chip that is new — a prefab holding state of its own keeps it as it slides. The shift itself
 is not animated: the elements are placed by a grid, and a tween fighting a layout is a tween that loses.</p>
 
+<h2 id="feed">Which history</h2>
+
+<p>Two feeds, and <strong>Feed</strong> picks between them:</p>
+
+<table>
+  <tr><th>Feed</th><th>Reads</th><th>Listens for</th><th>A chip opens</th></tr>
+  <tr><td><strong>Auto</strong> — the default</td><td colspan="3">whichever of the two the server says the game is</td></tr>
+  <tr><td><strong>Player</strong></td><td><code>MainState.History</code></td><td><code>ON_HISTORY</code></td><td>the <strong>bet info</strong> window on that bet</td></tr>
+  <tr><td><strong>Shared</strong></td><td><code>MainState.GameHistory</code></td><td><code>ON_GAME_HISTORY</code></td><td>the <strong>game history</strong> window on that round</td></tr>
+</table>
+
+<p><code>Auto</code> reads <code>SystemState.GameType</code>: <code>SHARED</code> is the shared feed, anything
+else the player's own bets. The game type arrives with the session and routinely <strong>after</strong> the
+strip has already subscribed, so the strip keeps asking and switches over on the frame the answer changes — off
+the old event, on to the new one, and filled in again from the list that one writes to. Nothing has to be timed
+against it.</p>
+
+<p>A round is not a bet, and the strip shows it as one anyway: <code>Id</code>, the outcome payload, and the two
+amounts — <code>TotalBetAmountUsd</code> and <code>TotalWinAmountUsd</code>, in dollars, because a shared round
+is bet on in as many currencies as there are players. So <strong>an element written for the player's history
+draws a round without being changed</strong>, and <code>Outcome("multiplier")</code> reads the same key out of
+either.</p>
+
+<p>What will not fit through that mapping is on the element beside <code>Data</code>:</p>
+
+<pre><code>public override void Write(HistoryDto data)
+{
+    label.text = Outcome("multiplier") + "x";
+
+    // null on the player's own history; the round it came from on a shared game
+    count.text = Round != null ? Round.TotalBetCount + " bets" : string.Empty;
+}</code></pre>
+
+<p><code>UiHistory.RoundFor(id)</code> is the same thing for code holding an id rather than an element.</p>
+
+<div class="note">
+  <p>A round carries <strong>no timestamp</strong>, so there is nothing for <strong>Sort By Time</strong> to
+  sort by and it stands aside on the shared feed. The order is the one the server sent:
+  <code>MainState.GameHistory</code> is kept newest first, the way the web front keeps it, and the strip turns
+  it round on the way in.</p>
+</div>
+
 <h2 id="clicking">Clicking</h2>
 
-<p>A click raises <code>OnPicked(HistoryDto)</code> and then opens the bet info dialog on that bet —
-<code>Show(id)</code>, so the dialog asks the server for the whole transaction with its seeds rather than making
-do with the summary the history payload is.</p>
+<p>A click raises <code>OnPicked(HistoryDto)</code> and then opens a dialog on what was clicked —
+<code>Show(id)</code>, so the dialog asks the server for the whole thing rather than making do with the summary
+the history payload is.</p>
 
-<p>Which dialog: the one in <strong>Bet Info</strong>, and only that one. <strong>Nothing is searched
-for</strong>, and that is a decision rather than an omission — a scene holds as many bet info windows as somebody
-put in it, a game's own plus whatever an example or a test built for itself, and a strip that guessed would open
-one of them off screen about half the time. So it is a reference you set, once, and then it is certain.</p>
+<p>Which dialog is the feed's business: <strong>Bet Info</strong> on the player's own bets, <strong>Game
+History</strong> on the shared feed. A round is handed over whole rather than as an id, so the dialog has the
+outcome and the totals to draw while the transactions are still on their way.</p>
+
+<p>Either way it is the window in that field and only that one. <strong>Nothing is searched for</strong>, and
+that is a decision rather than an omission — a scene holds as many bet info windows as somebody put in it, a
+game's own plus whatever an example or a test built for itself, and a strip that guessed would open one of them
+off screen about half the time. So it is a reference you set, once, and then it is certain.</p>
 
 <p>Leave it empty and a click raises <code>OnPicked</code> and nothing else, which is exactly what a game that
 drives its own dialog wants:</p>
@@ -380,13 +431,15 @@ prefab that brings its own <code>Button</code> keeps it — only the listener is
 <h2 id="feeding">Feeding it yourself</h2>
 
 <p><strong>Follow State</strong> on — the default — seeds from <code>MainState.History</code> on enable and adds
-every <code>ON_HISTORY</code> after that. Off hands the feeding over:</p>
+every <code>ON_HISTORY</code> after that, or from <code>MainState.GameHistory</code> and
+<code>ON_GAME_HISTORY</code> on the shared feed. Off hands the feeding over:</p>
 
 <table>
   <tr><th>Call</th><th>Does</th></tr>
   <tr><td><code>Add(data)</code></td><td>The newest bet. Animates, drops the oldest past <code>Capacity</code></td></tr>
-  <tr><td><code>AddRange(values)</code></td><td>One after another</td></tr>
-  <tr><td><code>Set(values)</code></td><td>Replaces everything, oldest first. Animates nothing</td></tr>
+  <tr><td><code>Add(round)</code></td><td>The same for a <code>GameHistoryDto</code> — mapped onto a bet, and kept for <code>Round</code></td></tr>
+  <tr><td><code>AddRange(values)</code></td><td>One after another. Takes either</td></tr>
+  <tr><td><code>Set(values)</code></td><td>Replaces everything, oldest first. Animates nothing. Takes either</td></tr>
   <tr><td><code>Remove(id)</code>, <code>Clear()</code></td><td>What they say</td></tr>
   <tr><td><code>Refresh()</code></td><td>Writes every element again from the bet it holds — after something outside the bet has changed</td></tr>
 </table>
@@ -442,7 +495,7 @@ inspector rather than from a prefab script.</p>
   <tr><td><strong>Style</strong></td><td>Strip: gap. Arrival: duration, scale, fade, ease, unscaled, follow duration. Scrolling: sensitivity, inertia, deceleration</td></tr>
   <tr><td><strong>Element</strong></td><td>Element Prefab</td></tr>
   <tr><td><strong>Strip</strong></td><td>Flow, Order, Align, Overflow, Capacity, Clip, Follow Newest</td></tr>
-  <tr><td><strong>Behaviour</strong></td><td>Follow State, Dedupe, Sort By Time, Animate Arrivals, Bet Info, Preview, Sample Count</td></tr>
+  <tr><td><strong>Behaviour</strong></td><td>Feed, Follow State, Dedupe, Sort By Time, Animate Arrivals, Bet Info, Game History, Preview, Sample Count</td></tr>
   <tr><td><strong>Events</strong></td><td>On Picked, On Element</td></tr>
 </table>
 
@@ -453,7 +506,8 @@ colours, border, radius, font, size, decimals, format, padding, element size —
 looks like a history strip in the editor rather than like an empty rect. It needs an element prefab like
 anything else does. Sample bets carry a <code>multiplier</code> in their outcome, since that is the key most
 games ask for; an element reading some other key shows whatever it makes of an empty string until a real session
-replaces them.</p>
+replaces them. A strip set to the shared feed is given sample <strong>rounds</strong> instead, totals and all,
+so <code>Round</code> reads in the editor too.</p>
 
 <h2 id="notes">Worth knowing</h2>
 
@@ -535,10 +589,12 @@ replaces them.</p>
   <tr><td><code>UiHistoryExampleElement.cs</code></td><td>A working element in ten lines — a label, a colour, and a <code>Write</code></td></tr>
   <tr><td><code>UiHistoryStyle.cs</code></td><td>The gap, the arrival and the scrolling</td></tr>
   <tr><td><code>EHistoryFlow.cs</code><br><code>EHistoryOrder.cs</code><br><code>EHistoryAlign.cs</code><br><code>EHistoryOverflow.cs</code></td><td>Direction, which end is newest, where a part-full strip sits, and what happens when it fills</td></tr>
-  <tr><td><code>UiHistoryExample.cs</code></td><td>Three strips built from code, elements and all</td></tr>
+  <tr><td><code>EHistoryFeed.cs</code></td><td>Which history is shown: the player's own bets, or a shared game's rounds</td></tr>
+  <tr><td><code>UiHistoryExample.cs</code></td><td>Four strips built from code, elements and all — the last one on the shared feed</td></tr>
   <tr><td><code>Editor/History/UiHistoryMenu.cs</code></td><td>The GameObject menu entry</td></tr>
   <tr><td><code>../Grid/</code></td><td><code>UiGrid</code>, which places the elements</td></tr>
-  <tr><td><code>../Window/BetInfoWindow.cs</code></td><td>The dialog a click opens</td></tr>
+  <tr><td><code>../Window/BetInfo/BetInfoWindow.cs</code></td><td>The dialog a click opens on the player's own bets</td></tr>
+  <tr><td><code>../Window/GameHistory/GameHistoryWindow.cs</code></td><td>The dialog a click opens on the shared feed</td></tr>
 </table>
 
 </main>

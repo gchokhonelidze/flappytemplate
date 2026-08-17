@@ -168,6 +168,48 @@ namespace FlappyTemplate
                 fil_PH: "I-verify", ur_PK: "تصدیق کریں", fa_IR: "بررسی", ms_MY: "Sahkan",
                 ka_GE: "შემოწმება", hy_AM: "Ստուգել");
 
+            // Game history window.
+
+            Row("game_history.title",
+                en_US: "Game history", ru_RU: "История игры", fr_FR: "Historique du jeu", bn_BD: "গেমের ইতিহাস",
+                de_DE: "Spielverlauf", es_ES: "Historial del juego", id_ID: "Riwayat permainan", pt_PT: "Histórico do jogo",
+                tr_TR: "Oyun geçmişi", vi_VN: "Lịch sử trò chơi", ar_AE: "سجل اللعبة", hi_IN: "गेम इतिहास",
+                th_TH: "ประวัติเกม", ja_JP: "ゲーム履歴", ko_KR: "게임 기록", zh_CN: "游戏历史",
+                fil_PH: "Kasaysayan ng laro", ur_PK: "گیم کی تاریخ", fa_IR: "تاریخچه بازی", ms_MY: "Sejarah permainan",
+                ka_GE: "თამაშის ისტორია", hy_AM: "Խաղի պատմություն");
+
+            Row("game_history.total_bet_count",
+                en_US: "Total bet count", ru_RU: "Всего ставок", fr_FR: "Nombre total de paris", bn_BD: "মোট বাজির সংখ্যা",
+                de_DE: "Anzahl der Wetten", es_ES: "Número total de apuestas", id_ID: "Jumlah taruhan", pt_PT: "Número total de apostas",
+                tr_TR: "Toplam bahis sayısı", vi_VN: "Tổng số cược", ar_AE: "إجمالي عدد الرهانات", hi_IN: "कुल बेट संख्या",
+                th_TH: "จำนวนเดิมพันทั้งหมด", ja_JP: "ベット総数", ko_KR: "총 베팅 수", zh_CN: "总投注笔数",
+                fil_PH: "Kabuuang bilang ng taya", ur_PK: "کل شرطوں کی تعداد", fa_IR: "تعداد کل شرط‌ها", ms_MY: "Jumlah bilangan pertaruhan",
+                ka_GE: "ფსონების საერთო რაოდენობა", hy_AM: "Խաղադրույքների ընդհանուր թիվը");
+
+            Row("game_history.total_bet_amount",
+                en_US: "Total bet amount", ru_RU: "Сумма ставок", fr_FR: "Montant total misé", bn_BD: "মোট বাজির পরিমাণ",
+                de_DE: "Gesamteinsatz", es_ES: "Importe total apostado", id_ID: "Total nilai taruhan", pt_PT: "Valor total apostado",
+                tr_TR: "Toplam bahis tutarı", vi_VN: "Tổng tiền cược", ar_AE: "إجمالي مبلغ الرهان", hi_IN: "कुल बेट राशि",
+                th_TH: "ยอดเดิมพันรวม", ja_JP: "ベット総額", ko_KR: "총 베팅 금액", zh_CN: "总投注金额",
+                fil_PH: "Kabuuang halaga ng taya", ur_PK: "کل شرط کی رقم", fa_IR: "مبلغ کل شرط‌ها", ms_MY: "Jumlah amaun pertaruhan",
+                ka_GE: "ფსონების საერთო თანხა", hy_AM: "Խաղադրույքների ընդհանուր գումարը");
+
+            Row("game_history.total_profit",
+                en_US: "Total profit", ru_RU: "Общая прибыль", fr_FR: "Gain total", bn_BD: "মোট লাভ",
+                de_DE: "Gesamtgewinn", es_ES: "Beneficio total", id_ID: "Total keuntungan", pt_PT: "Lucro total",
+                tr_TR: "Toplam kâr", vi_VN: "Tổng lợi nhuận", ar_AE: "إجمالي الربح", hi_IN: "कुल मुनाफ़ा",
+                th_TH: "กำไรรวม", ja_JP: "合計利益", ko_KR: "총 수익", zh_CN: "总盈利",
+                fil_PH: "Kabuuang tubo", ur_PK: "کل منافع", fa_IR: "سود کل", ms_MY: "Jumlah keuntungan",
+                ka_GE: "საერთო მოგება", hy_AM: "Ընդհանուր շահույթ");
+
+            Row("game_history.no_bets",
+                en_US: "No bets on this round", ru_RU: "На этот раунд ставок нет", fr_FR: "Aucun pari sur ce tour", bn_BD: "এই রাউন্ডে কোনো বাজি নেই",
+                de_DE: "Keine Wetten in dieser Runde", es_ES: "Sin apuestas en esta ronda", id_ID: "Tidak ada taruhan di ronde ini", pt_PT: "Sem apostas nesta ronda",
+                tr_TR: "Bu turda bahis yok", vi_VN: "Không có cược ở vòng này", ar_AE: "لا رهانات في هذه الجولة", hi_IN: "इस राउंड में कोई बेट नहीं",
+                th_TH: "ไม่มีการเดิมพันในรอบนี้", ja_JP: "このラウンドのベットはありません", ko_KR: "이 라운드에 베팅이 없습니다", zh_CN: "本局没有投注",
+                fil_PH: "Walang taya sa round na ito", ur_PK: "اس راؤنڈ میں کوئی شرط نہیں", fa_IR: "در این دور شرطی وجود ندارد", ms_MY: "Tiada pertaruhan pada pusingan ini",
+                ka_GE: "ამ რაუნდზე ფსონები არ არის", hy_AM: "Այս ռաունդում խաղադրույքներ չկան");
+
             // Fairness window.
 
             Row("fairness.title",
