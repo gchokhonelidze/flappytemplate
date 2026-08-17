@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transform Constraints — FlappyBet Template</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --ink: #1c1f24;
+    --soft: #5b6472;
+    --line: #dfe3e8;
+    --accent: #3f6fd8;
+    --code-bg: #f2f4f7;
+    --note-bg: #eef4ff;
+    --note-line: #6f9bea;
+    --stage: #e9ebef;
+    --obj: #ffffff;
+    --obj-line: #b9c0cb;
+    --track: #c9d1de;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --panel: #1d2025;
+      --ink: #e4e7ec;
+      --soft: #9aa3b0;
+      --line: #2c3038;
+      --accent: #7aa2f7;
+      --code-bg: #12141a;
+      --note-bg: #161d2b;
+      --note-line: #4a6ea8;
+      --stage: #0f1114;
+      --obj: #2b3038;
+      --obj-line: #4a515e;
+      --track: #3a414d;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 28px 96px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 64px; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 14px;
+    border-left: 2px solid var(--line);
+    padding-left: 16px;
+  }
+  nav.toc strong { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--soft); }
+  nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+
+  header.title { margin-bottom: 28px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 44px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  p { margin: 12px 0; max-width: 74ch; }
+  a { color: var(--accent); }
+  .lede { color: var(--soft); }
+  .stamp { color: var(--soft); font-size: 13.5px; font-style: italic; }
+  ul { max-width: 74ch; }
+
+  code, pre { font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 4px; font-size: 0.86em; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--soft); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td:first-child { white-space: nowrap; }
+
+  .note {
+    border-left: 3px solid var(--note-line);
+    background: var(--note-bg);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+  .note p { margin: 0; }
+  .note p + p { margin-top: 10px; }
+
+  figure { margin: 24px 0; }
+  figure figcaption { color: var(--soft); font-size: 13px; margin-top: 8px; max-width: 74ch; }
+  .stagebox {
+    background: var(--stage);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 16px 12px;
+    overflow-x: auto;
+  }
+  .stagebox svg { display: block; width: 100%; min-width: 560px; height: auto; }
+
+  /* Follower objects are outlined boxes, targets are filled discs - the same pair in every figure. */
+  .obj { fill: var(--obj); stroke: var(--obj-line); stroke-width: 1.6; }
+  .obj.ghost { opacity: .38; stroke-dasharray: 4 4; }
+  .tgt { fill: var(--accent); }
+  .gap { stroke: var(--soft); stroke-width: 1.3; stroke-dasharray: 4 4; opacity: .85; }
+  .move { fill: none; stroke: var(--accent); stroke-width: 2; }
+  .trail { fill: none; stroke: var(--obj-line); stroke-width: 2; stroke-dasharray: 6 5; }
+  .rule { stroke: var(--track); stroke-width: 1.2; }
+  .divider { stroke: var(--line); stroke-width: 1.4; }
+  .lbl { fill: var(--ink); font: 600 13px -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .sub { fill: var(--soft); font: 12px -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .mode { fill: var(--ink); font: 700 13px -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: .04em; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <a href="#three">The three</a>
+  <a href="#editing">While you edit</a>
+  <a href="#power">Power</a>
+  <a href="#axes">Axes</a>
+  <a href="#mode">Absolute or relative</a>
+  <a href="#space">Space</a>
+  <a href="#offsets">Offsets</a>
+  <a href="#tween">Tween Duration</a>
+  <a href="#rest">Rest pose</a>
+  <a href="#inspector">The inspector</a>
+  <a href="#code">From code</a>
+  <a href="#notes">Worth knowing</a>
+  <a href="#files">Files</a>
+</nav>
+
+<main>
+
+<header class="title">
+  <h1>Transform Constraints</h1>
+  <p class="lede">Three components that hold one scene object against others: <strong>Position
+  Constraint</strong>, <strong>Rotation Constraint</strong> and <strong>Look At Constraint</strong>. Point one
+  at a target and it follows — every frame, while you edit as well as while you play, with a blend knob,
+  per-axis ticks, offsets, and a duration if it should trail rather than stick.</p>
+  <p>They exist so the ten-line follower script nobody ever quite finishes — the one that needs an offset by
+  Tuesday, only the x axis by Wednesday, and a bit of lag by Friday — is a component with an inspector
+  instead.</p>
+  <p class="stamp">Describes package 1.0.79. Update this file with the code — and README.md beside it.</p>
+</header>
+
+<p><strong>Add Component → FlappyBet → Position Constraint</strong> (or Rotation, or Look At), drag a target
+in, done. From code:</p>
+
+<pre><code>var follow = marker.AddComponent&lt;PositionConstraint&gt;();
+follow.SetTarget(ball);            // copy the ball's position
+follow.Axes = EConstraintAxes.X;   // only the x of it
+follow.Offset = Vector3.up * 2f;   // two units above
+follow.TweenDuration = 0.3f;       // trailing a third of a second behind
+follow.Power = 0.5f;               // and only half the way there</code></pre>
+
+<h2 id="three">The three</h2>
+
+<table>
+  <tr><th>Component</th><th>Holds</th><th>Reach for it when</th></tr>
+  <tr><td><strong>Position Constraint</strong></td><td><code>position</code> / <code>localPosition</code></td>
+    <td>A marker rides a peg, a camera trails a ball, a label tracks something across the board</td></tr>
+  <tr><td><strong>Rotation Constraint</strong></td><td><code>rotation</code> / <code>localRotation</code></td>
+    <td>A sign leans with the board it is bolted to, two dice tumble as one</td></tr>
+  <tr><td><strong>Look At Constraint</strong></td><td><code>rotation</code>, worked out from a direction</td>
+    <td>An arrow, an eye, a spotlight or a camera has to <em>face</em> something rather than copy its facing</td></tr>
+</table>
+
+<p>All three share one base class, <a href="TransformConstraint.cs"><code>TransformConstraint</code></a>,
+which owns everything below this line. A subclass only answers "what value should this transform hold this
+frame".</p>
+
+<p>Rotation and position are separate channels, so a Position Constraint and a Look At Constraint on the same
+object cooperate rather than fight — that pair is the usual follow-cam.</p>
+
+<h2 id="editing">While you edit</h2>
+
+<p><code>[ExecuteAlways]</code>, plus a tick on <code>EditorApplication.update</code>, so a constraint is live
+in the scene view with no play mode involved: drag the target and the follower comes with it. <strong>Apply In
+Edit Mode</strong> off confines it to play mode.</p>
+
+<div class="note">
+  <p>The one thing edit mode does not do is <em>tween</em>. DOTween does not run outside play mode, so while
+  editing the value is always applied instantly, whatever <strong>Tween Duration</strong> says. Nothing in the
+  component touches DOTween before you press play — which is also why no stray <code>[DOTween]</code> object
+  ever turns up in your scene.</p>
+</div>
+
+<h2 id="power">Power</h2>
+
+<p><code>Power</code> is a 0–1 knob, 1 by default.</p>
+
+<figure>
+  <div class="stagebox">
+    <svg viewBox="0 0 720 170" role="img" aria-label="Power blends the object between its rest pose and the target">
+      <line class="rule" x1="110" y1="96" x2="610" y2="96"/>
+      <line class="rule" x1="110" y1="88" x2="110" y2="104"/>
+      <line class="rule" x1="360" y1="88" x2="360" y2="104"/>
+      <line class="rule" x1="610" y1="88" x2="610" y2="104"/>
+
+      <!-- rest pose, halfway, on the target -->
+      <rect class="obj" x="94" y="80" width="32" height="32" rx="5"/>
+      <rect class="obj" x="344" y="80" width="32" height="32" rx="5"/>
+      <circle class="tgt" cx="610" cy="96" r="13"/>
+      <rect class="obj ghost" x="594" y="80" width="32" height="32" rx="5"/>
+
+      <text class="lbl" x="110" y="60" text-anchor="middle">Power 0</text>
+      <text class="sub" x="110" y="140" text-anchor="middle">rest pose —</text>
+      <text class="sub" x="110" y="155" text-anchor="middle">nothing written at all</text>
+      <text class="lbl" x="360" y="60" text-anchor="middle">Power 0.5</text>
+      <text class="sub" x="360" y="140" text-anchor="middle">halfway</text>
+      <text class="lbl" x="610" y="60" text-anchor="middle">Power 1</text>
+      <text class="sub" x="610" y="140" text-anchor="middle">on the target</text>
+      <text class="sub" x="668" y="100">target</text>
+    </svg>
+  </div>
+  <figcaption>0 means <em>off</em>, not "hold the rest pose": the component stops writing and hands the object
+  back to whatever else moves it. Any running tween is dropped on the spot rather than allowed to
+  finish.</figcaption>
+</figure>
+
+<p>Part power blends from the rest pose — the object's authored pose, <a href="#rest">below</a> — and never
+from where the object currently stands. Blending from the current pose is the classic mistake: each frame's
+result becomes the next frame's starting point, and a half-power constraint quietly walks all the way onto
+its target over a handful of frames.</p>
+
+<h2 id="axes">Axes</h2>
+
+<p><code>Axes</code> is a tick per axis. An unticked axis is <strong>not read, not blended and not
+written</strong> — it is left entirely to whatever else owns it, an animation, another script, or your own
+hand in the scene view.</p>
+
+<pre><code>constraint.Axes = EConstraintAxes.X | EConstraintAxes.Z;   // follow across the floor, keep my own height
+constraint.Axes ^= EConstraintAxes.Y;                       // toggle one</code></pre>
+
+<p>For rotation that mask is applied in euler angles, because that is the only frame an "axis" exists in — so
+<code>Axes: Z</code> on a Look At Constraint is exactly how a 2D arrow spins in the plane of the board and
+nothing else. At full power with all three axes ticked the rotation goes through as a quaternion and skips
+euler entirely, which is what keeps a fully constrained object from flipping as it passes straight up.</p>
+
+<h2 id="mode">Absolute or relative</h2>
+
+<p><strong>Worth having, and the two are not interchangeable</strong> — this is the option most likely to be
+mistaken for a bug when it is missing.</p>
+
+<figure>
+  <div class="stagebox">
+    <svg viewBox="0 0 720 260" role="img" aria-label="Absolute snaps the object onto the target; Relative keeps the gap it was authored with">
+      <line class="divider" x1="40" y1="132" x2="700" y2="132"/>
+      <line class="divider" x1="352" y1="24" x2="352" y2="240"/>
+      <text class="sub" x="196" y="20" text-anchor="middle">as authored</text>
+      <text class="sub" x="524" y="20" text-anchor="middle">target has moved</text>
+
+      <!-- Absolute -->
+      <text class="mode" x="40" y="50">ABSOLUTE</text>
+      <rect class="obj" x="104" y="72" width="30" height="30" rx="5"/>
+      <line class="gap" x1="140" y1="87" x2="242" y2="87"/>
+      <circle class="tgt" cx="256" cy="87" r="12"/>
+      <text class="sub" x="191" y="118" text-anchor="middle">gap</text>
+
+      <path class="move" d="M384,87 h180"/>
+      <path class="move" d="M556,81 l10,6 -10,6 z" stroke="none" fill="var(--accent)"/>
+      <circle class="tgt" cx="596" cy="87" r="12"/>
+      <rect class="obj" x="581" y="72" width="30" height="30" rx="5"/>
+      <rect class="obj ghost" x="404" y="72" width="30" height="30" rx="5"/>
+      <text class="sub" x="480" y="118" text-anchor="middle">the object jumps onto it</text>
+
+      <!-- Relative -->
+      <text class="mode" x="40" y="176">RELATIVE</text>
+      <rect class="obj" x="104" y="198" width="30" height="30" rx="5"/>
+      <line class="gap" x1="140" y1="213" x2="242" y2="213"/>
+      <circle class="tgt" cx="256" cy="213" r="12"/>
+      <text class="sub" x="191" y="244" text-anchor="middle">gap</text>
+
+      <path class="move" d="M384,213 h180"/>
+      <path class="move" d="M556,207 l10,6 -10,6 z" stroke="none" fill="var(--accent)"/>
+      <circle class="tgt" cx="596" cy="213" r="12"/>
+      <rect class="obj" x="444" y="198" width="30" height="30" rx="5"/>
+      <line class="gap" x1="480" y1="213" x2="582" y2="213"/>
+      <rect class="obj ghost" x="404" y="198" width="30" height="30" rx="5"/>
+      <text class="sub" x="531" y="244" text-anchor="middle">the same gap, carried along</text>
+    </svg>
+  </div>
+  <figcaption>Faded boxes are where the object started. Absolute takes the target's value; Relative keeps the
+  separation the scene was authored with and lets the target carry it about.</figcaption>
+</figure>
+
+<p>Absolute is what "copy the position" means and is the default, because it is also self-evident: you drag a
+target in and the object moves. Relative is what you want the moment the object should stay <em>where you put
+it</em> — a camera three units back and two up, a sign beside a peg rather than inside it, a hand held near a
+bone. Doing that with Absolute means measuring the gap by hand and typing it into <strong>Offset</strong>,
+which then stops being right the moment anything moves.</p>
+
+<p>For <strong>Look At</strong>, Relative means "keep the skew you were authored with": an object standing a
+few degrees off its target keeps those few degrees while it tracks.</p>
+
+<p>The gap is measured between the <a href="#rest">rest pose</a> and where the targets stood when the
+constraint started following them — on enable, and again after any inspector edit or target change. In play
+mode that means the first frame it runs, which is the offset the scene was authored with.
+<code>ResampleOffset()</code> re-takes it deliberately, after a target has been moved on purpose and the
+object should trail it from its new place.</p>
+
+<h2 id="space">Space</h2>
+
+<table>
+  <tr><th>Space</th><th>Reads</th><th>Writes</th></tr>
+  <tr><td><strong>World</strong></td><td><code>target.position</code> / <code>.rotation</code></td>
+    <td><code>position</code> / <code>rotation</code></td></tr>
+  <tr><td><strong>Local</strong></td><td><code>target.localPosition</code> / <code>.localRotation</code></td>
+    <td><code>localPosition</code> / <code>localRotation</code></td></tr>
+</table>
+
+<p>World is the usual answer: the two objects can sit anywhere in the hierarchy. Local copies the
+<em>relationship</em> rather than the location — "hold the same place relative to your parent as the target
+holds relative to its own" — which is what two scaled or rotated holders carrying a copy of the same layout
+want. For siblings under one parent the two are identical.</p>
+
+<p>Space also decides which frame the axis mask works in, and that is the whole of its effect on a Look At
+Constraint: aiming is a world-space job either way, but <code>Local</code> masks against the parent's axes,
+which is how a billboard turns only about the axis its holder calls up.</p>
+
+<h2 id="offsets">Offsets</h2>
+
+<table>
+  <tr><th>Component</th><th>Field</th><th>Applied</th></tr>
+  <tr><td>Position</td><td><code>Offset</code></td><td>Added to the constrained position</td></tr>
+  <tr><td>Position</td><td><code>Offset In Target Space</code></td>
+    <td>On, the offset turns with the target — <code>(0, 0, -4)</code> stays four units <em>behind</em>
+    something that spins</td></tr>
+  <tr><td>Rotation</td><td><code>Offset Euler</code></td><td>After the copy, about this object's own axes</td></tr>
+  <tr><td>Look At</td><td><code>Aim Offset</code></td>
+    <td>Moves the point being aimed at, in world units — <code>(0, 1, 0)</code> looks at the head, not the feet</td></tr>
+  <tr><td>Look At</td><td><code>Offset Euler</code></td>
+    <td>After the aim — a few degrees leads the thing being tracked instead of sitting dead on it</td></tr>
+</table>
+
+<h2 id="tween">Tween Duration</h2>
+
+<p>0 is a hard constraint: the value is simply held, every frame. Above 0 the object trails the target by that
+long, which is what turns a rigid follower into a camera.</p>
+
+<figure>
+  <div class="stagebox">
+    <svg viewBox="0 0 720 190" role="img" aria-label="With a duration above zero the object follows the target's path a little behind it">
+      <path class="move" d="M60,130 C 150,130 170,40 260,40 C 350,40 360,140 450,140 C 540,140 560,50 650,50"/>
+      <path class="trail" d="M60,142 C 168,142 188,58 278,58 C 368,58 378,152 468,152 C 546,152 572,66 662,66"/>
+
+      <circle class="tgt" cx="450" cy="140" r="12"/>
+      <rect class="obj" x="404" y="132" width="30" height="30" rx="5"/>
+      <circle class="tgt" cx="650" cy="50" r="12"/>
+      <rect class="obj" x="614" y="52" width="30" height="30" rx="5"/>
+
+      <text class="sub" x="60" y="112">target's path</text>
+      <text class="sub" x="60" y="176">the object's, a third of a second behind</text>
+    </svg>
+  </div>
+  <figcaption>One DOTween tweener lives as long as the component and is re-aimed as the target moves, rather
+  than a new tween being built every frame.</figcaption>
+</figure>
+
+<p>The retarget snaps the ease's start to wherever the object has got to
+(<code>ChangeEndValue(goal, duration, true)</code>), which is what makes it read as lag rather than as a
+stutter. Rotations use the quaternion shortcuts, so a tweened aim cannot flip as it passes overhead.</p>
+
+<p><code>Ease</code> shapes the trailing move: <code>OutQuad</code> reads as weight, <code>Linear</code> reads
+as machinery. Editing <code>Tween Duration</code> or <code>Ease</code> — in the inspector or through the
+property — drops the live tween so the next frame builds one with the new timing.</p>
+
+<h2 id="rest">Rest pose</h2>
+
+<p>The object's authored <strong>local</strong> pose, captured the moment the component is added. Two things
+need it: Power blends from it, and Relative measures its gap from it. It is stored as a local pose and
+converted on demand, so it stays correct under a parent that moves, turns or scales.</p>
+
+<div class="note">
+  <p>It sits in a foldout at the bottom of the inspector, with a <strong>Capture</strong> and a <strong>Put
+  Object Back</strong> button, and it is on the inspector at all rather than hidden because of one case: a
+  <strong>prefab instance</strong> inherits the prefab's rest pose. Place one somewhere else and its rest pose
+  still points at where the prefab was authored — invisible at Power 1 in Absolute mode, and obvious at
+  anything else. Capture is the fix.</p>
+</div>
+
+<p>The component's context menu carries the same things: <strong>Apply Now</strong>, <strong>Capture Rest
+Pose</strong> and <strong>Reset To Rest Pose</strong>.</p>
+
+<h2 id="inspector">The inspector</h2>
+
+<p>Shared by all three:</p>
+
+<table>
+  <tr><th>Field</th><th>Means</th></tr>
+  <tr><td><code>Targets</code></td><td>The objects copied from, each with a weight. Weights are shares: two
+    targets at 1 sit the object between them, and the same pair at 0.5 does the same thing. 0, or an empty
+    slot, is skipped</td></tr>
+  <tr><td><code>Power</code></td><td><a href="#power">Above</a> — 0 is off</td></tr>
+  <tr><td><code>Axes</code></td><td>Which axes may be written</td></tr>
+  <tr><td><code>Space</code></td><td>World or Local</td></tr>
+  <tr><td><code>Mode</code></td><td>Absolute or Relative</td></tr>
+  <tr><td><code>Tween Duration</code>, <code>Tween Ease</code></td><td>Trail the target instead of sticking to
+    it. Play mode only</td></tr>
+  <tr><td><code>Follow</code></td><td>On, live every frame in <code>LateUpdate</code>. Off, applied once on
+    enable and then left alone until <code>Apply()</code></td></tr>
+  <tr><td><code>Apply In Edit Mode</code></td><td>Also constrain while editing</td></tr>
+  <tr><td><code>Rest Local Position</code>, <code>Rest Local Euler</code></td><td>The authored pose Power and
+    Relative work from</td></tr>
+</table>
+
+<p>Position Constraint adds <code>Offset</code> and <code>Offset In Target Space</code>. Rotation Constraint
+adds <code>Offset Euler</code>. Look At Constraint adds:</p>
+
+<table>
+  <tr><th>Field</th><th>Means</th></tr>
+  <tr><td><code>Aim Axis</code></td><td>The local axis pointed at the target. <code>Forward</code> for a
+    model; <code>Up</code> or <code>Right</code> for a sprite whose art faces the camera</td></tr>
+  <tr><td><code>Up Axis</code></td><td>The local axis held against <code>World Up</code>. Decides the roll
+    left over. Must not be the same axis as <code>Aim Axis</code></td></tr>
+  <tr><td><code>World Up</code></td><td>The direction that axis is held against. The board's normal, for a
+    game played on a tilted surface</td></tr>
+  <tr><td><code>Up Target</code></td><td>Optional — holds <code>Up Axis</code> at another object instead,
+    which is how a camera stays level with a rig that banks</td></tr>
+  <tr><td><code>Aim Offset</code>, <code>Offset Euler</code></td><td><a href="#offsets">Above</a></td></tr>
+</table>
+
+<div class="note">
+  <p><strong>Aiming a sprite in 2D.</strong> A sprite's Forward points out of the screen, so pointing
+  <em>that</em> at a target turns the art edge-on and it vanishes. What you want is the art to spin in the
+  plane of the board: <strong>Aim Axis</strong> <code>Up</code> (or <code>Right</code>, whichever way the art
+  points), <strong>Up Axis</strong> <code>Forward</code>, <strong>World Up</strong> <code>(0, 0, 1)</code>,
+  and <strong>Axes</strong> <code>Z</code> alone. The last two are what keep the sprite flat.</p>
+</div>
+
+<h2 id="code">From code</h2>
+
+<table>
+  <tr><th>Member</th><th>Does</th></tr>
+  <tr><td><code>SetTarget(t)</code></td><td>Replaces the whole list with one target at full weight</td></tr>
+  <tr><td><code>AddTarget(t, weight = 1)</code></td><td>Blends another one in</td></tr>
+  <tr><td><code>RemoveTarget(t)</code>, <code>ClearTargets()</code></td><td>The other way</td></tr>
+  <tr><td><code>Targets</code></td><td>The list itself, for re-weighting rows in place</td></tr>
+  <tr><td><code>Power</code>, <code>Axes</code>, <code>Space</code>, <code>Mode</code>,
+    <code>TweenDuration</code>, <code>Follow</code></td><td>The inspector, at runtime</td></tr>
+  <tr><td><code>Offset</code> / <code>OffsetEuler</code> / <code>AimOffset</code></td><td>Per component</td></tr>
+  <tr><td><code>Apply()</code></td><td>Evaluate and write now — the hook to call with <code>Follow</code>
+    off</td></tr>
+  <tr><td><code>CaptureRest()</code>, <code>ResetToRest()</code></td><td>The rest pose: take it, or go back to
+    it</td></tr>
+  <tr><td><code>ResampleOffset()</code></td><td>Re-measure the gap Relative holds, as things stand now</td></tr>
+</table>
+
+<pre><code>// Blend a camera from its own rest pose onto a ball over a second, then let it trail
+var rig = cam.GetComponent&lt;PositionConstraint&gt;();
+rig.SetTarget(ball);
+rig.TweenDuration = 0.4f;
+DOTween.To(() =&gt; rig.Power, p =&gt; rig.Power = p, 1f, 1f);</code></pre>
+
+<p>Every setter is safe to poke every frame; the components hold no state that a change would corrupt.</p>
+
+<h2 id="notes">Worth knowing</h2>
+
+<ul>
+  <li><strong>Chains lag by a frame.</strong> Constraints run in <code>LateUpdate</code> and Unity does not
+  order components across objects, so a constraint whose target is itself constrained may read a value one
+  frame old. Where that shows, put the driver earlier in the Script Execution Order, or call
+  <code>Apply()</code> on the follower yourself.</li>
+  <li><strong><code>LateUpdate</code> beats animation.</strong> The Animator has applied its clips by then, so
+  a constraint overrides an animated channel rather than being overwritten by it.</li>
+  <li><strong>A constraint cannot target its own transform.</strong> <code>OnValidate</code> clears that and
+  says so — it would be reading the value it had just written.</li>
+  <li><strong>Two of the same kind on one object fight</strong>, so
+  <code>[DisallowMultipleComponent]</code> refuses. One of each kind is fine.</li>
+  <li><strong><code>Follow</code> off freezes the object where the constraint last left it</strong>, which is
+  not the rest pose. <code>ResetToRest()</code> is the way back.</li>
+  <li><strong>Unity has its own <code>PositionConstraint</code>, <code>RotationConstraint</code> and
+  <code>LookAtConstraint</code></strong> in <code>UnityEngine.Animations</code>, for animation rigging. These
+  are unrelated and live in <code>FlappyTemplate</code>. A file that imports both namespaces needs to qualify
+  the name.</li>
+  <li><strong>Nothing here reads a <code>RectTransform</code>.</strong> These are for scene objects; the UI
+  equivalents live under <code>Ui/RectTransforms</code>.</li>
+</ul>
+
+<h2 id="files">Files</h2>
+
+<table>
+  <tr><th>File</th><th>What</th></tr>
+  <tr><td><code>TransformConstraint.cs</code></td><td>The base: targets, rest pose, power, mask, tween, when it
+    runs</td></tr>
+  <tr><td><code>PositionConstraint.cs</code></td><td>Position, with an offset that can turn with the
+    target</td></tr>
+  <tr><td><code>RotationConstraint.cs</code></td><td>Rotation, copied</td></tr>
+  <tr><td><code>LookAtConstraint.cs</code></td><td>Rotation, aimed — the axis relabelling that lets any local
+    axis do the pointing</td></tr>
+  <tr><td><code>ConstraintSource.cs</code></td><td>One target and its weight</td></tr>
+  <tr><td><code>EConstraintAxes.cs</code>, <code>EConstraintSpace.cs</code>, <code>EConstraintMode.cs</code>,
+    <code>EAimAxis.cs</code></td><td>The four choices</td></tr>
+  <tr><td><code>ConstraintExample.cs</code></td><td>Keys 1–4, X, Y, Z, T, M, S, F and R driving all of it
+    against an orbiting target</td></tr>
+  <tr><td><code>README.md</code></td><td>This, as text</td></tr>
+  <tr><td><code>Editor/Constraints/TransformConstraintEditor.cs</code></td><td>The inspector: the default one,
+    with the rest pose moved to a foldout at the bottom</td></tr>
+</table>
+
+</main>
+</div>
+</body>
+</html>
