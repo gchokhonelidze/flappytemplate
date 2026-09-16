@@ -34,6 +34,10 @@ namespace FlappyTemplate
 		MULTI_LEAVE_TABLE,
 		MULTI_TAKE_SEAT,
 		MULTI_LEAVE_SEAT,
-		MULTI_CUSTOM
+		MULTI_CUSTOM,
+
+		// Asks the server to run the init again. The answer is the same ON_GROUP snapshot the
+		// connection opens with, so it can be asked for at any point without side effects.
+		RELOAD
 	}
 }

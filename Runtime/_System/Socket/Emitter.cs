@@ -102,6 +102,16 @@ namespace FlappyTemplate
 			Socket.Inst.Send(nameof(EPlayerEvent.BAL), new { });
 		}
 
+		/// <summary>
+		/// Asks the server to run the init over again. It answers with the same ON_GROUP snapshot a
+		/// fresh connection gets - system, balance, state, bet info, stats, freespins, history and
+		/// settings - so it is safe to call whenever the client suspects it missed the first one.
+		/// </summary>
+		public void OnReload()
+		{
+			Socket.Inst.Send(nameof(EPlayerEvent.RELOAD), new { });
+		}
+
 		public void OnMultiJoinTable(string RoomId)
 		{
 			Socket.Inst.Send(nameof(EPlayerEvent.MULTI_JOIN_TABLE), new { GameTableId = RoomId });

@@ -25,14 +25,23 @@ namespace FlappyTemplate
                 var eventName = payload.Value<string>(nameof(PayloadDto.EventName));
                 var data = payload[nameof(PayloadDto.Data)];
                 if (string.IsNullOrEmpty(eventName) || data is null)
+                {
+                    // Dropping a packet used to be silent, which is how a whole missing init looked
+                    // like nothing at all in the console. Anything unusable is now loud.
+                    Debug.LogWarning($"Discarded payload without an event name or data: {msg}");
                     return;
+                }
                 // Debug.Log(msg);
                 var dataJson = data.ToString(Formatting.None);
                 if (eventName == nameof(EGameEvent.ON_GROUP))
                 {
                     var values = data[nameof(PayloadGroupDto.Values)] as JArray;
                     if (values is null)
+                    {
+                        Debug.LogWarning($"Discarded {nameof(EGameEvent.ON_GROUP)} without a "
+                            + $"{nameof(PayloadGroupDto.Values)} array: {msg}");
                         return;
+                    }
                     foreach (var element in values.OfType<JObject>())
                     {
                         var groupEventName = element.Value<string>(

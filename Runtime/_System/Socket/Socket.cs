@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 #if UNITY_WEBGL && !UNITY_EDITOR
 using System.Runtime.InteropServices;
@@ -74,7 +75,18 @@ namespace FlappyTemplate
 				+ "the parent page already polls on its own connection and pushes ON_BALANCE down to us. 0 disables."
 		)]
 		private float BalancePollInterval = 60f;
+
+		[Tooltip(
+			"Seconds to give the init snapshot before deciding it was missed. Bridge mode only — see WatchInit. 0 disables the watchdog."
+		)]
+		[SerializeField]
+		private float InitGraceTime = 1f;
+
+		[Tooltip("How many times to ask for a missed init. Each attempt waits InitGraceTime first and only sends if it is still missing.")]
+		[SerializeField]
+		private int InitReloadAttempts = 3;
 		private Incoming incoming;
+		private StateManager stateManager;
 
 		/// <summary>
 		/// True when the WebGL build runs inside an iframe. There is no SignalR connection in that
@@ -117,6 +129,8 @@ namespace FlappyTemplate
 		void Awake()
 		{
 			incoming = GetComponent<Incoming>();
+			// Incoming requires it on this same object, so it is always here to be found.
+			stateManager = GetComponent<StateManager>();
 			Inst = this;
 			Emitter = new Emitter();
 			Application.runInBackground = true;
@@ -130,6 +144,10 @@ namespace FlappyTemplate
 			CanLog = CanLogJS() != 0;
 			if (CanLog)
 				Debug.Log(IsBridge ? "Socket: iframe detected, using the postMessage bridge." : "Socket: standalone page, using SignalR.");
+			// Owning the connection has no gap to cover: the handler is registered before the socket
+			// is opened, so nothing can arrive unheard.
+			if (IsBridge && InitGraceTime > 0f && InitReloadAttempts > 0)
+				StartCoroutine(WatchInit());
 			StartBalancePoll();
 			return;
 #else
@@ -164,6 +182,37 @@ namespace FlappyTemplate
 			StartBalancePoll();
 			return;
 #endif
+		}
+
+		/// <summary>
+		/// True once the init snapshot has been applied. System and balance are the two events every
+		/// init carries, single and multi alike, so the pair being present is what "the init landed"
+		/// looks like from here.
+		/// </summary>
+		bool HasInit => stateManager.MainState.SystemState is not null && stateManager.MainState.BalanceState is not null;
+
+		/// <summary>
+		/// Recovers an init snapshot the parent page threw away. It releases its buffered packets at
+		/// the iframe's DOM load event, which for a WebGL build fires while the wasm is still
+		/// downloading - the snapshot is posted into a window with no "message" listener on it yet,
+		/// and nothing resends it. RELOAD asks the server to run the init again.
+		///
+		/// The ask is conditional because it is not free: the server's init makes a balance call out
+		/// to the partner, so asking when the snapshot did arrive buys a second one for nothing. That
+		/// also means this needs no changing if the parent page ever learns to hold its buffer until
+		/// the game is really listening - the state will simply be there and nothing will be sent.
+		/// </summary>
+		IEnumerator WatchInit()
+		{
+			for (var attempt = 1; attempt <= InitReloadAttempts; attempt++)
+			{
+				// Unscaled: a game that opens paused would otherwise never reach the check.
+				yield return new WaitForSecondsRealtime(InitGraceTime);
+				if (HasInit)
+					yield break;
+				Debug.LogWarning($"No init after {InitGraceTime}s. Asking again (attempt {attempt} of {InitReloadAttempts}).");
+				Emitter.OnReload();
+			}
 		}
 
 		/// <summary>
