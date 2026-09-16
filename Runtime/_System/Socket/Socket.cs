@@ -83,6 +83,15 @@ namespace FlappyTemplate
 		/// </summary>
 		public bool IsBridge { get; private set; }
 
+		/// <summary>
+		/// The web front's canLog(): true on staging and localhost, false everywhere else. It gates the
+		/// socket trace that Socket.jslib prints to the browser console — every event out with the
+		/// event name and its payload, every event in batched into one block — so a production embed
+		/// stays silent. Read it for game-side traces that should come and go with the same switch.
+		/// Always true in the editor and standalone builds, where there is no hostname to look at.
+		/// </summary>
+		public bool CanLog { get; private set; } = true;
+
 #if UNITY_WEBGL && !UNITY_EDITOR
 		[DllImport("__Internal")]
 		private static extern void Init(string objectName, string domain, string configJson);
@@ -92,6 +101,9 @@ namespace FlappyTemplate
 
 		[DllImport("__Internal")]
 		private static extern int IsBridgeJS();
+
+		[DllImport("__Internal")]
+		private static extern int CanLogJS();
 
 		[DllImport("__Internal")]
 		private static extern void DisposeJS();
@@ -115,7 +127,9 @@ namespace FlappyTemplate
 #if UNITY_WEBGL && !UNITY_EDITOR
 			Init(gameObject.name, Domain.TrimEnd('/'), Config.ToJson());
 			IsBridge = IsBridgeJS() != 0;
-			Debug.Log(IsBridge ? "Socket: iframe detected, using the postMessage bridge." : "Socket: standalone page, using SignalR.");
+			CanLog = CanLogJS() != 0;
+			if (CanLog)
+				Debug.Log(IsBridge ? "Socket: iframe detected, using the postMessage bridge." : "Socket: standalone page, using SignalR.");
 			StartBalancePoll();
 			return;
 #else
@@ -180,12 +194,14 @@ namespace FlappyTemplate
 				return;
 			}
 
-			Debug.Log($"Sending to js json: {json}");
 #if UNITY_WEBGL && !UNITY_EDITOR
+			// No Debug.Log here on purpose: the browser trace is printed by Socket.jslib, which sees
+			// both directions and can style them the way the web front does. See CanLog.
 			SendJS(method, json);
 #else
 
-			Debug.Log($"Sending message: {method} with json: {json}");
+			if (CanLog)
+				Debug.Log($"Sending message: {method} with json: {json}");
 			if (signalR == null)
 			{
 				Debug.LogWarning($"SignalR not initialized yet. ");

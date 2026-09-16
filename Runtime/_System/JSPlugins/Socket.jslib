@@ -66,6 +66,62 @@ var SocketLib = {
 			}
 			return String(value);
 		},
+		// Mirrors the web front's canLog(): the event trace is on for staging and local
+		// development only, so a production embed stays quiet. Resolved once in Init.
+		canLog: false,
+		logArr: [],
+		logTimer: null,
+		checkCanLog: function () {
+			try {
+				var h = window.location.hostname;
+				return h.indexOf("staging") !== -1 || h.indexOf("localhost") !== -1;
+			} catch (err) {
+				return false;
+			}
+		},
+		// Outgoing, one line each, printed as it goes out. H is the layout probe — it fires on
+		// every resize and says nothing, so it is left out the way the web front leaves it out.
+		logOut: function (eventName, data) {
+			if (!vars.canLog || eventName === "H") return;
+			console.log("%c " + eventName + "▶️ " + vars.serialize(data), "background: #222; color: #bada55");
+		},
+		// Incoming, batched: events that arrive together print as one block closed by a flag,
+		// rather than scrolling past a line at a time. ON_GROUP is unpacked so its members read
+		// like the individual events they are.
+		logIn: function (eventName, data) {
+			if (!vars.canLog) return;
+			if (eventName === "ON_GROUP" && data && Object.prototype.toString.call(data.Values) === "[object Array]") {
+				for (var i = 0; i < data.Values.length; i++) {
+					vars.logArr.push([data.Values[i].E, data.Values[i].O]);
+				}
+			} else {
+				vars.logArr.push([eventName, data]);
+			}
+			clearTimeout(vars.logTimer);
+			vars.logTimer = setTimeout(function () {
+				for (var i = 0; i < vars.logArr.length; i++) {
+					console.log(vars.logArr[i][0], vars.logArr[i][1]);
+				}
+				vars.logArr.length = 0;
+				console.log("🚩");
+			}, 100);
+		},
+		// The hub hands the envelope over as an object or as its JSON text depending on the
+		// protocol in play; both are traced the same way.
+		logInRaw: function (message) {
+			if (!vars.canLog) return;
+			var o = message;
+			if (typeof o === "string") {
+				try {
+					o = JSON.parse(o);
+				} catch (err) {
+					console.log(message);
+					return;
+				}
+			}
+			if (!o || typeof o !== "object") return;
+			vars.logIn(o.EventName, o.Data);
+		},
 		connect: function () {
 			if (!signalR) {
 				console.error("Socket.jslib: signalR library not found. Make sure to include the SignalR JavaScript client library.");
@@ -79,7 +135,7 @@ var SocketLib = {
 				});
 				var domain = (vars.domain || "").replace(/\/+$/, "");
 				var url = domain + "/sock?token=" + params.token;
-				console.log("Connecting to Socket server at:", url);
+				if (vars.canLog) console.log("Connecting to Socket server at:", url);
 				// WebSockets only — no transport fallback, so negotiate is skippable.
 				var urlOptions = {
 					transport: vars.config.transport,
@@ -99,7 +155,7 @@ var SocketLib = {
 				vars.connection.serverTimeoutInMilliseconds = vars.config.serverTimeout;
 				vars.connection.keepAliveIntervalInMilliseconds = vars.config.keepAliveInterval;
 				vars.connection.on("OnData", function (message) {
-					console.log("Received from server:", message);
+					vars.logInRaw(message);
 					vars.sendToUnity("OnData", vars.serialize(message));
 				});
 				vars.connection.on("Disconnect", function (reason) {
@@ -112,7 +168,7 @@ var SocketLib = {
 					console.warn("Socket.jslib: Reconnecting: " + (err ? err.toString() : ""));
 				});
 				vars.connection.onreconnected(function () {
-					console.log("Socket.jslib: Reconnected.");
+					if (vars.canLog) console.log("Socket.jslib: Reconnected.");
 				});
 				vars.connection.onclose(function (err) {
 					console.warn("Socket.jslib: Connection closed: " + (err ? err.toString() : ""));
@@ -121,7 +177,7 @@ var SocketLib = {
 				vars.connection
 					.start()
 					.then(function () {
-						console.log("Socket.jslib: Connected to server.");
+						if (vars.canLog) console.log("Socket.jslib: Connected to server.");
 					})
 					.catch(function (err) {
 						console.error("Socket.jslib: Connection error: " + err.toString());
@@ -141,7 +197,7 @@ var SocketLib = {
 				vars.onParentMessage(event);
 			};
 			window.addEventListener("message", vars.bridgeListener);
-			console.log("Socket.jslib: running in iframe — using postMessage bridge, SignalR disabled.");
+			if (vars.canLog) console.log("Socket.jslib: running in iframe — using postMessage bridge, SignalR disabled.");
 		},
 		stopBridge: function () {
 			if (!vars.bridgeListener) return;
@@ -158,6 +214,7 @@ var SocketLib = {
 				vars.postToParent("H", { H: vars.getHeight() });
 				return;
 			}
+			vars.logIn(o.EventName, o.Data);
 			// Same envelope the hub sends, including ON_GROUP with { Values: [{ E, O }] },
 			// so it goes into Incoming.OnData untouched.
 			vars.sendToUnity("OnData", vars.serialize({ EventName: o.EventName, Data: o.Data }));
@@ -201,6 +258,7 @@ var SocketLib = {
 		} catch (err) {
 			console.warn("Socket.jslib: Invalid config, using defaults: " + err.toString());
 		}
+		vars.canLog = vars.checkCanLog();
 		vars.instance = window.MyGameInstance || window.unityInstance || window.gameInstance;
 		vars.bridge = vars.inIframe();
 		if (vars.bridge) {
@@ -214,6 +272,7 @@ var SocketLib = {
 		var _json = UTF8ToString(data);
 		var _method = UTF8ToString(method);
 		var _data = JSON.parse(_json);
+		vars.logOut(_method, _data);
 		if (vars.bridge) {
 			vars.postToParent(_method, _data);
 			return;
@@ -226,6 +285,10 @@ var SocketLib = {
 		vars.connection.invoke("Data", { Event: _method, Data: _data }).catch(function (err) {
 			console.error("Socket.jslib: Send error: " + err.toString());
 		});
+	},
+
+	CanLogJS: function () {
+		return vars.canLog ? 1 : 0;
 	},
 
 	IsBridgeJS: function () {

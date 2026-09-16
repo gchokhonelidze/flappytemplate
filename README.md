@@ -4,7 +4,7 @@ Every readme in the package, in one place. Each row below opens a component's do
 twin sits beside every one of them in the same folder, with the same content laid out for a browser and the
 component **drawn** rather than described.
 
-*Package 1.0.82. Update this file when a readme is added or removed — and the versions in
+*Package 1.0.83. Update this file when a readme is added or removed — and the versions in
 [Which are current](#which-are-current) when one is brought up to date. **README.html** beside it is the same
 content for reading in a browser.*
 
@@ -71,12 +71,13 @@ server has already given.
 
 ## Which are current
 
-Every readme carries the package version it was last checked against. The ones below **1.0.82** are the pages to
+Every readme carries the package version it was last checked against. The ones below **1.0.83** are the pages to
 distrust first if something on them does not match the code.
 
 | Describes | Pages |
 | --- | --- |
-| **1.0.82** — current | Window, Ui Navbar, Sound |
+| **1.0.83** — current | — |
+| 1.0.82 | Window, Ui Navbar, Sound |
 | 1.0.81 | Hotkeys |
 | 1.0.80 | Ui History |
 | 1.0.79 | Transform Constraints |
@@ -97,7 +98,7 @@ source is the documentation for now, and the files named are the ones worth open
 
 | | |
 | --- | --- |
-| [`Socket/`](Runtime/_System/Socket/) | The connection itself. `Emitter` is everything the game sends, `Incoming` everything it receives and where each payload lands in the state. |
+| [`Socket/`](Runtime/_System/Socket/) | The connection itself. `Emitter` is everything the game sends, `Incoming` everything it receives and where each payload lands in the state. In a WebGL build `Socket.jslib` traces both directions to the browser console — on for `staging` and `localhost` hostnames only, and readable from C# as `Socket.Inst.CanLog`. |
 | [`States/`](Runtime/_System/States/) | `MainState` is what the server has told us, `MainEvents` is how to hear about it changing, and `StateManager` is the object holding both. |
 | [`Navigation/`](Runtime/_System/Navigation/) | `Navigator`: leaving the game for the operator's page, and what an address has to look like to be followed. |
 | [`Performance/`](Runtime/_System/Performance/) | The frame rate limiter, the anti-aliasing policy and the FPS counter. |

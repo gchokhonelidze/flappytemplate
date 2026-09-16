@@ -190,7 +190,7 @@
   <p class="lede">Every readme in the package, in one place. Each card opens the browser copy of a component's
   documentation; a <code>README.md</code> twin sits beside every one of them in the same folder, with the same
   content for reading in an editor or on a repository page.</p>
-  <p class="stamp">Package 1.0.82. Update this file when a readme is added or removed — and the version badges
+  <p class="stamp">Package 1.0.83. Update this file when a readme is added or removed — and the version badges
   below when one is brought up to date. <strong>README.md</strong> beside it is the same content as Markdown,
   which is the copy a GitLab or GitHub page can render — this one is for reading locally, in a browser, with
   every component drawn.</p>
@@ -337,7 +337,7 @@ the server has already given.</p>
 <h2 id="versions">Which are current</h2>
 
 <p>Every readme carries the package version it was last checked against. The badges above repeat it, and the ones
-marked in amber describe a version older than the current <strong>1.0.82</strong> — so they are the pages to
+marked in amber describe a version older than the current <strong>1.0.83</strong> — so they are the pages to
 distrust first if something on them does not match the code.</p>
 
 <div class="note">
@@ -349,7 +349,8 @@ distrust first if something on them does not match the code.</p>
 <table>
   <thead><tr><th>Describes</th><th>Pages</th></tr></thead>
   <tbody>
-    <tr><td><strong>1.0.82</strong> — current</td><td>Window, Ui Navbar, Sound</td></tr>
+    <tr><td><strong>1.0.83</strong> — current</td><td>—</td></tr>
+    <tr><td>1.0.82</td><td>Window, Ui Navbar, Sound</td></tr>
     <tr><td>1.0.81</td><td>Hotkeys</td></tr>
     <tr><td>1.0.80</td><td>Ui History</td></tr>
     <tr><td>1.0.79</td><td>Transform Constraints</td></tr>
@@ -367,7 +368,7 @@ distrust first if something on them does not match the code.</p>
 source is the documentation for now, and the files below are the ones worth opening first.</p>
 
 <div class="undoc">
-  <div><b>Socket/</b> — the connection itself. <code>Emitter</code> is everything the game sends, <code>Incoming</code> everything it receives and where each payload lands in the state.</div>
+  <div><b>Socket/</b> — the connection itself. <code>Emitter</code> is everything the game sends, <code>Incoming</code> everything it receives and where each payload lands in the state. In a WebGL build <code>Socket.jslib</code> traces both directions to the browser console — on for <code>staging</code> and <code>localhost</code> hostnames only, and readable from C# as <code>Socket.Inst.CanLog</code>.</div>
   <div><b>States/</b> — <code>MainState</code> is what the server has told us, <code>MainEvents</code> is how to hear about it changing, and <code>StateManager</code> is the object holding both.</div>
   <div><b>Navigation/</b> — <code>Navigator</code>: leaving the game for the operator's page, and what an address has to look like to be followed.</div>
   <div><b>Performance/</b> — the frame rate limiter, the anti-aliasing policy and the FPS counter.</div>
