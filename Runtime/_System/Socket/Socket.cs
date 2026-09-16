@@ -87,6 +87,8 @@ namespace FlappyTemplate
 		private int InitReloadAttempts = 3;
 		private Incoming incoming;
 		private StateManager stateManager;
+		private bool gotSystem;
+		private bool gotBalance;
 
 		/// <summary>
 		/// True when the WebGL build runs inside an iframe. There is no SignalR connection in that
@@ -131,6 +133,9 @@ namespace FlappyTemplate
 			incoming = GetComponent<Incoming>();
 			// Incoming requires it on this same object, so it is always here to be found.
 			stateManager = GetComponent<StateManager>();
+			// Before Start, so the flags cannot miss a packet that arrives while we are setting up.
+			stateManager.Events.OnSystem.AddListener(OnSystemArrived);
+			stateManager.Events.OnBalance.AddListener(OnBalanceArrived);
 			Inst = this;
 			Emitter = new Emitter();
 			Application.runInBackground = true;
@@ -184,12 +189,21 @@ namespace FlappyTemplate
 #endif
 		}
 
+		void OnSystemArrived(SystemDto _) => gotSystem = true;
+
+		void OnBalanceArrived(BalanceDto _) => gotBalance = true;
+
 		/// <summary>
 		/// True once the init snapshot has been applied. System and balance are the two events every
-		/// init carries, single and multi alike, so the pair being present is what "the init landed"
+		/// init carries, single and multi alike, so the pair having arrived is what "the init landed"
 		/// looks like from here.
+		///
+		/// It watches the events rather than reading MainState, because the state cannot answer this.
+		/// SystemState and BalanceState are serializable classes on a serialized field, and Unity does
+		/// not keep null for those - it builds a blank one at load, so they are non-null from the
+		/// first frame whether or not anything ever arrived.
 		/// </summary>
-		bool HasInit => stateManager.MainState.SystemState is not null && stateManager.MainState.BalanceState is not null;
+		bool HasInit => gotSystem && gotBalance;
 
 		/// <summary>
 		/// Recovers an init snapshot the parent page threw away. It releases its buffered packets at
@@ -299,6 +313,11 @@ namespace FlappyTemplate
 
 		void OnDestroy()
 		{
+			if (stateManager != null)
+			{
+				stateManager.Events.OnSystem.RemoveListener(OnSystemArrived);
+				stateManager.Events.OnBalance.RemoveListener(OnBalanceArrived);
+			}
 #if UNITY_WEBGL && !UNITY_EDITOR
 			// Drops the window "message" listener so a reloaded scene does not end up with two
 			// bridges feeding the same events into Incoming.
