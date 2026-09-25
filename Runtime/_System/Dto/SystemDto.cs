@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 
@@ -56,7 +57,9 @@ namespace FlappyTemplate
         }
         public string? MinBet;
         public string? MaxBet;
+        public string? DefaultBet;
         public string? MaxWin;
+        public string[]? BetLevels;
 
         [SerializeField]
         private string _MeId = string.Empty;
@@ -101,6 +104,19 @@ namespace FlappyTemplate
         public string? ReturnUrl;
         public string? Version;
         public bool? BattleReady;
+
+        [SerializeField]
+        private string _TotalOnline = string.Empty;
+        private bool TotalOnlineHasValue;
+        public int? TotalOnline
+        {
+            get => TotalOnlineHasValue ? int.Parse(_TotalOnline) : null;
+            set
+            {
+                TotalOnlineHasValue = value.HasValue;
+                _TotalOnline = value.HasValue ? value.Value.ToString() : string.Empty;
+            }
+        }
 
         public SystemDto ApplyPatch(string json)
         {
@@ -149,8 +165,16 @@ namespace FlappyTemplate
                     case nameof(MaxBet):
                         MaxBet = kv.Value.GetString();
                         break;
+                    case nameof(DefaultBet):
+                        DefaultBet = kv.Value.GetString();
+                        break;
                     case nameof(MaxWin):
                         MaxWin = kv.Value.GetString();
+                        break;
+                    case nameof(BetLevels):
+                        BetLevels = kv.Value is JArray levels
+                            ? levels.Select(level => level.GetString() ?? string.Empty).ToArray()
+                            : null;
                         break;
                     case nameof(MeId):
                         MeId = kv.Value.GetInt64();
@@ -177,6 +201,9 @@ namespace FlappyTemplate
                         break;
                     case nameof(BattleReady):
                         BattleReady = kv.Value.GetBoolean();
+                        break;
+                    case nameof(TotalOnline):
+                        TotalOnline = kv.Value.GetInt32_Nullable();
                         break;
                     default:
                         // Ignore unknown fields.
