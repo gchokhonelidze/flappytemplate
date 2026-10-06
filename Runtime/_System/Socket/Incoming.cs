@@ -147,8 +147,9 @@ namespace FlappyTemplate
                     }
                     case nameof(EGameEvent.ON_BET_INFO_PAYOUT):
                     {
-                        var patchArray = Utils.TryDeserialize<TransactionChunks>(dataJson);
-                        foreach (var (id, chunk) in patchArray.Chunks)
+                        // { id: [chunks] }, one list of winning bets per transaction.
+                        var patchArray = TransactionChunks.ReadMap(dataJson);
+                        foreach (var (id, chunks) in patchArray)
                         {
                             if (
                                 !StateManager.Inst.MainState.BetInfos.TryGetValue(
@@ -157,12 +158,21 @@ namespace FlappyTemplate
                                 )
                             )
                                 continue;
-                            var bet = betInfo.Bets.FirstOrDefault(el => el.BetId == chunk.BetId);
-                            if (bet is null)
-                                continue;
-                            bet.Payout = chunk.Payout;
-                            bet.Win = true;
-                            stateManager.Events.OnBetInfoPayout?.Invoke(betInfo);
+                            var changed = false;
+                            foreach (var chunk in chunks)
+                            {
+                                var bet = betInfo.Bets?.FirstOrDefault(el =>
+                                    el.BetId == chunk.BetId
+                                );
+                                if (bet is null)
+                                    continue;
+                                bet.Payout = chunk.Payout;
+                                bet.Win = true;
+                                changed = true;
+                            }
+                            // Once per transaction, after all of its bets are in, not once per bet.
+                            if (changed)
+                                stateManager.Events.OnBetInfoPayout?.Invoke(betInfo);
                         }
                         break;
                     }
