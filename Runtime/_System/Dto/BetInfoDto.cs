@@ -1,6 +1,10 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using UnityEngine;
 
 namespace FlappyTemplate
 {
@@ -33,10 +37,57 @@ namespace FlappyTemplate
         public string TotalBetUsd = "0";
         public string TotalProfitUsd = "0";
 
+        /// <summary>
+        /// Reads an ON_BET_INFO payload into one map of transaction id to bet. The server sends a list of
+        /// one-entry objects, <c>[ { id: bet }, ... ]</c>; the older form, <c>{ id: bet, ... }</c>, is read too,
+        /// the way the web front does. Anything unreadable is logged and left out.
+        /// </summary>
+        public static Dictionary<string, BetInfoDto> ReadMap(string json)
+        {
+            var result = new Dictionary<string, BetInfoDto>();
+            JToken token;
+            try
+            {
+                token = JToken.Parse(json);
+            }
+            catch (JsonException ex)
+            {
+                Debug.LogError($"Failed to parse bet info JSON: {ex.Message}");
+                return result;
+            }
+
+            void Add(JObject entries)
+            {
+                foreach (var (id, value) in entries)
+                {
+                    if (value is null)
+                        continue;
+                    var dto = Utils.TryDeserialize<BetInfoDto>(value.ToString(Formatting.None));
+                    if (dto != null)
+                        result[id] = dto;
+                }
+            }
+
+            switch (token)
+            {
+                case JArray list:
+                    foreach (var entry in list.OfType<JObject>())
+                        Add(entry);
+                    break;
+                case JObject map:
+                    Add(map);
+                    break;
+                default:
+                    Debug.LogWarning($"Discarded bet info that is neither a list nor an object: {json}");
+                    break;
+            }
+            return result;
+        }
+
         public void ApplyPatch(string json)
         {
-            var patchArray = Utils.Deserialize<Dictionary<string, BetInfoDto>>(json);
-            if (patchArray is null || patchArray.Count == 0)
+            var patchArray = ReadMap(json);
+            if (patchArray.Count == 0)
                 return;
 
             foreach (var (id, betInfoDto) in patchArray!)

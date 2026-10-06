@@ -133,13 +133,12 @@ namespace FlappyTemplate
                     }
                     case nameof(EGameEvent.ON_BET_INFO):
                     {
-                        var patchArray = Utils.TryDeserialize<Dictionary<string, BetInfoDto>>(
-                            dataJson
-                        );
-                        if (patchArray is null || patchArray.Count == 0)
+                        // A list of one-entry objects now, a single object before; ReadMap takes both.
+                        var patchArray = BetInfoDto.ReadMap(dataJson);
+                        if (patchArray.Count == 0)
                             return;
 
-                        foreach (var (id, betInfoDto) in patchArray!)
+                        foreach (var (id, betInfoDto) in patchArray)
                         {
                             StateManager.Inst.MainState.BetInfos[id] = betInfoDto;
                             stateManager.Events.OnBetInfo?.Invoke(betInfoDto);
