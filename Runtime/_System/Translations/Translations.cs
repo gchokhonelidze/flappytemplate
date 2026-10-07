@@ -210,6 +210,33 @@ namespace FlappyTemplate
                 fil_PH: "Walang taya sa round na ito", ur_PK: "اس راؤنڈ میں کوئی شرط نہیں", fa_IR: "در این دور شرطی وجود ندارد", ms_MY: "Tiada pertaruhan pada pusingan ini",
                 ka_GE: "ამ რაუნდზე ფსონები არ არის", hy_AM: "Այս ռաունդում խաղադրույքներ չկան");
 
+            // Bet info sheet - the other way of drawing a bet. Its title, totals and seeds are the bet info and
+            // game history windows' and the common ones above; these are only what it adds.
+
+            Row("bet_info.round_id",
+                en_US: "Round ID", ru_RU: "ID раунда", fr_FR: "ID du tour", bn_BD: "রাউন্ড আইডি",
+                de_DE: "Runden-ID", es_ES: "ID de la ronda", id_ID: "ID ronde", pt_PT: "ID da ronda",
+                tr_TR: "Tur kimliği", vi_VN: "ID vòng", ar_AE: "معرّف الجولة", hi_IN: "राउंड आईडी",
+                th_TH: "รหัสรอบ", ja_JP: "ラウンドID", ko_KR: "라운드 ID", zh_CN: "回合 ID",
+                fil_PH: "ID ng round", ur_PK: "راؤنڈ کی آئی ڈی", fa_IR: "شناسه دور", ms_MY: "ID pusingan",
+                ka_GE: "რაუნდის ID", hy_AM: "Ռաունդի ID");
+
+            Row("bet_info.server_sha512",
+                en_US: "Server seed's SHA512 hash", ru_RU: "SHA512-хеш серверного сида", fr_FR: "Hachage SHA512 de la graine serveur", bn_BD: "সার্ভার সিডের SHA512 হ্যাশ",
+                de_DE: "SHA512-Hash des Server-Seeds", es_ES: "Hash SHA512 de la semilla del servidor", id_ID: "Hash SHA512 seed server", pt_PT: "Hash SHA512 da semente do servidor",
+                tr_TR: "Sunucu tohumunun SHA512 özeti", vi_VN: "Hash SHA512 của seed máy chủ", ar_AE: "تجزئة SHA512 لبذرة الخادم", hi_IN: "सर्वर सीड का SHA512 हैश",
+                th_TH: "แฮช SHA512 ของซีดเซิร์ฟเวอร์", ja_JP: "サーバーシードの SHA512 ハッシュ", ko_KR: "서버 시드의 SHA512 해시", zh_CN: "服务器种子的 SHA512 哈希",
+                fil_PH: "SHA512 hash ng server seed", ur_PK: "سرور سیڈ کا SHA512 ہیش", fa_IR: "هش SHA512 بذر سرور", ms_MY: "Cincangan SHA512 benih pelayan",
+                ka_GE: "სერვერის სიდის SHA512 ჰეში", hy_AM: "Սերվերի սերմի SHA512 հեշը");
+
+            Row("bet_info.round_bets",
+                en_US: "Round Bets", ru_RU: "Ставки раунда", fr_FR: "Paris du tour", bn_BD: "রাউন্ডের বাজি",
+                de_DE: "Wetten der Runde", es_ES: "Apuestas de la ronda", id_ID: "Taruhan ronde", pt_PT: "Apostas da ronda",
+                tr_TR: "Tur bahisleri", vi_VN: "Cược trong vòng", ar_AE: "رهانات الجولة", hi_IN: "राउंड की बेट",
+                th_TH: "การเดิมพันในรอบ", ja_JP: "ラウンドのベット", ko_KR: "라운드 베팅", zh_CN: "本回合投注",
+                fil_PH: "Mga taya sa round", ur_PK: "راؤنڈ کی شرطیں", fa_IR: "شرط‌های دور", ms_MY: "Pertaruhan pusingan",
+                ka_GE: "რაუნდის ფსონები", hy_AM: "Ռաունդի խաղադրույքները");
+
             // Fairness window.
 
             Row("fairness.title",

@@ -1857,6 +1857,10 @@ namespace FlappyTemplate
             button.targetGraphic = backdrop;
             button.transition = Selectable.Transition.None;
 
+            // A Button, so UiCursor would put the hand over the whole screen behind a modal. The sheet is a way
+            // out rather than a control, and the arrow is what a page shows over one.
+            UiCursorHint.Set(backdrop.gameObject, ECursor.Default);
+
             // Outside the creation branch: a sheet that was made in the editor comes back from the scene
             // file with its Button and without the listener, since AddListener is not something that is
             // saved. HookEvents covers the same ground on load; this covers a backdrop switched on later.

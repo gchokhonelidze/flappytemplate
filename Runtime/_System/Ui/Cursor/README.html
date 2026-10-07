@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cursor — FlappyBet Template</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --ink: #1c1f24;
+    --soft: #5b6472;
+    --line: #dfe3e8;
+    --accent: #3f6fd8;
+    --code-bg: #f2f4f7;
+    --note-bg: #eef4ff;
+    --note-line: #6f9bea;
+    --warn-bg: #fff6e5;
+    --warn-line: #e6a23c;
+    --stage: #e9ebef;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --panel: #1d2025;
+      --ink: #e4e7ec;
+      --soft: #9aa3b0;
+      --line: #2c3038;
+      --accent: #7aa2f7;
+      --code-bg: #12141a;
+      --note-bg: #161d2b;
+      --note-line: #4a6ea8;
+      --warn-bg: #2c2415;
+      --warn-line: #b98330;
+      --stage: #0f1114;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 28px 96px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 64px; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 14px;
+    border-left: 2px solid var(--line);
+    padding-left: 16px;
+  }
+  nav.toc strong { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--soft); }
+  nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+  nav.toc a.home {
+    color: var(--ink);
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  header.title { margin-bottom: 28px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 44px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  p { margin: 12px 0; max-width: 74ch; }
+  a { color: var(--accent); }
+  .lede { color: var(--soft); }
+  .stamp { color: var(--soft); font-size: 13.5px; font-style: italic; }
+
+  code, pre { font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 4px; font-size: 0.86em; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--soft); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td:first-child { white-space: nowrap; }
+
+  .note, .warn {
+    border-left: 3px solid var(--note-line);
+    background: var(--note-bg);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+  .warn { border-left-color: var(--warn-line); background: var(--warn-bg); }
+  .note p, .warn p { margin: 0; max-width: none; }
+
+  /* ---- the four tiles of the example, with the cursor each one gets ---- */
+  .stage {
+    background: var(--stage);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 22px;
+    margin: 18px 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
+  }
+  .tile {
+    border-radius: 14px;
+    padding: 18px 12px;
+    text-align: center;
+    color: #1c1a4a;
+    font-weight: 700;
+    font-size: 14px;
+    user-select: none;
+  }
+  .tile small { display: block; font-weight: 500; font-size: 12px; opacity: .75; margin-top: 4px; font-family: "SF Mono", Menlo, Consolas, monospace; }
+  .tile.button { background: #90e49a; cursor: pointer; }
+  .tile.off { background: #9a9a9a; cursor: default; }
+  .tile.card { background: #fbcc14; cursor: pointer; }
+  .tile.handle { background: #b05af2; cursor: grab; }
+  .tile.handle:active { cursor: grabbing; }
+  .tile.field { background: #fff; border: 2px solid #c9ccd3; cursor: text; text-align: left; font-weight: 500; }
+  .stage .why { grid-column: 1 / -1; margin: 0; color: var(--soft); font-size: 13px; max-width: none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc">
+  <a class="home" href="../../../../README.html">&#8592; All documentation</a>
+  <strong>Contents</strong>
+  <a href="#rule">What it shows</a>
+  <a href="#hints">Hints</a>
+  <a href="#code">From code</a>
+  <a href="#decides">How it decides</a>
+  <a href="#outside">Outside the browser</a>
+  <a href="#files">Files</a>
+</nav>
+
+<main>
+
+<header class="title">
+  <h1>Cursor</h1>
+  <p class="lede">The hand over anything clickable. UGUI has no idea of a mouse cursor — a Button tints when it is
+  hovered and the arrow stays an arrow — so <code>UiCursor</code> looks at what is under the mouse and shows the
+  cursor it wants.</p>
+  <p><strong>There is nothing to set up.</strong> No component goes in the scene: the first scene that loads starts
+  a hidden driver, the same way Hotkeys does, and every Button in the game — the template's windows, the navbar, the
+  history chips, the game's own — gets the hand from then on.</p>
+  <p class="stamp">Describes package 1.0.89. Update this file with the code — and README.md beside it.</p>
+</header>
+
+<div class="warn">
+  <p><strong>Check it in a WebGL build, not in play mode.</strong> The cursor is the browser's own, set as CSS on the
+  canvas — the only cursor a page can show, and the reason this exists. The editor has no hand of its own to show,
+  so in play mode nothing visibly changes. See <a href="#outside">Outside the browser</a>.</p>
+</div>
+
+<h2 id="rule">What it shows</h2>
+
+<div class="stage">
+  <p class="why">The tiles <code>UiCursorExample</code> builds, plus a text field — hover over them. Each has the
+  cursor the game would give it.</p>
+  <div class="tile button">Button<small>pointer</small></div>
+  <div class="tile off">Disabled Button<small>default</small></div>
+  <div class="tile card">Clickable Card<small>pointer</small></div>
+  <div class="tile handle">Drag Handle<small>grab · hint</small></div>
+  <div class="tile field">Text field<small>text</small></div>
+</div>
+
+<table>
+  <tr><th>Under the mouse</th><th>Cursor</th></tr>
+  <tr><td>A <code>Button</code>, <code>Toggle</code>, <code>Slider</code>, <code>Scrollbar</code>, <code>Dropdown</code> — anything <code>Selectable</code> that can be used</td><td>the hand</td></tr>
+  <tr><td>A text field, <code>TMP_InputField</code> or <code>InputField</code></td><td>the I-beam</td></tr>
+  <tr><td>A <code>Selectable</code> that is not interactable</td><td>the arrow</td></tr>
+  <tr><td>Anything else with a click handler on it — an <code>EventTrigger</code>, a game's own <code>IPointerClickHandler</code></td><td>the hand</td></tr>
+  <tr><td>Anything with a <a href="#hints"><code>UiCursorHint</code></a> on it or above it</td><td>whatever that says</td></tr>
+  <tr><td>Nothing that answers a click</td><td>the arrow</td></tr>
+</table>
+
+<h2 id="hints">Hints</h2>
+
+<p>The rule is right for anything built from UGUI's own controls. For the rest, a <strong>Ui Cursor Hint</strong>
+says what an object is: Add Component → UI → Cursor Hint, pick a cursor, done. It covers the object's children too,
+and the nearest hint up the hierarchy wins — a hint on a card reaches the labels inside it, and a Button inside that
+card with a hint of its own keeps its own.</p>
+
+<pre><code>UiCursorHint.Set(handle, ECursor.Grab);      // a drag handle: nothing to click, but something to pick up
+UiCursorHint.Set(card, ECursor.Pointer);     // clickable through code that is not a click handler
+UiCursorHint.Set(backdrop, ECursor.Default); // a Button that should not look like one</code></pre>
+
+<p>The template uses one itself: a <strong>window's backdrop</strong> is a Button — it closes the dialog when the
+player clicks past it — and without a hint the whole screen behind a modal would show the hand. It shows the arrow,
+as a page does over one.</p>
+
+<table>
+  <tr><th><code>ECursor</code></th><th>CSS</th><th></th></tr>
+  <tr><td><code>Default</code></td><td><code>default</code></td><td>the arrow</td></tr>
+  <tr><td><code>Pointer</code></td><td><code>pointer</code></td><td>the hand</td></tr>
+  <tr><td><code>Text</code></td><td><code>text</code></td><td>the I-beam</td></tr>
+  <tr><td><code>Grab</code></td><td><code>grab</code></td><td>an open hand</td></tr>
+  <tr><td><code>Grabbing</code></td><td><code>grabbing</code></td><td>a closed hand</td></tr>
+  <tr><td><code>NotAllowed</code></td><td><code>not-allowed</code></td><td>a circle with a bar through it</td></tr>
+</table>
+
+<h2 id="code">From code</h2>
+
+<table>
+  <tr><td><code>UiCursor.Enabled</code></td><td>On by default. Off puts the arrow back and leaves it — for a game that draws a cursor of its own.</td></tr>
+  <tr><td><code>UiCursor.Current</code></td><td>The cursor showing now.</td></tr>
+  <tr><td><code>UiCursor.Resolve(gameObject)</code></td><td>Which cursor an object asks for, by the rules above.</td></tr>
+  <tr><td><code>UiCursor.SetTexture(cursor, texture, hotspot)</code></td><td>A cursor image for platforms other than the web. See below.</td></tr>
+  <tr><td><code>UiCursor.Reapply()</code></td><td>Says the current cursor again.</td></tr>
+  <tr><td><code>UiCursor.Css(cursor)</code></td><td>The CSS name for a cursor.</td></tr>
+  <tr><td><code>UiCursorHint.Set(gameObject, cursor)</code></td><td>Adds a hint, or changes the one already there.</td></tr>
+</table>
+
+<h2 id="decides">How it decides</h2>
+
+<p>Only the <strong>first</strong> thing a raycast hits is asked — the one a click would go to — and its hierarchy
+is walked upwards one level at a time, the nearest answer winning. So a label inside a Button is a hand, and a
+disabled Button inside a clickable card is an arrow.</p>
+
+<p>It looks again whenever the mouse moves, and every tenth of a second while it does not: something can arrive
+under a mouse that is standing still — a window opening, a list scrolling — and that is soon enough for it without
+raycasting the canvas every frame for nothing. <strong>While the button is held, the cursor stays what it
+was</strong> when the press began, so a drag that wanders off the slider it started on does not flick to an arrow
+mid-drag.</p>
+
+<p>Only switched-on things count. A hint, a Button or a handler on an object that is switched off answers nothing,
+the same as the click it stands for.</p>
+
+<h2 id="outside">Outside the browser</h2>
+
+<p>Every platform but the web has no hand of its own, so there the cursor changes only if it has been given an
+image for it:</p>
+
+<pre><code>UiCursor.SetTexture(ECursor.Pointer, handTexture, new Vector2(9f, 2f));  // the hotspot is the fingertip</code></pre>
+
+<p>With no textures given, nothing is touched at all — and that is deliberate: setting the cursor back to the
+system's would throw away one a game had set with <code>Cursor.SetCursor</code> itself. The texture has to be
+imported as <strong>Cursor</strong>, with Read/Write on, as Unity requires of any cursor.</p>
+
+<h2 id="files">Files</h2>
+
+<table>
+  <tr><th>File</th><th></th></tr>
+  <tr><td><code>UiCursor.cs</code></td><td>The rule, the driver's tick, and the cursor setting.</td></tr>
+  <tr><td><code>UiCursorHint.cs</code></td><td>The per-object override.</td></tr>
+  <tr><td><code>ECursor.cs</code></td><td>The cursors there are.</td></tr>
+  <tr><td><code>UiCursorDriver.cs</code></td><td>The hidden object that gives it a frame. Internal.</td></tr>
+  <tr><td><code>UiCursorExample.cs</code></td><td>A button, a disabled one, a card with a click handler and a hinted drag handle. Drop it on an empty RectTransform in a canvas.</td></tr>
+  <tr><td><code>../../JSPlugins/Cursor.jslib</code></td><td>Sets the CSS cursor on the canvas.</td></tr>
+  <tr><td><code>../Window/UiWindow.cs</code></td><td>Puts the arrow hint on a window's backdrop.</td></tr>
+</table>
+
+</main>
+</div>
+</body>
+</html>

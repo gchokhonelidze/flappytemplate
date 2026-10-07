@@ -4,10 +4,10 @@ using UnityEngine.UI;
 
 namespace FlappyTemplate.Editor
 {
-    // Puts Window, Statistics Window, Bet Info Window, Game History Window, Fairness Window, Hotkeys Window and
-    // Sound Window in GameObject > UI (Canvas) >
-    // FlappyBet, and makes them behave like Panel: a canvas and an EventSystem appear if the scene has none,
-    // the object lands under whatever was right-clicked, and one undo takes the whole lot back out.
+    // Puts Window, Statistics Window, Bet Info Window, Game History Window, Fairness Window, Hotkeys Window,
+    // Sound Window and Bet Info Sheet Window in GameObject > UI (Canvas) > FlappyBet, and makes them behave like
+    // Panel: a canvas and an EventSystem appear if the scene has none, the object lands under whatever was
+    // right-clicked, and one undo takes the whole lot back out.
     //
     // The canvas-finding and reparenting are RoundedBoxMenu's - the same three steps UGUI's own menu runs,
     // and there is no reason for a second copy of them.
@@ -24,6 +24,7 @@ namespace FlappyTemplate.Editor
         private static readonly Vector2 StatisticsSize = new Vector2(300f, 560f);
         private static readonly Vector2 BetInfoSize = new Vector2(560f, 620f);
         private static readonly Vector2 GameHistorySize = new Vector2(560f, 700f);
+        private static readonly Vector2 BetInfoSheetSize = new Vector2(760f, 720f);
         private static readonly Vector2 FairnessSize = new Vector2(480f, 620f);
         private static readonly Vector2 HotkeysSize = new Vector2(660f, 780f);
         private static readonly Vector2 SoundSize = new Vector2(460f, 340f);
@@ -78,6 +79,29 @@ namespace FlappyTemplate.Editor
             created.GetComponent<GameHistoryWindow>().Rebuild();
 
             Undo.SetCurrentGroupName("Create Game History Window");
+            Selection.activeGameObject = created;
+        }
+
+        // Last in the list rather than beside Game History, so the entries that were already there keep the
+        // places people know them by.
+        [MenuItem(FlappyBetMenu.Group + "Bet Info Sheet Window", false, MenuPriority + 7)]
+        private static void CreateBetInfoSheetWindow(MenuCommand command)
+        {
+            var created = Create("Bet Info Sheet", BetInfoSheetSize, command, out var window, typeof(BetInfoSheetWindow));
+            window.Title = "Bet info";
+
+            // The same bet the bet info window draws, laid out the other way: no caption, a charcoal panel, and a
+            // sheet the window scrolls once it is past the height the design is drawn at. The panel is painted
+            // once, here, the way Create paints it - after that it is the panel's own to restyle. Rebuilt from
+            // the sample bet, so it arrives looking like the dialog rather than like a row of dots.
+            window.ShowCaption = false;
+            window.SetContentPadding(22f, 18f, 22f, 22f);
+            window.MaxHeight = BetInfoSheetSize.y;
+            BetInfoSheetWindow.Charcoal(window.Panel);
+
+            created.GetComponent<BetInfoSheetWindow>().Rebuild();
+
+            Undo.SetCurrentGroupName("Create Bet Info Sheet Window");
             Selection.activeGameObject = created;
         }
 

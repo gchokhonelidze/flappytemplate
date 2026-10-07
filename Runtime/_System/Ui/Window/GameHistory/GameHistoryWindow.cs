@@ -165,6 +165,10 @@ namespace FlappyTemplate
         [SerializeField]
         private BetInfoWindow betInfo;
 
+        [Tooltip("The other way of drawing a bet. Set, a pressed row opens this instead of Bet Info.")]
+        [SerializeField]
+        private BetInfoSheetWindow betInfoSheet;
+
         [Header("Events")]
         [Tooltip("A round has arrived and the window is filled in. Where a game draws its own view of it into Outcome.")]
         public UnityEvent<GameHistoryByIdDto> OnRound = new UnityEvent<GameHistoryByIdDto>();
@@ -357,6 +361,14 @@ namespace FlappyTemplate
         {
             get => betInfo;
             set => betInfo = value;
+        }
+
+        /// <summary>The bet info sheet a pressed row opens in place of <see cref="BetInfo"/> whenever it is
+        /// set. Null leaves the choice to Bet Info.</summary>
+        public BetInfoSheetWindow BetInfoSheet
+        {
+            get => betInfoSheet;
+            set => betInfoSheet = value;
         }
 
         public Button DetailsButton
@@ -598,12 +610,13 @@ namespace FlappyTemplate
 
             OnPicked.Invoke(betId);
 
-            if (betInfo == null)
-                return;
-
             // Show asks the server for the bet and opens on a loader, which is the right thing here: a round's
-            // transaction is a summary, and the dialog wants the whole thing with its seeds.
-            betInfo.Show(betId);
+            // transaction is a summary, and the dialog wants the whole thing with its seeds. The sheet first when
+            // both are set: it is the one a scene only has if somebody chose it.
+            if (betInfoSheet != null)
+                betInfoSheet.Show(betId);
+            else if (betInfo != null)
+                betInfo.Show(betId);
         }
 
         /// <summary>Fills the list and the totals in from the round and lays the window out again.</summary>

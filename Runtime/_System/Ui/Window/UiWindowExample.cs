@@ -4,19 +4,20 @@ using UnityEngine;
 
 namespace FlappyTemplate
 {
-    // Six windows, built at runtime under whatever this sits on: a plain one, a modal one, the statistics
-    // window, the bet info window, the game history window and the fairness window. Drop it on an empty
+    // Seven windows, built at runtime under whatever this sits on: a plain one, a modal one, the statistics
+    // window, the bet info window, the game history window, the fairness window and the bet info sheet - the
+    // same bet the bet info window shows, drawn the other way. Drop it on an empty
     // RectTransform inside a canvas and press play, or use Build Now from the component's context menu to see
     // them without leaving the editor.
     //
     // It is here to be read as much as run. Each window below is one chain, and between them they cover
     // most of what UiWindowBuilder can say - a caption, a backdrop, a transition, a drag, a close.
     //
-    // The keys are the other half of it: 1 to 6 open the six windows, and Escape closes whatever is open.
+    // The keys are the other half of it: 1 to 7 open the seven windows, and Escape closes whatever is open.
     //
     // They are placed to overlap on purpose, because that is the other thing to look at here: open several
     // and each one arrives in front of the last, and clicking any of them - the caption, the body, a button
-    // or a tab inside it - brings that one forward again. None of the five asks for it; a window does it.
+    // or a tab inside it - brings that one forward again. None of them asks for it; a window does it.
     [AddComponentMenu("UI/Ui Window Example")]
     [RequireComponent(typeof(RectTransform))]
     public class UiWindowExample : MonoBehaviour
@@ -30,6 +31,7 @@ namespace FlappyTemplate
         private BetInfoWindow betInfo;
         private GameHistoryWindow gameHistory;
         private FairnessWindow fairness;
+        private BetInfoSheetWindow betInfoSheet;
 
         void Start()
         {
@@ -59,6 +61,9 @@ namespace FlappyTemplate
             if (Input.GetKeyDown(KeyCode.Alpha6) && fairness != null)
                 fairness.Window.Toggle();
 
+            if (Input.GetKeyDown(KeyCode.Alpha7) && betInfoSheet != null)
+                betInfoSheet.Window.Toggle();
+
             if (!Input.GetKeyDown(KeyCode.Escape))
                 return;
 
@@ -66,6 +71,8 @@ namespace FlappyTemplate
             // underneath and leaving the modal sheet over the top of it.
             if (modal != null && modal.IsOpen)
                 modal.Close();
+            else if (betInfoSheet != null && betInfoSheet.Window.IsOpen)
+                betInfoSheet.Window.Close();
             else if (fairness != null && fairness.Window.IsOpen)
                 fairness.Window.Close();
             else if (gameHistory != null && gameHistory.Window.IsOpen)
@@ -156,6 +163,14 @@ namespace FlappyTemplate
             fairness = FairnessWindow.Create(transform);
             fairness.Window.Rect.anchoredPosition = new Vector2(240f, -60f);
             fairness.OnSeeds.AddListener(seeds => Debug.Log("New seed pair, nonce " + seeds.Nonce));
+
+            // The same bet as the bet info window, drawn as one sheet the window scrolls: the result in a pill
+            // across the top, then the totals, the seeds and the bet's parts each under a heading of their own.
+            // The pill is the game's to fill - SetResult from OnTransaction - and the coin beside it swaps every
+            // amount between the bet's own currency and dollars.
+            betInfoSheet = BetInfoSheetWindow.Create(transform);
+            betInfoSheet.Window.Rect.anchoredPosition = new Vector2(-40f, -20f);
+            betInfoSheet.OnTransaction.AddListener(ShowResult);
         }
 
         // What no template can write for a game: the block under the fields that says what actually happened.
@@ -201,6 +216,28 @@ namespace FlappyTemplate
             gameHistory.Refresh();
         }
 
+        // What a game writes into the bet info sheet's pill. A dice game prints the roll, a crash game the
+        // multiplier it stopped at; this prints the first thing the server put in the outcome. Anything richer
+        // than a line of text is parented into Outcome instead, under the pill, exactly as the bet info window
+        // takes it.
+        private void ShowResult(TransactionPublic data)
+        {
+            if (betInfoSheet == null || data == null)
+                return;
+
+            string first = null;
+            if (data.Outcome != null)
+            {
+                foreach (var pair in data.Outcome)
+                {
+                    first = pair.Value != null ? pair.Value.ToString() : pair.Key;
+                    break;
+                }
+            }
+
+            betInfoSheet.SetResult(string.IsNullOrEmpty(first) ? string.Empty : "Result: " + first);
+        }
+
         [ContextMenu("Clear")]
         public void Clear()
         {
@@ -223,6 +260,7 @@ namespace FlappyTemplate
             betInfo = null;
             gameHistory = null;
             fairness = null;
+            betInfoSheet = null;
         }
     }
 }

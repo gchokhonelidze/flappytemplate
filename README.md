@@ -4,7 +4,7 @@ Every readme in the package, in one place. Each row below opens a component's do
 twin sits beside every one of them in the same folder, with the same content laid out for a browser and the
 component **drawn** rather than described.
 
-*Package 1.0.83. Update this file when a readme is added or removed — and the versions in
+*Package 1.0.89. Update this file when a readme is added or removed — and the versions in
 [Which are current](#which-are-current) when one is brought up to date. **README.html** beside it is the same
 content for reading in a browser.*
 
@@ -35,9 +35,10 @@ The furniture drawn over the game: dialogs, the bar that opens them, the strip o
 
 | | Describes | What it is |
 | --- | --- | --- |
-| **[Window](Runtime/_System/Ui/Window/)** | 1.0.82 | A dialog that is one component rather than a prefab: panel, caption, close button, drag, an animated opening, and a body that scrolls when the content outgrows the screen. The six windows built on it — Statistics, Bet info, Game history, Fairness, Hotkeys and Sound — are documented here too. |
+| **[Window](Runtime/_System/Ui/Window/)** | 1.0.89 | A dialog that is one component rather than a prefab: panel, caption, close button, drag, an animated opening, and a body that scrolls when the content outgrows the screen. The seven windows built on it — Statistics, Bet info, Bet info sheet, Game history, Fairness, Hotkeys and Sound — are documented here too. |
 | **[Ui Navbar](Runtime/_System/Ui/Navbar/)** | 1.0.82 | The row of buttons over the game: home, statistics, fairness, hotkeys, sound, and whatever the game adds beside them. Home leaves for the address the server sent — taking the whole page, not the iframe — and hides itself while there is none. The rest find their windows, or build them. |
-| **[Ui History](Runtime/_System/Ui/History/)** | 1.0.80 | The strip of recent bets, as a row of chips over the game or a column down the side. It feeds itself from the socket, animates each arrival, drops or scrolls the oldest, and opens the bet info dialog on whichever chip is clicked. |
+| **[Ui History](Runtime/_System/Ui/History/)** | 1.0.89 | The strip of recent bets, as a row of chips over the game or a column down the side. It feeds itself from the socket, animates each arrival, drops or scrolls the oldest, and opens the bet info dialog on whichever chip is clicked. |
+| **[Cursor](Runtime/_System/Ui/Cursor/)** | 1.0.89 | The hand over anything clickable, which UGUI never shows on its own. Works out the cursor from what is under the mouse — a Button, a text field, a disabled control — and sets it as CSS on the page's canvas. Nothing to add to a scene; a hint per object covers the rest. |
 | **[Hotkeys](Runtime/_System/Ui/Hotkeys/)** | 1.0.81 | Keys bound to things the game does, and the dialog that tells the player about them. One line binds a key; the window reads the registry, so there is no list to keep in step. Gated on the player's own `keyboard` setting, which the socket remembers. |
 
 ## Drawing and layout
@@ -71,15 +72,14 @@ server has already given.
 
 ## Which are current
 
-Every readme carries the package version it was last checked against. The ones below **1.0.83** are the pages to
+Every readme carries the package version it was last checked against. The ones below **1.0.89** are the pages to
 distrust first if something on them does not match the code.
 
 | Describes | Pages |
 | --- | --- |
-| **1.0.83** — current | — |
-| 1.0.82 | Window, Ui Navbar, Sound |
+| **1.0.89** — current | Window, Ui History, Cursor |
+| 1.0.82 | Ui Navbar, Sound |
 | 1.0.81 | Hotkeys |
-| 1.0.80 | Ui History |
 | 1.0.79 | Transform Constraints |
 | 1.0.78 | Sprite Gradient |
 | 1.0.73 | Dice Roller |

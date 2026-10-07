@@ -114,6 +114,10 @@ namespace FlappyTemplate
         [SerializeField]
         private BetInfoWindow betInfo;
 
+        [Tooltip("The other way of drawing a bet - one scrolling sheet with the seeds always showing. Set, it is opened instead of Bet Info on the player's own bets; leave it empty to keep Bet Info.")]
+        [SerializeField]
+        private BetInfoSheetWindow betInfoSheet;
+
         [Tooltip("The dialog a clicked element opens while the strip is on the shared feed - the round, everybody who bet on it, and the seeds it was rolled from. Found no more than the bet info window is, and for the same reason.")]
         [SerializeField]
         private GameHistoryWindow gameHistory;
@@ -395,6 +399,14 @@ namespace FlappyTemplate
             set => betInfo = value;
         }
 
+        /// <summary>The bet info sheet, opened on the player's own bets in place of <see cref="BetInfo"/>
+        /// whenever it is set. Null leaves the choice to Bet Info.</summary>
+        public BetInfoSheetWindow BetInfoSheet
+        {
+            get => betInfoSheet;
+            set => betInfoSheet = value;
+        }
+
         /// <summary>The dialog a clicked element opens while the strip is on the shared feed. Null opens
         /// nothing - a click still raises <see cref="OnPicked"/>.</summary>
         public GameHistoryWindow GameHistory
@@ -402,6 +414,7 @@ namespace FlappyTemplate
             get => gameHistory;
             set => gameHistory = value;
         }
+
 
         /// <summary>Builds a strip under a parent, ready to be given an element and fed.</summary>
         public static UiHistory Create(Transform parent, string name = "History", float width = 640f, float height = 64f)
@@ -831,11 +844,12 @@ namespace FlappyTemplate
             OnPicked.Invoke(data);
 
             // Which dialog a press opens is the feed's business rather than the element's: a bet opens the bet
-            // info window, and a shared round opens the game history window - the round, everybody who bet on
-            // it, and a way through to any one of those bets.
+            // info window - or the bet info sheet, which draws the same bet the other way - and a shared round
+            // opens the game history window - the round, everybody who bet on it, and a way through to any one
+            // of those bets.
             bool round = IsShared;
 
-            if (round ? gameHistory == null : betInfo == null)
+            if (round ? gameHistory == null : betInfo == null && betInfoSheet == null)
             {
                 // Said once rather than once a click: a strip wired to OnPicked and nothing else is a perfectly
                 // ordinary thing to build, and a log line per press would be noise. Said at all because the
@@ -846,7 +860,7 @@ namespace FlappyTemplate
                     Debug.LogWarning(
                         round
                             ? $"{name}: no game history window to open - point Game History at one. A click still raises OnPicked, so ignore this if the game opens its own."
-                            : $"{name}: no bet info window to open - point Bet Info at one. A click still raises OnPicked, so ignore this if the game opens its own.",
+                            : $"{name}: no bet info window to open - point Bet Info or Bet Info Sheet at one. A click still raises OnPicked, so ignore this if the game opens its own.",
                         this
                     );
                 }
@@ -877,8 +891,12 @@ namespace FlappyTemplate
             }
 
             // Show asks the server for the bet and opens on a loader, which is the right thing here: the
-            // history payload is a summary, and the dialog wants the whole transaction with its seeds.
-            betInfo.Show(data.Id);
+            // history payload is a summary, and the dialog wants the whole transaction with its seeds. The sheet
+            // first when both are set: it is the one a scene only has if somebody chose it.
+            if (betInfoSheet != null)
+                betInfoSheet.Show(data.Id);
+            else
+                betInfo.Show(data.Id);
         }
 
         /// <summary>Slides a scrolling strip to the end the newest bet is at.</summary>

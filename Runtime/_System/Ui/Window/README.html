@@ -364,6 +364,32 @@
   .sndcard.off .trk i { background: rgba(255, 255, 255, .45); }
   .pct { flex: none; width: 42px; text-align: right; font-size: 12px; color: rgba(255, 255, 255, .75); }
   .sndcard.off .pct { color: rgba(255, 255, 255, .35); }
+
+  /* ---- the bet info sheet: the same bet, charcoal and outlined ---- */
+
+  .win.sheet { --fill: #1b1b1b; --edge: #262626; width: 300px; border-width: 1px; border-radius: 18px; font-size: 11.5px; }
+  .win.sheet .body { padding: 12px 14px 14px; max-height: 330px; overflow: hidden; position: relative; }
+  .win.sheet .body::after { content: ""; position: absolute; right: 4px; top: 54px; width: 4px; height: 90px; border-radius: 999px; background: rgba(255, 255, 255, .45); }
+  .win.sheet .x { top: 10px; right: 10px; width: 26px; height: 26px; font-size: 14px; color: #111; }
+  .shead { display: grid; grid-template-columns: 26px 1fr 26px; align-items: center; margin-bottom: 8px; }
+  .toggle { width: 22px; height: 22px; border-radius: 999px; background: rgba(255, 255, 255, .08); display: grid; place-items: center; }
+  .toggle i { width: 12px; height: 12px; border-radius: 999px; background: #fab833; border: 1.5px solid #cc801a; }
+  .pill { justify-self: center; background: #b8261a; border: 2px solid #fac933; border-radius: 999px; padding: 2px 12px; font-size: 12px; }
+  .sid { color: rgba(255, 255, 255, .7); font-size: 10.5px; margin-bottom: 8px; }
+  .sid b { font-weight: 400; color: rgba(255, 255, 255, .55); }
+  .sh { display: flex; align-items: center; gap: 6px; margin: 8px 0 4px; }
+  .sh i { font-style: normal; width: 12px; text-align: center; opacity: .9; }
+  .sbox { border: 1.5px solid rgba(255, 255, 255, .16); border-radius: 9px; padding: 5px 8px; word-break: break-all; line-height: 1.35; }
+  .sbox.tot { display: flex; justify-content: space-between; gap: 6px; word-break: normal; font-size: 9.5px; color: rgba(255, 255, 255, .6); }
+  .sbox.tot span:nth-child(2) { text-align: center; }
+  .sbox.tot span:nth-child(3) { text-align: right; }
+  .sbox.tot b { display: block; color: #fff; font-size: 11px; margin-top: 2px; }
+  .sbet { display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, .05); border-radius: 6px; padding: 4px 6px; }
+  .sbet > span { flex: 1; text-align: center; }
+  .sbet .who { display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .sbet .who i { font-style: normal; width: 16px; height: 16px; border-radius: 4px; background: #fff; display: grid; place-items: center; font-size: 10px; }
+  .sbet .chev { flex: none; width: 14px; }
+  .sbet .w { color: #73db80; }
 </style>
 </head>
 <body>
@@ -389,6 +415,10 @@
   <a class="sub" href="#amounts">Values</a>
   <a class="sub" href="#seeds">Details and verify</a>
   <a class="sub" href="#pictures">Pictures</a>
+  <a href="#sheet">Bet info sheet</a>
+  <a class="sub" href="#sheetfill">What fills it</a>
+  <a class="sub" href="#sheetusd">The coin and dollars</a>
+  <a class="sub" href="#marks">The marks</a>
   <a href="#gamehistory">Game history</a>
   <a class="sub" href="#round">The round itself</a>
   <a class="sub" href="#list">The list</a>
@@ -420,16 +450,16 @@
   <p class="lede">The window owns where things go, not what they look like: Panel, Caption, Title, Close,
   Scrollbar and the sheet behind it are ordinary RoundedBox and TextMeshPro objects — select one and style it
   as you would any other. Nothing here paints over it afterwards.</p>
-  <p class="stamp">Describes package 1.0.82. Update this file with the code — and README.md beside it.</p>
+  <p class="stamp">Describes package 1.0.89. Update this file with the code — and README.md beside it.</p>
   <p><strong>GameObject → UI (Canvas) → FlappyBet → Window</strong>, which makes a canvas if the scene has
   none, drops the window under whatever was right-clicked, and builds the whole thing on the spot so it
   arrives looking like a window rather than as an empty rect waiting for play mode. <strong>Statistics
   Window</strong>, <strong>Bet Info Window</strong>, <strong>Game History Window</strong>, <strong>Fairness
-  Window</strong>, <strong>Hotkeys Window</strong> and <strong>Sound Window</strong> sit beside it in that same
-  group, along with everything else this template adds — Rounded Box, Grid, History and Navbar, the row of
-  buttons that opens four of the windows here. Each of the six keeps its own files in a folder of its own:
-  <code>Statistics/</code>, <code>BetInfo/</code>, <code>GameHistory/</code>, <code>Fairness/</code>,
-  <code>Hotkeys/</code>, <code>Sound/</code>.</p>
+  Window</strong>, <strong>Hotkeys Window</strong>, <strong>Sound Window</strong> and <strong>Bet Info Sheet
+  Window</strong> sit beside it in that same group, along with everything else this template adds — Rounded Box,
+  Grid, History and Navbar, the row of buttons that opens four of the windows here. Each of the seven keeps its
+  own files in a folder of its own: <code>Statistics/</code>, <code>BetInfo/</code>, <code>BetInfoSheet/</code>,
+  <code>GameHistory/</code>, <code>Fairness/</code>, <code>Hotkeys/</code>, <code>Sound/</code>.</p>
   <p>Adding the component by hand instead, it belongs on an <strong>empty RectTransform</strong>, not a UI
   Panel: the window draws its own panel, so a Panel's Image leaves two backgrounds stacked, and anything
   already inside that Panel ends up beside the caption rather than under <code>Content</code>. Or one chain
@@ -505,6 +535,33 @@ stats.Window.Open();</code></pre>
     <em>meant</em> is the only part of this a template cannot write.</p>
     <pre><code>var info = BetInfoWindow.Create(canvas);
 info.Show(betId);</code></pre>
+  </div>
+
+  <div class="specimen">
+    <div class="stage wide">
+      <div class="win sheet">
+        <div class="x">✕</div>
+        <div class="body">
+          <div class="shead"><div class="toggle"><i></i></div><div class="pill">Result: 2</div><div></div></div>
+          <div class="sid"><b>Round ID:</b>&nbsp; d9f77676f0a390e1</div>
+          <div class="sh"><i>▥</i>Statistics:</div>
+          <div class="sbox tot"><span>Total bet count<b>1</b></span><span>Total bet amount<b>BTC 0.0001</b></span><span>Total profit<b>BTC 0.0001</b></span></div>
+          <div class="sh"><i>⊟</i>Server seed:</div>
+          <div class="sbox">6e43ebe3daf247c9892449b94be2d57a</div>
+          <div class="sh"><i>▭</i>Client seed:</div>
+          <div class="sbox">N/A</div>
+          <div class="sh"><i>#</i>Server seed's SHA512 hash:</div>
+          <div class="sbox">5cca0e0e2291f73c5999d07c8d336905013026f2fff58fefb2464ef2068c8d4a5274784d4f625e6994005efea832d4f1048d14931174378209421f1d8eeaa9c6</div>
+          <div class="sh"><i>☰</i>Round Bets:</div>
+          <div class="sbox"><div class="sbet"><span class="who"><i>🍅</i>admin</span><span>BTC 0.0001</span><span class="w">BTC 0.0002</span><span class="chev">⌄</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">Bet info sheet</div>
+    <p class="why">The same bet drawn the other way: one long sheet, everything showing, and the window
+    scrolling it. The coin top left swaps every amount to dollars.</p>
+    <pre><code>var sheet = BetInfoSheetWindow.Create(canvas);
+sheet.Show(betId);</code></pre>
   </div>
 
   <div class="specimen">
@@ -1043,6 +1100,100 @@ so closing the dialog does not abandon the fetch, and the picture is already the
 way the statistics window shows sample figures. A <code>StateManager</code> that is running but has not been
 sent a transaction shows the loader; a real game never sees invented numbers.</p>
 
+<h2 id="sheet">Bet info sheet</h2>
+
+<p><strong>GameObject → UI (Canvas) → FlappyBet → Bet Info Sheet Window</strong>, or Add Component → UI → Bet
+Info Sheet Window on a <code>UiWindow</code>, or the whole thing in one line:</p>
+
+<pre><code>var sheet = BetInfoSheetWindow.Create(canvas);
+sheet.OnTransaction.AddListener(bet =&gt; sheet.SetResult("Result: " + bet.Outcome["result"]));
+sheet.Show(betId);</code></pre>
+
+<p><strong>The same bet as the bet info window, drawn the other way.</strong> It asks for and reads exactly what
+that window does — <code>Show(id)</code> emits <code>BET_INFO</code>, the answer arrives as
+<code>ON_BET_INFO_ID</code> in <code>MainState.BetInfoById</code> — so a game picks whichever look it wants and
+nothing else changes. Where the bet info window is a card of paired fields with the seeds behind a Details
+button, this is <strong>one long sheet with everything showing</strong>: the result in a pill across the top,
+the id, then a heading and an outlined box each for the totals, the three seeds and the bet's parts.</p>
+
+<p>The sheet is as tall as what is on it, and <strong>past the window's Max Height the window scrolls it</strong>
+— the window's own scrolling, described <a href="#scrolling">above</a>, so the bar, the wheel and the drag all
+work the way they do everywhere else. <code>Create</code> holds Max Height at 720, the height the design is
+drawn at.</p>
+
+<p><code>Create</code> and the menu also give the window <strong>no caption and a charcoal panel</strong>, once,
+as it is made. That is the panel's own <code>RoundedBox</code> like any other, so restyle it there;
+<code>BetInfoSheetWindow.Charcoal(panel)</code> paints the same look onto a window made some other way.</p>
+
+<table>
+  <tr><th>Call</th><th>Does</th></tr>
+  <tr><td><code>Show(id)</code> · <code>Show(transaction)</code> · <code>Show()</code> · <code>Request(id)</code> · <code>Clear()</code></td><td>As the bet info window.</td></tr>
+  <tr><td><code>SetResult(text)</code> · <code>Result</code></td><td>The line in the pill across the top. Empty hides the pill. Cleared whenever the window is pointed at another bet, so set it from <code>OnTransaction</code>. Rich text works.</td></tr>
+  <tr><td><code>ToggleCurrency()</code> · <code>UsdView</code></td><td>Every amount in the bet's own currency, or converted to dollars.</td></tr>
+  <tr><td><code>TogglePlaces()</code> · <code>PlacesOpen</code></td><td>The places under the player's row. Only a bet the server sent places for opens; it closes again whenever the sheet is pointed at another bet.</td></tr>
+  <tr><td><code>Verify()</code></td><td>Opens the verifier in a browser — the same string the bet info window builds.</td></tr>
+  <tr><td><code>Refresh()</code> · <code>Layout()</code> · <code>Rebuild()</code></td><td>Fill in again, lay out again, build again.</td></tr>
+  <tr><td><code>Outcome</code> · <code>ResultBox</code> · <code>CurrencyButton</code> · <code>VerifyButton</code></td><td>The parts, for anything the style does not reach.</td></tr>
+</table>
+
+<table>
+  <tr><th>Field</th><th>What it does</th></tr>
+  <tr><td>Style</td><td>The sheet: headings, the drawn marks, the outlined boxes, the pill, the coin, the rows.</td></tr>
+  <tr><td>Labels</td><td>Every caption, <em>Round ID</em> to <em>Round Bets</em>, all of them translated like everywhere else.</td></tr>
+  <tr><td>Show Currency Toggle / Outcome / Id / Statistics / Server Seed / Client Seed / Server Hash / Bets / Verify</td><td>One per block of the sheet. A block that is off takes its row and its gap away with it.</td></tr>
+  <tr><td>Usd View</td><td>Start converted to dollars.</td></tr>
+  <tr><td>Follow State · Request On Show · Match Requested Id · Load Images · Fit Window Height</td><td>As the bet info window.</td></tr>
+</table>
+
+<p><code>OnTransaction</code>, <code>OnRequested</code>, <code>OnVerify</code> and
+<code>OnCurrencyToggled</code> are UnityEvents.</p>
+
+<div class="note">
+  <p>To use it in place of the bet info window, point the <strong>history strip's Bet Info Sheet</strong> at it,
+  and the <strong>game history window's Bet Info Sheet</strong> if rows in a round should open it too. Either
+  opens the sheet whenever it is set, and the bet info window only when it is not.</p>
+</div>
+
+<h3 id="sheetfill">What fills it</h3>
+
+<table>
+  <tr><th>Block</th><th>From</th></tr>
+  <tr><td>Result</td><td>Whatever the game passes to <code>SetResult</code>. Anything richer than a line goes into <code>Outcome</code>, under the pill, with the same rules about height as the bet info window's.</td></tr>
+  <tr><td>Round ID</td><td>The transaction's <code>Id</code> — or the id that was asked for, while the answer is on its way.</td></tr>
+  <tr><td>Statistics</td><td>How many places the bet was spread over (one for a bet made in one piece), <code>BetAmount</code>, and <code>WinAmount</code> less <code>BetAmount</code> — the profit the bet info window prints. Each is a caption with its figure under it, held left, centre and right.</td></tr>
+  <tr><td>Server seed</td><td><code>ServerSeed</code>, or <strong>Hidden</strong> while it is still in play.</td></tr>
+  <tr><td>Client seed</td><td><code>ClientSalt</code>, or <strong>N/A</strong>. On a <code>SHARED</code> or <code>MULTI</code> transaction it is captioned as the block hash, as in the bet info window.</td></tr>
+  <tr><td>SHA512 hash</td><td><code>ServerSeedSha512</code>, or <strong>N/A</strong>.</td></tr>
+  <tr><td>Round Bets</td><td>The player who made the bet — avatar (<code>CImg</code>) and name — with what they staked and what came back, green when it paid back whole or better. Where the server sent the places the bet was spread over (<code>MainState.BetInfos</code>, from <code>ON_BET_INFO</code>), the row has a <strong>chevron</strong> and a press opens one line a place underneath: where, at what multiplier, the stake and what it paid. The sheet listens for <code>OnBetInfo</code> and <code>OnBetInfoPayout</code> too, so places that land after the transaction still show.</td></tr>
+</table>
+
+<h3 id="sheetusd">The coin and dollars</h3>
+
+<p>The coin on the left is the switch: a coin while the amounts are in the bet's own currency, <strong>$</strong>
+while they are converted. Everything on the sheet follows it — the totals and every row. The rate is the
+transaction's own <code>RateUsd</code> from <code>MainState.BetInfos</code> where there is one, else the player's
+balance rate <strong>when the balance is in the same currency</strong> — a rate for one coin applied to another
+would be a confident wrong number. With neither there is nothing to convert at, so the switch is not shown and
+the amounts stay in their own currency.</p>
+
+<p>A bet made in dollars to begin with reads the same way — <strong>$ 1.5</strong>, not USD 1.5, and a
+<strong>$</strong> on its coins. Only <code>usd</code> itself: USDT and USDC are currencies of their own, and
+keep their codes.</p>
+
+<p>Money is truncated and trimmed the way the bet info window does it; dollar figures go to the style's
+<strong>Usd Decimals</strong>, or to what <code>SystemState.DecimalPoints</code> says when that is below
+zero.</p>
+
+<h3 id="marks">The marks</h3>
+
+<p>The small marks in front of the headings — bars, a server, a screen, a hash, a list — are <strong>drawn from
+boxes</strong>, like the close cross: no atlas entry, sharp at any size, in <strong>Icon Color</strong>. Drop a
+sprite into <strong>Statistics Icon</strong>, <strong>Server Seed Icon</strong> and the rest to use your own, or
+set <strong>Icon Size</strong> to zero to leave them out.</p>
+
+<p>With no socket at all the sheet shows a sample bet — the one in the design, <code>Result: 2</code> and
+all.</p>
+
 <h2 id="gamehistory">Game history</h2>
 
 <p><strong>GameObject → UI (Canvas) → FlappyBet → Game History Window</strong>, or Add Component → UI → Game
@@ -1096,6 +1247,7 @@ way.</p>
   <tr><td>Load Images</td><td>Fetch the currency and avatar pictures the server sends as urls.</td></tr>
   <tr><td>Fit Window Height · Collapse Details On Close</td><td>As the bet info window.</td></tr>
   <tr><td>Bet Info</td><td>The dialog a row press opens. Nothing is searched for — the same decision the history strip makes.</td></tr>
+  <tr><td>Bet Info Sheet</td><td>The <a href="#sheet">other way of drawing a bet</a>. Set, a row press opens it instead of Bet Info.</td></tr>
 </table>
 
 <p><code>OnRound</code>, <code>OnRequested</code>, <code>OnPicked</code>, <code>OnVerify</code>,
@@ -1548,7 +1700,7 @@ in each inspector, the window <code>Title</code>, and a <code>StatisticsRow</cod
 
 <p>Only captions are translated. Every value beside one — an amount, a seed, a hash, a bet id, a player name —
 is printed as the server sent it. The two exceptions are the ones that are words rather than data:
-<strong>N/A</strong> in the fairness rows and <strong>Hidden</strong> where a server seed has not been revealed
+<strong>N/A</strong> in the fairness rows and the bet info sheet's empty boxes, and <strong>Hidden</strong> where a server seed has not been revealed
 yet.</p>
 
 <div class="note">
@@ -1647,13 +1799,15 @@ yet.</p>
   <tr><td><code>UiWindowDragHandle.cs</code></td><td>The grab. Usable on its own, for a custom header.</td></tr>
   <tr><td><code>UiWindowParts.cs</code></td><td>Making and finding children, and naming them for a grid. Internal.</td></tr>
   <tr><td><code>EWindowTransition.cs</code>, <code>EWindowScroll.cs</code></td><td></td></tr>
-  <tr><td><code>UiWindowExample.cs</code></td><td>Six windows built from code, including a game's own outcome block. Drop it on an empty RectTransform in a canvas.</td></tr>
+  <tr><td><code>UiWindowExample.cs</code></td><td>Seven windows built from code, including a game's own outcome block and the sheet's result pill. Drop it on an empty RectTransform in a canvas.</td></tr>
   <tr><td><code>Statistics/StatisticsWindow.cs</code></td><td>The statistics panel.</td></tr>
   <tr><td><code>Statistics/StatisticsWindowStyle.cs</code>, <code>Statistics/StatisticsRow.cs</code></td><td>What it looks like, and what it shows.</td></tr>
   <tr><td><code>Statistics/EStatsTab.cs</code>, <code>Statistics/EStatField.cs</code>, <code>Statistics/EStatTint.cs</code></td><td></td></tr>
   <tr><td><code>BetInfo/BetInfoWindow.cs</code></td><td>The bet info dialog.</td></tr>
   <tr><td><code>BetInfo/BetInfoWindowStyle.cs</code></td><td>What it looks like.</td></tr>
-  <tr><td><code>BetInfo/UiRemoteImage.cs</code></td><td>Sprites from urls, cached for the session. Internal. Used by the game history window too.</td></tr>
+  <tr><td><code>BetInfo/UiRemoteImage.cs</code></td><td>Sprites from urls, cached for the session. Internal. Used by the game history window and the sheet too.</td></tr>
+  <tr><td><code>BetInfoSheet/BetInfoSheetWindow.cs</code></td><td>The bet info sheet: the same bet as one scrolling sheet, everything showing.</td></tr>
+  <tr><td><code>BetInfoSheet/BetInfoSheetWindowStyle.cs</code></td><td>What it looks like.</td></tr>
   <tr><td><code>GameHistory/GameHistoryWindow.cs</code></td><td>The game history dialog: one shared round and everybody who bet on it.</td></tr>
   <tr><td><code>GameHistory/GameHistoryWindowStyle.cs</code></td><td>What it looks like.</td></tr>
   <tr><td><code>Fairness/FairnessWindow.cs</code></td><td>The fairness dialog.</td></tr>
@@ -1665,12 +1819,13 @@ yet.</p>
   <tr><td><code>Sound/SoundWindow.cs</code></td><td>The sound dialog: two cards, two switches, two volumes.</td></tr>
   <tr><td><code>Sound/SoundWindowStyle.cs</code></td><td>What it looks like.</td></tr>
   <tr><td><code><a href="../../Audio/README.html">../../Audio/</a></code></td><td><code>Sounds</code>, which that dialog reads and the game plays through.</td></tr>
-  <tr><td><code>Editor/Window/UiWindowMenu.cs</code></td><td>The seven GameObject → UI (Canvas) → FlappyBet entries.</td></tr>
+  <tr><td><code>Editor/Window/UiWindowMenu.cs</code></td><td>The eight GameObject → UI (Canvas) → FlappyBet entries.</td></tr>
   <tr><td><code>../../Translations/</code></td><td><code>Translator.Label</code>, which every caption above is written through.</td></tr>
   <tr><td><code>Editor/FlappyBetMenu.cs</code></td><td>The one group they all go in, path and priority. Internal.</td></tr>
   <tr><td><code>../RoundedBox/</code></td><td>Every panel here is one.</td></tr>
   <tr><td><code>../Grid/</code></td><td>What lays the bet info card, the game history list and the fairness rows out.</td></tr>
   <tr><td><code>../History/</code></td><td>The strip that opens the bet info and game history dialogs.</td></tr>
+  <tr><td><code>../Cursor/</code></td><td>The hand over every button in these windows — and the arrow hint on the backdrop, which is a Button too.</td></tr>
 </table>
 
 </main>

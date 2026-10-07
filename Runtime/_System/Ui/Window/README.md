@@ -14,21 +14,23 @@ Inside, the caption and the body are two rows of a [`UiGrid`](../Grid/), and the
 content is taller than the screen has room for — so a dialog is bounded by what it is drawn on rather than by
 what its author guessed.
 
-Six windows built on it live in folders of their own beside it, and are worked examples of filling one in:
+Seven windows built on it live in folders of their own beside it, and are worked examples of filling one in:
 `Statistics/` — the two-tab panel reading `MainState.Statistics`; `BetInfo/` — the dialog that asks the server
-for one bet and lays out what came back; `GameHistory/` — the same for a whole shared round, everybody who bet
+for one bet and lays out what came back; `BetInfoSheet/` — the same bet laid out the other way, as one
+scrolling sheet; `GameHistory/` — the same for a whole shared round, everybody who bet
 on it included; `Fairness/` — the seed pair the game is rolling from, and the two ways a player may change it;
 `Hotkeys/` — which keys are bound to what, drawn on a keyboard, and the switch that turns them on; and
 `Sound/` — a switch and a volume for the effects, and the same pair for the music.
 
-Every caption in all six, and the title of any window, is **translated** — see
+Every caption in all seven, and the title of any window, is **translated** — see
 [Translations](#translations) below.
 
-*Describes package 1.0.82. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.89. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the windows drawn rather than described.*
 
 **GameObject → UI (Canvas) → FlappyBet → Window**, and **Statistics Window**, **Bet Info Window**, **Game
-History Window**, **Fairness Window**, **Hotkeys Window** and **Sound Window** beside it. Each makes a canvas if the scene has none, drops the window under whatever was
+History Window**, **Fairness Window**, **Hotkeys Window**, **Sound Window** and **Bet Info Sheet Window**
+beside it. Each makes a canvas if the scene has none, drops the window under whatever was
 right-clicked, and builds the whole thing on the spot so it arrives looking like a window rather than as an
 empty rect waiting for play mode. Everything else this template adds is in that same **FlappyBet** group —
 Rounded Box, Grid, History and [Navbar](../Navbar/), which is the row of buttons that opens three of the
@@ -485,6 +487,105 @@ With no socket at all — a scene with no `StateManager` — the window shows a 
 statistics window shows sample figures. A `StateManager` that is running but has not been sent a transaction
 shows the loader; a real game never sees invented numbers.
 
+## Bet info sheet
+
+**GameObject → UI (Canvas) → FlappyBet → Bet Info Sheet Window**, or Add Component → UI → Bet Info Sheet Window
+on a `UiWindow`, or the whole thing in one line:
+
+```csharp
+var sheet = BetInfoSheetWindow.Create(canvas);
+sheet.OnTransaction.AddListener(bet => sheet.SetResult("Result: " + bet.Outcome["result"]));
+sheet.Show(betId);
+```
+
+**The same bet as the bet info window, drawn the other way.** It asks for and reads exactly what that window
+does — `Show(id)` emits `BET_INFO`, the answer arrives as `ON_BET_INFO_ID` in `MainState.BetInfoById` — so a
+game picks whichever look it wants and nothing else changes. Where the bet info window is a card of paired
+fields with the seeds behind a Details button, this is **one long sheet with everything showing**:
+
+```
+ (coin|$)              ( Result: 2 )              (✕)
+ Round ID:  d9f77676f0a390e1
+ ▥ Statistics:
+ ╭ Total bet count             Total bet amount                  Total profit ╮
+ │ 1                            BTC 0.0001                    BTC 0.0001 │
+ ⊟ Server seed:
+ ╭ 6e43ebe3daf247c9892449b94be2d57a                                              ╮
+ ▭ Client seed:
+ ╭ N/A                                                                           ╮
+ # Server seed's SHA512 hash:
+ ╭ 5cca0e0e2291f73c5999d07c8d336905…                                             ╮
+ ☰ Round Bets:
+ ╭ [🍅] admin            BTC 0.0001            BTC 0.0002                  ⌄ ╮
+                              [ Verify ]
+```
+
+The sheet is as tall as what is on it, and **past the window's Max Height the window scrolls it** — the window's
+own scrolling, described [above](#scrolling), so the bar, the wheel and the drag all work the way they do
+everywhere else. `Create` holds Max Height at 720, the height the design is drawn at.
+
+`Create` and the menu also give the window **no caption and a charcoal panel**, once, as it is made. That is
+the panel's own `RoundedBox` like any other, so restyle it there; `BetInfoSheetWindow.Charcoal(panel)` paints
+the same look onto a window made some other way.
+
+| Call | Does |
+| --- | --- |
+| `Show(id)` · `Show(transaction)` · `Show()` · `Request(id)` · `Clear()` | As the bet info window. |
+| `SetResult(text)` · `Result` | The line in the pill across the top. Empty hides the pill. Cleared whenever the window is pointed at another bet, so set it from `OnTransaction`. Rich text works. |
+| `ToggleCurrency()` · `UsdView` | Every amount in the bet's own currency, or converted to dollars. |
+| `TogglePlaces()` · `PlacesOpen` | The places under the player's row. Only a bet the server sent places for opens; it closes again whenever the sheet is pointed at another bet. |
+| `Verify()` | Opens the verifier in a browser — the same string the bet info window builds. |
+| `Refresh()` · `Layout()` · `Rebuild()` | Fill in again, lay out again, build again. |
+| `Outcome` · `ResultBox` · `CurrencyButton` · `VerifyButton` | The parts, for anything the style does not reach. |
+
+| Field | What it does |
+| --- | --- |
+| Style | The sheet: headings, the drawn marks, the outlined boxes, the pill, the coin, the rows. |
+| Labels | Every caption, `Round ID` to `Round Bets`, all of them translated like everywhere else. |
+| Show Currency Toggle / Outcome / Id / Statistics / Server Seed / Client Seed / Server Hash / Bets / Verify | One per block of the sheet. A block that is off takes its row and its gap away with it. |
+| Usd View | Start converted to dollars. |
+| Follow State · Request On Show · Match Requested Id · Load Images · Fit Window Height | As the bet info window. |
+
+`OnTransaction`, `OnRequested`, `OnVerify` and `OnCurrencyToggled` are UnityEvents.
+
+To use it in place of the bet info window, point the **history strip's Bet Info Sheet** at it, and the **game
+history window's Bet Info Sheet** if rows in a round should open it too. Either opens the sheet whenever it is
+set, and the bet info window only when it is not.
+
+### What fills it
+
+| Block | From |
+| --- | --- |
+| Result | Whatever the game passes to `SetResult`. Anything richer than a line goes into `Outcome`, under the pill, with the same rules about height as the bet info window's. |
+| Round ID | The transaction's `Id` — or the id that was asked for, while the answer is on its way. |
+| Statistics | How many places the bet was spread over (one for a bet made in one piece), `BetAmount`, and `WinAmount` less `BetAmount` — the profit the bet info window prints. Each is a caption with its figure under it, held left, centre and right. |
+| Server seed | `ServerSeed`, or **Hidden** while it is still in play. |
+| Client seed | `ClientSalt`, or **N/A**. On a `SHARED` or `MULTI` transaction it is captioned as the block hash, as in the bet info window. |
+| SHA512 hash | `ServerSeedSha512`, or **N/A**. |
+| Round Bets | The player who made the bet — avatar (`CImg`) and name — with what they staked and what came back, green when it paid back whole or better. Where the server sent the places the bet was spread over (`MainState.BetInfos`, from `ON_BET_INFO`), the row has a **chevron** and a press opens one line a place underneath: where, at what multiplier, the stake and what it paid. The sheet listens for `OnBetInfo` and `OnBetInfoPayout` too, so places that land after the transaction still show. |
+
+### The coin and dollars
+
+The coin on the left is the switch: a coin while the amounts are in the bet's own currency, **$** while they
+are converted. Everything on the sheet follows it — the totals and every row. The rate is the transaction's own
+`RateUsd` from `MainState.BetInfos` where there is one, else the player's balance rate **when the balance is in
+the same currency** — a rate for one coin applied to another would be a confident wrong number. With neither
+there is nothing to convert at, so the switch is not shown and the amounts stay in their own currency.
+
+A bet made in dollars to begin with reads the same way — **$ 1.5**, not USD 1.5, and a **$** on its coins.
+Only `usd` itself: USDT and USDC are currencies of their own, and keep their codes.
+
+Money is truncated and trimmed the way the bet info window does it; dollar figures go to the style's **Usd
+Decimals**, or to what `SystemState.DecimalPoints` says when that is below zero.
+
+### The marks
+
+The small marks in front of the headings — bars, a server, a screen, a hash, a list — are **drawn from boxes**,
+like the close cross: no atlas entry, sharp at any size, in **Icon Color**. Drop a sprite into **Statistics
+Icon**, **Server Seed Icon** and the rest to use your own, or set **Icon Size** to zero to leave them out.
+
+With no socket at all the sheet shows a sample bet — the one in the design, `Result: 2` and all.
+
 ## Game history
 
 **GameObject → UI (Canvas) → FlappyBet → Game History Window**, or Add Component → UI → Game History Window on
@@ -537,6 +638,7 @@ drawn while the transactions are still on their way.
 | Load Images | Fetch the currency and avatar pictures the server sends as urls. |
 | Fit Window Height · Collapse Details On Close | As the bet info window. |
 | Bet Info | The dialog a row press opens. Nothing is searched for — the same decision the history strip makes. |
+| Bet Info Sheet | The [other way of drawing a bet](#bet-info-sheet). Set, a row press opens it instead of Bet Info. |
 
 `OnRound`, `OnRequested`, `OnPicked`, `OnVerify`, `OnDetailsToggled` and `OnCurrencyToggled` are UnityEvents.
 
@@ -825,7 +927,8 @@ inspector, the window `Title`, and a `StatisticsRow`'s title all go through it.
 
 Only captions are translated. Every value beside one — an amount, a seed, a hash, a bet id, a player name — is
 printed as the server sent it. The two exceptions are the ones that are words rather than data: **N/A** in the
-fairness rows and **Hidden** where a server seed has not been revealed yet.
+fairness rows and the bet info sheet's empty boxes, and **Hidden** where a server seed has not been revealed
+yet.
 
 > A window is switched off while it is closed, so a closed one is not listening. It repaints on the way back
 > in, which is why a language changed behind a closed dialog is already applied when it opens.
@@ -967,13 +1070,15 @@ itself.
 | `UiWindowDragHandle.cs` | The grab. Usable on its own, for a custom header. |
 | `UiWindowParts.cs` | Making and finding children, and naming them for a grid. Internal. |
 | `EWindowTransition.cs`, `EWindowScroll.cs` | |
-| `UiWindowExample.cs` | Six windows built from code, including a game's own outcome block. Drop it on an empty RectTransform in a canvas. |
+| `UiWindowExample.cs` | Seven windows built from code, including a game's own outcome block and the sheet's result pill. Drop it on an empty RectTransform in a canvas. |
 | `Statistics/StatisticsWindow.cs` | The statistics panel. |
 | `Statistics/StatisticsWindowStyle.cs`, `Statistics/StatisticsRow.cs` | What it looks like, and what it shows. |
 | `Statistics/EStatsTab.cs`, `Statistics/EStatField.cs`, `Statistics/EStatTint.cs` | |
 | `BetInfo/BetInfoWindow.cs` | The bet info dialog. |
 | `BetInfo/BetInfoWindowStyle.cs` | What it looks like. |
-| `BetInfo/UiRemoteImage.cs` | Sprites from urls, cached for the session. Internal. Used by the game history window too. |
+| `BetInfo/UiRemoteImage.cs` | Sprites from urls, cached for the session. Internal. Used by the game history window and the sheet too. |
+| `BetInfoSheet/BetInfoSheetWindow.cs` | The bet info sheet: the same bet as one scrolling sheet, everything showing. |
+| `BetInfoSheet/BetInfoSheetWindowStyle.cs` | What it looks like. |
 | `GameHistory/GameHistoryWindow.cs` | The game history dialog: one shared round and everybody who bet on it. |
 | `GameHistory/GameHistoryWindowStyle.cs` | What it looks like. |
 | `Fairness/FairnessWindow.cs` | The fairness dialog. |
@@ -985,10 +1090,11 @@ itself.
 | `Sound/SoundWindow.cs` | The sound dialog: two cards, two switches, two volumes. |
 | `Sound/SoundWindowStyle.cs` | What it looks like. |
 | [`../../Audio/`](../../Audio/) | `Sounds`, which that dialog reads and the game plays through. |
-| `Editor/Window/UiWindowMenu.cs` | The seven GameObject → UI (Canvas) → FlappyBet entries. |
+| `Editor/Window/UiWindowMenu.cs` | The eight GameObject → UI (Canvas) → FlappyBet entries. |
 | [`../../Translations/`](../../Translations/) | `Translator.Label`, which every caption above is written through. |
 | `Editor/FlappyBetMenu.cs` | The one group they all go in, path and priority. Internal. |
 | `../RoundedBox/` | Every panel here is one. |
 | `../Grid/` | What lays the bet info card and the game history list out. |
 | `../History/` | The strip that opens the bet info and game history dialogs. |
 | `../Navbar/` | The bar whose Statistics, Fairness, Hotkeys and Sound buttons open four of these. |
+| [`../Cursor/`](../Cursor/) | The hand over every button in these windows — and the arrow hint on the backdrop, which is a Button too. |

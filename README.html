@@ -190,7 +190,7 @@
   <p class="lede">Every readme in the package, in one place. Each card opens the browser copy of a component's
   documentation; a <code>README.md</code> twin sits beside every one of them in the same folder, with the same
   content for reading in an editor or on a repository page.</p>
-  <p class="stamp">Package 1.0.83. Update this file when a readme is added or removed — and the version badges
+  <p class="stamp">Package 1.0.89. Update this file when a readme is added or removed — and the version badges
   below when one is brought up to date. <strong>README.md</strong> beside it is the same content as Markdown,
   which is the copy a GitLab or GitHub page can render — this one is for reading locally, in a browser, with
   every component drawn.</p>
@@ -221,15 +221,15 @@
 <div class="cards">
 
   <a class="card" href="Runtime/_System/Ui/Window/README.html">
-    <div class="top"><span class="name">Window</span><span class="ver">1.0.82</span></div>
+    <div class="top"><span class="name">Window</span><span class="ver">1.0.89</span></div>
     <p class="what">A dialog that is one component rather than a prefab: panel, caption, close button, drag, an
-    animated opening, and a body that scrolls when the content outgrows the screen. Six windows built on it —
-    Statistics, Bet info, Game history, Fairness, Hotkeys and Sound — are documented here too.</p>
+    animated opening, and a body that scrolls when the content outgrows the screen. Seven windows built on it —
+    Statistics, Bet info, Bet info sheet, Game history, Fairness, Hotkeys and Sound — are documented here too.</p>
     <p class="where">Runtime/_System/Ui/Window/</p>
   </a>
 
   <a class="card" href="Runtime/_System/Ui/Navbar/README.html">
-    <div class="top"><span class="name">Ui Navbar</span><span class="ver">1.0.82</span></div>
+    <div class="top"><span class="name">Ui Navbar</span><span class="ver stale">1.0.82</span></div>
     <p class="what">The row of buttons over the game: home, statistics, fairness, hotkeys, sound, and whatever the game
     adds beside them. Home leaves for the address the server sent — taking the whole page, not the iframe — and
     hides itself while there is none. The rest find their windows, or build them.</p>
@@ -237,11 +237,19 @@
   </a>
 
   <a class="card" href="Runtime/_System/Ui/History/README.html">
-    <div class="top"><span class="name">Ui History</span><span class="ver stale">1.0.80</span></div>
+    <div class="top"><span class="name">Ui History</span><span class="ver">1.0.89</span></div>
     <p class="what">The strip of recent bets, as a row of chips over the game or a column down the side. It feeds
     itself from the socket, animates each arrival, drops or scrolls the oldest, and opens the bet info dialog on
     whichever chip is clicked.</p>
     <p class="where">Runtime/_System/Ui/History/</p>
+  </a>
+
+  <a class="card" href="Runtime/_System/Ui/Cursor/README.html">
+    <div class="top"><span class="name">Cursor</span><span class="ver">1.0.89</span></div>
+    <p class="what">The hand over anything clickable, which UGUI never shows on its own. Works out the cursor from
+    what is under the mouse — a Button, a text field, a disabled control — and sets it as CSS on the page's canvas.
+    Nothing to add to a scene; a hint per object covers the rest.</p>
+    <p class="where">Runtime/_System/Ui/Cursor/</p>
   </a>
 
   <a class="card" href="Runtime/_System/Ui/Hotkeys/README.html">
@@ -317,7 +325,7 @@ the server has already given.</p>
 <div class="cards">
 
   <a class="card" href="Runtime/_System/Audio/README.html">
-    <div class="top"><span class="name">Sound</span><span class="ver">1.0.82</span></div>
+    <div class="top"><span class="name">Sound</span><span class="ver stale">1.0.82</span></div>
     <p class="what">Playing a clip with the player's own switches and volumes already applied — one line, no
     manager in the scene, no mixer. A named bank fills itself from the inspector, music is one clip faded rather
     than cut, and the four settings behind it are the same ones the web front keeps.</p>
@@ -337,7 +345,7 @@ the server has already given.</p>
 <h2 id="versions">Which are current</h2>
 
 <p>Every readme carries the package version it was last checked against. The badges above repeat it, and the ones
-marked in amber describe a version older than the current <strong>1.0.83</strong> — so they are the pages to
+marked in amber describe a version older than the current <strong>1.0.89</strong> — so they are the pages to
 distrust first if something on them does not match the code.</p>
 
 <div class="note">
@@ -349,10 +357,9 @@ distrust first if something on them does not match the code.</p>
 <table>
   <thead><tr><th>Describes</th><th>Pages</th></tr></thead>
   <tbody>
-    <tr><td><strong>1.0.83</strong> — current</td><td>—</td></tr>
-    <tr><td>1.0.82</td><td>Window, Ui Navbar, Sound</td></tr>
+    <tr><td><strong>1.0.89</strong> — current</td><td>Window, Ui History, Cursor</td></tr>
+    <tr><td>1.0.82</td><td>Ui Navbar, Sound</td></tr>
     <tr><td>1.0.81</td><td>Hotkeys</td></tr>
-    <tr><td>1.0.80</td><td>Ui History</td></tr>
     <tr><td>1.0.79</td><td>Transform Constraints</td></tr>
     <tr><td>1.0.78</td><td>Sprite Gradient</td></tr>
     <tr><td>1.0.73</td><td>Dice Roller</td></tr>

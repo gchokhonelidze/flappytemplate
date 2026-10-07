@@ -18,7 +18,7 @@ elements sit in the middle of the strip.
 What is left is the strip: which way it runs, which end the newest bet lands on, what happens when it fills up,
 and the gap between one element and the next.
 
-*Describes package 1.0.80. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.89. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the strips drawn rather than described.*
 
 **GameObject → UI (Canvas) → FlappyBet → History**, or Add Component → UI → Ui History.
@@ -145,7 +145,7 @@ Two feeds, and **Feed** picks between them:
 | Feed | Reads | Listens for | A chip opens |
 |---|---|---|---|
 | **Auto** — the default | whichever of the two the server says the game is | | |
-| **Player** | `MainState.History` | `ON_HISTORY` | the **bet info** window on that bet |
+| **Player** | `MainState.History` | `ON_HISTORY` | the **bet info** window — or the **bet info sheet** — on that bet |
 | **Shared** | `MainState.GameHistory` | `ON_GAME_HISTORY` | the **game history** window on that round |
 
 `Auto` reads `SystemState.GameType`: `SHARED` is the shared feed, anything else the player's own bets. The game
@@ -184,6 +184,8 @@ A click raises `OnPicked(HistoryDto)` and then opens a dialog on what was clicke
 asks the server for the whole thing rather than making do with the summary the history payload is.
 
 Which dialog is the feed's business: **Bet Info** on the player's own bets, **Game History** on the shared feed.
+**Bet Info Sheet** is the other way of drawing a bet; set, it is opened instead of Bet Info, and Bet Info only
+when it is not.
 A round is handed over whole rather than as an id, so the dialog has the outcome and the totals to draw while
 the transactions are still on their way.
 
@@ -279,7 +281,7 @@ than from a prefab script.
 | **Style** | Strip: gap. Arrival: duration, scale, fade, ease, unscaled, follow duration. Scrolling: sensitivity, inertia, deceleration |
 | **Element** | Element Prefab |
 | **Strip** | Flow, Order, Align, Overflow, Capacity, Clip, Follow Newest |
-| **Behaviour** | Feed, Follow State, Dedupe, Sort By Time, Animate Arrivals, Bet Info, Game History, Preview, Sample Count |
+| **Behaviour** | Feed, Follow State, Dedupe, Sort By Time, Animate Arrivals, Bet Info, Bet Info Sheet, Game History, Preview, Sample Count |
 | **Events** | On Picked, On Element |
 
 That is the whole of it. Everything that used to sit under *Chip*, *Text* and *Value* — colours, border, radius,
@@ -364,4 +366,5 @@ the shared feed is given sample **rounds** instead, totals and all, so `Round` r
 | `Editor/History/UiHistoryMenu.cs` | The GameObject menu entry |
 | `../Grid/` | `UiGrid`, which places the elements |
 | `../Window/BetInfo/BetInfoWindow.cs` | The dialog a click opens on the player's own bets |
+| `../Window/BetInfoSheet/BetInfoSheetWindow.cs` | The same bet as one scrolling sheet, opened instead when it is set |
 | `../Window/GameHistory/GameHistoryWindow.cs` | The dialog a click opens on the shared feed |
