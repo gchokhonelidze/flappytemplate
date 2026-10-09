@@ -4,7 +4,7 @@ Every readme in the package, in one place. Each row below opens a component's do
 twin sits beside every one of them in the same folder, with the same content laid out for a browser and the
 component **drawn** rather than described.
 
-*Package 1.0.89. Update this file when a readme is added or removed — and the versions in
+*Package 1.0.94. Update this file when a readme is added or removed — and the versions in
 [Which are current](#which-are-current) when one is brought up to date. **README.html** beside it is the same
 content for reading in a browser.*
 
@@ -19,7 +19,7 @@ content for reading in a browser.*
 Three roads in, depending on what you are here for:
 
 - **Putting a dialog or a bar on screen.** Start with [Window](Runtime/_System/Ui/Window/) — it is the
-  component the six built-in dialogs are made from — then [Navbar](Runtime/_System/Ui/Navbar/), the row
+  component the seven built-in dialogs are made from — then [Navbar](Runtime/_System/Ui/Navbar/), the row
   of buttons that opens four of them.
 - **Drawing something of your own.** [Rounded Box](Runtime/_System/Ui/RoundedBox/) is the panel
   everything here is built out of, and [Ui Grid](Runtime/_System/Ui/Grid/) is what arranges it.
@@ -35,11 +35,13 @@ The furniture drawn over the game: dialogs, the bar that opens them, the strip o
 
 | | Describes | What it is |
 | --- | --- | --- |
-| **[Window](Runtime/_System/Ui/Window/)** | 1.0.89 | A dialog that is one component rather than a prefab: panel, caption, close button, drag, an animated opening, and a body that scrolls when the content outgrows the screen. The seven windows built on it — Statistics, Bet info, Bet info sheet, Game history, Fairness, Hotkeys and Sound — are documented here too. |
-| **[Ui Navbar](Runtime/_System/Ui/Navbar/)** | 1.0.82 | The row of buttons over the game: home, statistics, fairness, hotkeys, sound, and whatever the game adds beside them. Home leaves for the address the server sent — taking the whole page, not the iframe — and hides itself while there is none. The rest find their windows, or build them. |
+| **[Window](Runtime/_System/Ui/Window/)** | 1.0.94 | A dialog that is one component rather than a prefab: panel, caption, close button, drag, an animated opening, and a body that scrolls when the content outgrows the screen. Born in a flat charcoal with one green accent; Restyle Windows brings one made before that over. The seven windows built on it — Statistics, Bet info, Bet info sheet, Game history, Fairness, Hotkeys and Sound — are documented here too. |
+| **[Ui Navbar](Runtime/_System/Ui/Navbar/)** | 1.0.94 | The row of buttons over the game: home, statistics, fairness, hotkeys, sound, and whatever the game adds beside them. Home leaves for the address the server sent — taking the whole page, not the iframe — and hides itself while there is none. The rest find their windows, or build them. |
 | **[Ui History](Runtime/_System/Ui/History/)** | 1.0.89 | The strip of recent bets, as a row of chips over the game or a column down the side. It feeds itself from the socket, animates each arrival, drops or scrolls the oldest, and opens the bet info dialog on whichever chip is clicked. |
-| **[Cursor](Runtime/_System/Ui/Cursor/)** | 1.0.89 | The hand over anything clickable, which UGUI never shows on its own. Works out the cursor from what is under the mouse — a Button, a text field, a disabled control — and sets it as CSS on the page's canvas. Nothing to add to a scene; a hint per object covers the rest. |
-| **[Hotkeys](Runtime/_System/Ui/Hotkeys/)** | 1.0.81 | Keys bound to things the game does, and the dialog that tells the player about them. One line binds a key; the window reads the registry, so there is no list to keep in step. Gated on the player's own `keyboard` setting, which the socket remembers. |
+| **[Selectable Text](Runtime/_System/Ui/SelectableText/)** | 1.0.93 | A label the player can select and copy from, and not type into — one component on any TextMeshPro label. Drag, double-click, Ctrl+C, a copy icon; a long press on a phone. Copies through the page in a browser, so it works in an iframe and on Safari. |
+| **[Cursor](Runtime/_System/Ui/Cursor/)** | 1.0.93 | The hand over anything clickable, which UGUI never shows on its own. Works out the cursor from what is under the mouse — a Button, a text field, a disabled control — and sets it as CSS on the page's canvas. Nothing to add to a scene; a hint per object covers the rest. |
+| **[Ripple](Runtime/_System/Ui/Ripple/)** | 1.0.94 | A wave round a control when it is pressed: a ring off the control's own outline that runs outwards and fades, while the control dips and springs back. One component, or one line; drawn behind the control and kept out of any layout. On every window's close button, every navbar button and the sound window's switches. |
+| **[Hotkeys](Runtime/_System/Ui/Hotkeys/)** | 1.0.94 | Keys bound to things the game does, and the dialog that tells the player about them. One line binds a key; the window reads the registry, so there is no list to keep in step. Gated on the player's own `keyboard` setting, which the socket remembers. |
 
 ## Drawing and layout
 
@@ -67,19 +69,19 @@ server has already given.
 
 | | Describes | What it is |
 | --- | --- | --- |
-| **[Sound](Runtime/_System/Audio/)** | 1.0.82 | Playing a clip with the player's own switches and volumes already applied — one line, no manager in the scene, no mixer. A named bank fills itself from the inspector, music is one clip faded rather than cut, and the four settings behind it are the same ones the web front keeps. |
+| **[Sound](Runtime/_System/Audio/)** | 1.0.94 | Playing a clip with the player's own switches and volumes already applied — one line, no manager in the scene, no mixer. A named bank fills itself from the inspector, music is one clip faded rather than cut, and the four settings behind it are the same ones the web front keeps. |
 | **[Translations](Runtime/_System/Translations/)** | 1.0.68 | Every word the player reads, in the language `MainState.Locale` names. No file to load and no initialisation step — the strings are dictionaries compiled into the package. Every caption the package draws goes through it, and a wording of your own survives. |
 
 ## Which are current
 
-Every readme carries the package version it was last checked against. The ones below **1.0.89** are the pages to
+Every readme carries the package version it was last checked against. The ones below **1.0.94** are the pages to
 distrust first if something on them does not match the code.
 
 | Describes | Pages |
 | --- | --- |
-| **1.0.89** — current | Window, Ui History, Cursor |
-| 1.0.82 | Ui Navbar, Sound |
-| 1.0.81 | Hotkeys |
+| **1.0.94** — current | Window, Ripple, Ui Navbar, Hotkeys, Sound |
+| 1.0.93 | Cursor, Selectable Text |
+| 1.0.89 | Ui History |
 | 1.0.79 | Transform Constraints |
 | 1.0.78 | Sprite Gradient |
 | 1.0.73 | Dice Roller |

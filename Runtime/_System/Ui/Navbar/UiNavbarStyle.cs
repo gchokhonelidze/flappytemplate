@@ -71,6 +71,21 @@ namespace FlappyTemplate
         [Min(0f)]
         public float LabelHeight = 18f;
 
+        [Header("Waves")]
+        [Tooltip("A wave round a button as it is pressed: a ring off its edge that runs outwards and fades, while the button dips and springs back. See Ui/Ripple.")]
+        public bool Waves = true;
+
+        [Tooltip("The ring and the glow inside it. Its alpha is where the wave starts.")]
+        public Color WaveColor = new Color(1f, 1f, 1f, 0.6f);
+
+        [Tooltip("How far past the button's edge the wave runs. More than Button Spacing reaches the button beside it.")]
+        [Min(0f)]
+        public float WaveSpread = 12f;
+
+        [Tooltip("Seconds from the press to the wave fading out.")]
+        [Min(0.05f)]
+        public float WaveDuration = 0.6f;
+
         /// <summary>A deep copy. Nothing here is a reference type that needs untangling beyond the font,
         /// which is shared on purpose, but it keeps the two styles independent.</summary>
         public UiNavbarStyle Clone() => (UiNavbarStyle)MemberwiseClone();

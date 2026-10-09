@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace FlappyTemplate
 {
@@ -36,13 +37,17 @@ namespace FlappyTemplate
             if (corner == null)
                 return;
 
-            if (Input.GetKeyDown(KeyCode.Alpha1))
+            var keyboard = Keyboard.current;
+            if (keyboard == null)
+                return;
+
+            if (keyboard.digit1Key.wasPressedThisFrame)
                 corner.ShowStatistics();
 
-            if (Input.GetKeyDown(KeyCode.Alpha2))
+            if (keyboard.digit2Key.wasPressedThisFrame)
                 corner.ShowFairness();
 
-            if (Input.GetKeyDown(KeyCode.Alpha3))
+            if (keyboard.digit3Key.wasPressedThisFrame)
                 corner.GoHome();
         }
 

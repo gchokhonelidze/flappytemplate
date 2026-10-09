@@ -9,6 +9,7 @@ the arrow stays an arrow — so `UiCursor` looks at what is under the mouse and 
 | --- | --- |
 | A `Button`, `Toggle`, `Slider`, `Scrollbar`, `Dropdown` — anything `Selectable` that can be used | the hand |
 | A text field, `TMP_InputField` or `InputField` | the I-beam |
+| Text that can be selected and copied — a [`UiSelectableText`](../SelectableText/) | the I-beam |
 | A `Selectable` that is not interactable | the arrow |
 | Anything else with a click handler on it — an `EventTrigger`, a game's own `IPointerClickHandler` | the hand |
 | Anything with a [`UiCursorHint`](#hints) on it or above it | whatever that says |
@@ -18,7 +19,7 @@ the arrow stays an arrow — so `UiCursor` looks at what is under the mouse and 
 driver, the same way [Hotkeys](../Hotkeys/) does, and every Button in the game — the template's windows, the
 navbar, the history chips, the game's own — gets the hand from then on.
 
-*Describes package 1.0.89. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.93. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with tiles to hover over.*
 
 > **Check it in a WebGL build, not in play mode.** The cursor is the browser's own, set as CSS on the canvas —
@@ -73,6 +74,8 @@ It looks again whenever the mouse moves, and every tenth of a second while it do
 under a mouse that is standing still — a window opening, a list scrolling — and that is soon enough for it
 without raycasting the canvas every frame for nothing. **While the button is held, the cursor stays what it was**
 when the press began, so a drag that wanders off the slider it started on does not flick to an arrow mid-drag.
+The mouse is read from the Input System's `Mouse.current`; with no mouse at all — a touch screen — there is no
+cursor to change, and nothing is done.
 
 Only switched-on things count. A hint, a Button or a handler on an object that is switched off answers nothing,
 the same as the click it stands for.

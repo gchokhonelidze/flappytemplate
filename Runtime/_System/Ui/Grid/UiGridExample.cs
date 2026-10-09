@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace FlappyTemplate
 {
@@ -71,28 +72,32 @@ namespace FlappyTemplate
         {
             Follow();
 
-            if (Input.GetKeyDown(KeyCode.Alpha1))
+            var keyboard = Keyboard.current;
+            if (keyboard == null)
+                return;
+
+            if (keyboard.digit1Key.wasPressedThisFrame)
                 ShowWide();
 
-            if (Input.GetKeyDown(KeyCode.Alpha2))
+            if (keyboard.digit2Key.wasPressedThisFrame)
                 ShowNarrow();
 
-            if (Input.GetKeyDown(KeyCode.Alpha3))
+            if (keyboard.digit3Key.wasPressedThisFrame)
                 ShowEverything();
 
-            if (Input.GetKeyDown(KeyCode.Alpha4))
+            if (keyboard.digit4Key.wasPressedThisFrame)
                 WidenSidebar();
 
-            if (Input.GetKeyDown(KeyCode.Alpha5))
+            if (keyboard.digit5Key.wasPressedThisFrame)
                 Print();
 
-            if (Input.GetKeyDown(KeyCode.Alpha6))
+            if (keyboard.digit6Key.wasPressedThisFrame)
                 ShowBuilt();
 
-            if (Input.GetKeyDown(KeyCode.Alpha7))
+            if (keyboard.digit7Key.wasPressedThisFrame)
                 ShowByAreas();
 
-            if (Input.GetKeyDown(KeyCode.Alpha8))
+            if (keyboard.digit8Key.wasPressedThisFrame)
                 ShowAssembled(Screen.width > 900);
         }
 

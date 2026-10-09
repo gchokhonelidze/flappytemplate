@@ -8,8 +8,9 @@ namespace FlappyTemplate
     // button, backdrop - is set on those objects themselves; this is only the tabs, the rows and the reset
     // button.
     //
-    // The defaults are the violet-and-mint reading in the readme: mint for the tab that is showing and for
-    // anything above zero, red for anything below it, amber for a count.
+    // The defaults are the charcoal the bet info sheet is drawn in: a wash of white for the tab that is
+    // showing, quiet captions over white figures, green for anything above zero, red for anything below it,
+    // gold for a count.
     [Serializable]
     public class StatisticsWindowStyle
     {
@@ -27,20 +28,20 @@ namespace FlappyTemplate
         [Min(0f)]
         public float TabGap = 22f;
 
-        public Color TabActiveFill = new Color(0.565f, 0.894f, 0.604f);
+        public Color TabActiveFill = new Color(1f, 1f, 1f, 0.14f);
 
-        public Color TabActiveText = new Color(0.11f, 0.1f, 0.29f);
+        public Color TabActiveText = Color.white;
 
-        public Color TabIdleFill = new Color(0.18f, 0.16f, 0.36f);
+        public Color TabIdleFill = new Color(1f, 1f, 1f, 0.04f);
 
-        public Color TabIdleText = Color.white;
+        public Color TabIdleText = new Color(1f, 1f, 1f, 0.6f);
 
         public TMP_FontAsset TabFont;
 
         [Min(1f)]
-        public float TabSize = 21f;
+        public float TabSize = 18f;
 
-        public FontStyles TabStyle = FontStyles.Bold;
+        public FontStyles TabStyle = FontStyles.Normal;
 
         [Header("Rows")]
         [Tooltip("Between one row and the next. The caption and its value are held together by Label Gap instead.")]
@@ -53,16 +54,16 @@ namespace FlappyTemplate
         public TMP_FontAsset LabelFont;
 
         [Min(1f)]
-        public float LabelSize = 22f;
+        public float LabelSize = 17f;
 
-        public Color LabelColor = Color.white;
+        public Color LabelColor = new Color(1f, 1f, 1f, 0.6f);
 
-        public FontStyles LabelStyle = FontStyles.Bold;
+        public FontStyles LabelStyle = FontStyles.Normal;
 
         public TMP_FontAsset ValueFont;
 
         [Min(1f)]
-        public float ValueSize = 28f;
+        public float ValueSize = 22f;
 
         public FontStyles ValueStyle = FontStyles.Bold;
 
@@ -70,12 +71,12 @@ namespace FlappyTemplate
         [Tooltip("Rows tinted Plain, and the separators on the counts line.")]
         public Color ValueColor = Color.white;
 
-        public Color PositiveColor = new Color(0.29f, 0.87f, 0.5f);
+        public Color PositiveColor = new Color(0.45f, 0.86f, 0.5f);
 
-        public Color NegativeColor = new Color(0.94f, 0.27f, 0.27f);
+        public Color NegativeColor = new Color(0.94f, 0.36f, 0.36f);
 
         [Tooltip("The bets part of the counts line. Wins and losses take the positive and negative colours.")]
-        public Color CountColor = new Color(0.98f, 0.8f, 0.08f);
+        public Color CountColor = new Color(0.98f, 0.8f, 0.2f);
 
         [Header("Value format")]
         [Tooltip("Decimal places. Below zero prints the number exactly as the server sent it, which is the only way to be sure nothing was rounded off.")]
@@ -94,17 +95,17 @@ namespace FlappyTemplate
         public Vector2 ResetOffset = new Vector2(4f, 4f);
 
         [Min(0f)]
-        public float ResetCornerRadius = 16f;
+        public float ResetCornerRadius = 12f;
 
-        public Color ResetFill = new Color(0.565f, 0.894f, 0.604f);
+        public Color ResetFill = new Color(1f, 1f, 1f, 0.1f);
 
-        public Color ResetIconColor = new Color(0.11f, 0.1f, 0.29f);
+        public Color ResetIconColor = Color.white;
 
         [Range(0f, 1f)]
         public float ResetIconScale = 0.5f;
 
         [Min(0.5f)]
-        public float ResetIconThickness = 4f;
+        public float ResetIconThickness = 3f;
 
         [Tooltip("Leave empty and the circular arrow is drawn from boxes, which needs no atlas entry.")]
         public Sprite ResetIcon;

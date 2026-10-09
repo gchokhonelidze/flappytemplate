@@ -110,6 +110,10 @@ namespace FlappyTemplate
         // Frames left to check the fit on after a refresh - see the end of Refresh.
         private int settle;
 
+        // True while Refresh is writing, so the switches land where they belong rather than sliding there: a
+        // window opening on a muted channel shows it muted, and does not animate the knob across on the way in.
+        private bool snap;
+
         /// <summary>The window this is drawn into. Open, close, drag and theme it through that.</summary>
         public UiWindow Window
         {
@@ -236,6 +240,9 @@ namespace FlappyTemplate
                     Flush();
             }
 
+            Slide(sound);
+            Slide(music);
+
             if (settle <= 0)
                 return;
 
@@ -280,8 +287,17 @@ namespace FlappyTemplate
             if (!built)
                 return;
 
-            Layout();
-            Write();
+            snap = true;
+
+            try
+            {
+                Layout();
+                Write();
+            }
+            finally
+            {
+                snap = false;
+            }
 
             // Two more passes over the next two frames. Everything the layout needs is measured inside Layout,
             // except what only the canvas can settle - a font that finished loading, a rect that had no width
@@ -327,6 +343,12 @@ namespace FlappyTemplate
             // paints the answer the player is waiting for rather than the state they just left.
             Tint();
 
+            // The wave in the colour of where the switch is going, so on and off look like two answers rather
+            // than one. From here rather than from the press, so a hotkey that flips the channel shows it too.
+            var card = channel == ESoundChannel.Music ? music : sound;
+            if (card != null && card.SwitchWave != null && style.Waves)
+                card.SwitchWave.Play(Wave(on ? style.SwitchOnFill : style.SwitchOffFill));
+
             if (channel == ESoundChannel.Music)
                 OnMusicToggled.Invoke(on);
             else
@@ -371,6 +393,13 @@ namespace FlappyTemplate
             public RectTransform HandleArea;
             public RoundedBox Handle;
             public TextMeshProUGUI Percent;
+            public UiRipple SwitchWave;
+            public UiRipple HandleWave;
+
+            // Where the knob is between off (0) and on (1). Below zero until the card is first painted, which
+            // places it outright.
+            public float Slide = -1f;
+            public float SlideTo;
         }
 
         private void BuildParts(RectTransform content)
@@ -421,6 +450,14 @@ namespace FlappyTemplate
             card.Handle = UiWindowParts.Box(card.HandleArea, "Handle");
 
             card.Percent = UiWindowParts.Label(plate.transform, "Percent");
+
+            // The switch answers to being flipped rather than to being pressed - see Toggle. The slider waves
+            // round its handle the moment it is taken hold of.
+            card.SwitchWave = UiRipple.On(card.Pill.gameObject);
+            card.SwitchWave.PlayOnPress = false;
+
+            card.HandleWave = UiRipple.On(card.Rail.gameObject, card.Handle.rectTransform);
+            card.HandleWave.PlayOnPress = true;
 
             // The name the content grid's layout knows the card by. Set once, here, where the parts are:
             // a name is a property of the panel, and Arrange only draws the picture that uses them.
@@ -496,7 +533,8 @@ namespace FlappyTemplate
             else
                 Rows(card.Grid, GridTrack.Fixed(style.TitleHeight));
 
-            card.Plate.SetBorderSize(0f);
+            card.Plate.SetBorderSize(Mathf.Max(0f, style.CardBorderSize));
+            card.Plate.SetBorderColor(style.CardBorder);
             card.Plate.SetCornerRadius(Mathf.Max(0f, style.CardCornerRadius));
             card.Plate.EdgeSoftness = 1.25f;
             card.Plate.raycastTarget = false;
@@ -538,6 +576,12 @@ namespace FlappyTemplate
             card.Knob.SetCornerRadius(knob * 0.5f);
             card.Knob.EdgeSoftness = 1.25f;
             card.Knob.raycastTarget = false;
+
+            // Close to the pill: the card's own padding is all the room there is before the window's clip, so a
+            // wave that ran further would be cut off square at the edge of the body.
+            card.SwitchWave.enabled = style.Waves;
+            card.SwitchWave.Spread = Mathf.Min(style.WaveSpread, style.CardPadding);
+            card.SwitchWave.Duration = style.WaveDuration;
         }
 
         private void PaintSlider(Card card)
@@ -603,6 +647,11 @@ namespace FlappyTemplate
 
             Label(card.Percent, style.PercentFont, style.PercentSize, style.PercentColor, style.PercentStyle);
             card.Percent.alignment = TextAlignmentOptions.Right;
+
+            card.HandleWave.enabled = style.Waves;
+            card.HandleWave.Spread = style.WaveSpread;
+            card.HandleWave.Duration = style.WaveDuration;
+            card.HandleWave.Color = Wave(style.FillColor);
         }
 
         // What a card's colours say: the switch is green when the channel is on and grey when it is off, the
@@ -621,15 +670,17 @@ namespace FlappyTemplate
 
             card.Caption.color = on ? style.LabelColor : style.LabelOffColor;
 
-            card.Pill.FillGradientMode = EFillGradient.None;
-            card.Pill.FillColor = on ? style.SwitchOnFill : style.SwitchOffFill;
-
             card.Knob.FillGradientMode = EFillGradient.None;
             card.Knob.FillColor = style.KnobFill;
 
-            float inset = Mathf.Clamp(style.KnobInset, 0f, card.Pill.rectTransform.sizeDelta.y * 0.4f);
-            float travel = Mathf.Max(0f, card.Pill.rectTransform.sizeDelta.x - card.Knob.rectTransform.sizeDelta.x - inset * 2f);
-            card.Knob.rectTransform.anchoredPosition = new Vector2(inset + (on ? travel : 0f), 0f);
+            // Where the knob is headed. Put there outright on a refresh, out of play mode and on the first paint;
+            // otherwise LateUpdate slides it across, and the pill's colour with it.
+            card.SlideTo = on ? 1f : 0f;
+
+            if (snap || card.Slide < 0f || !Application.isPlaying || style.SwitchDuration <= 0f)
+                card.Slide = card.SlideTo;
+
+            PlaceKnob(card);
 
             if (!showSliders)
                 return;
@@ -645,6 +696,50 @@ namespace FlappyTemplate
 
             card.Percent.color = on ? style.PercentColor : style.PercentOffColor;
             card.Percent.text = Mathf.RoundToInt(volume * 100f).ToString(CultureInfo.InvariantCulture) + "%";
+        }
+
+        // One frame of a switch on its way across. Linear underneath and eased where it is drawn, in PlaceKnob.
+        private void Slide(Card card)
+        {
+            if (card == null || card.Knob == null || card.Slide < 0f || Mathf.Approximately(card.Slide, card.SlideTo))
+                return;
+
+            float step = Time.unscaledDeltaTime / Mathf.Max(0.01f, style.SwitchDuration);
+            card.Slide = Mathf.MoveTowards(card.Slide, card.SlideTo, step);
+            PlaceKnob(card);
+        }
+
+        // The knob and the pill for wherever the switch is between off and on. Halfway across the knob is drawn
+        // out wider - something being pushed rather than a counter being moved - and it is round again by the
+        // time it lands, since the stretch is a sine over the trip.
+        private void PlaceKnob(Card card)
+        {
+            float slide = Mathf.Clamp01(card.Slide);
+            float eased = Mathf.SmoothStep(0f, 1f, slide);
+
+            card.Pill.FillGradientMode = EFillGradient.None;
+            card.Pill.FillColor = Color.Lerp(style.SwitchOffFill, style.SwitchOnFill, eased);
+
+            var pill = card.Pill.rectTransform.sizeDelta;
+            float inset = Mathf.Clamp(style.KnobInset, 0f, pill.y * 0.4f);
+            float knob = Mathf.Max(2f, pill.y - inset * 2f);
+            float width = knob * (1f + Mathf.Max(0f, style.KnobStretch) * Mathf.Sin(Mathf.PI * slide));
+
+            width = Mathf.Min(width, Mathf.Max(knob, pill.x - inset * 2f));
+
+            float travel = Mathf.Max(0f, pill.x - width - inset * 2f);
+
+            card.Knob.rectTransform.sizeDelta = new Vector2(width, knob);
+            card.Knob.rectTransform.anchoredPosition = new Vector2(inset + travel * eased, 0f);
+        }
+
+        // A wave's colour off a fill: the same hue at a set strength, short of solid so it reads as light rather
+        // than as a second, bigger control. Set rather than scaled, so a faint off colour still sends a wave
+        // that can be seen.
+        private static Color Wave(Color fill)
+        {
+            fill.a = 0.6f;
+            return fill;
         }
 
         // ------------------------------------------------------------------ what is showing

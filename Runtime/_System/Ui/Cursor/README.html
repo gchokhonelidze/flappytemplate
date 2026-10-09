@@ -171,7 +171,7 @@
   <p><strong>There is nothing to set up.</strong> No component goes in the scene: the first scene that loads starts
   a hidden driver, the same way Hotkeys does, and every Button in the game — the template's windows, the navbar, the
   history chips, the game's own — gets the hand from then on.</p>
-  <p class="stamp">Describes package 1.0.89. Update this file with the code — and README.md beside it.</p>
+  <p class="stamp">Describes package 1.0.93. Update this file with the code — and README.md beside it.</p>
 </header>
 
 <div class="warn">
@@ -196,6 +196,7 @@
   <tr><th>Under the mouse</th><th>Cursor</th></tr>
   <tr><td>A <code>Button</code>, <code>Toggle</code>, <code>Slider</code>, <code>Scrollbar</code>, <code>Dropdown</code> — anything <code>Selectable</code> that can be used</td><td>the hand</td></tr>
   <tr><td>A text field, <code>TMP_InputField</code> or <code>InputField</code></td><td>the I-beam</td></tr>
+  <tr><td>Text that can be selected and copied — a <a href="../SelectableText/README.html"><code>UiSelectableText</code></a></td><td>the I-beam</td></tr>
   <tr><td>A <code>Selectable</code> that is not interactable</td><td>the arrow</td></tr>
   <tr><td>Anything else with a click handler on it — an <code>EventTrigger</code>, a game's own <code>IPointerClickHandler</code></td><td>the hand</td></tr>
   <tr><td>Anything with a <a href="#hints"><code>UiCursorHint</code></a> on it or above it</td><td>whatever that says</td></tr>
@@ -249,7 +250,8 @@ disabled Button inside a clickable card is an arrow.</p>
 under a mouse that is standing still — a window opening, a list scrolling — and that is soon enough for it without
 raycasting the canvas every frame for nothing. <strong>While the button is held, the cursor stays what it
 was</strong> when the press began, so a drag that wanders off the slider it started on does not flick to an arrow
-mid-drag.</p>
+mid-drag. The mouse is read from the Input System's <code>Mouse.current</code>; with no mouse at all —
+a touch screen — there is no cursor to change, and nothing is done.</p>
 
 <p>Only switched-on things count. A hint, a Button or a handler on an object that is switched off answers nothing,
 the same as the click it stands for.</p>

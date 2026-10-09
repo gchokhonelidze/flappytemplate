@@ -2,6 +2,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 namespace FlappyTemplate.Editor
@@ -284,7 +285,7 @@ namespace FlappyTemplate.Editor
             if (stage.FindComponentOfType<EventSystem>() != null)
                 return;
 
-            var eventSystem = ObjectFactory.CreateGameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+            var eventSystem = ObjectFactory.CreateGameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
             StageUtility.PlaceGameObjectInCurrentStage(eventSystem);
         }
 

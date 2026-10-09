@@ -60,8 +60,8 @@ namespace FlappyTemplate
         // What Enabled answers with when there is no template to read the setting from.
         private static bool local = true;
 
-        /// <summary>How a key's held state is read. Replace it to drive the bindings from something other than
-        /// the old Input Manager - the Input System package, a gamepad, a row of buttons on a phone - and the
+        /// <summary>How a key's held state is read - the Input System's keyboard unless replaced. Replace it to
+        /// drive the bindings from something else - a gamepad, a row of buttons on a phone - and the
         /// presses, the releases and the down-state the window paints from all follow from it.</summary>
         public static Func<KeyCode, bool> Reader = HotkeyInput.Read;
 
@@ -410,6 +410,11 @@ namespace FlappyTemplate
                 return false;
 
             if (selected.GetComponent<TMP_InputField>() != null)
+                return true;
+
+            // Text being selected to copy is held to the same rule: Ctrl+C on a seed is not a press of C, and
+            // Ctrl+A is not "half the amount".
+            if (selected.GetComponent<UiSelectableText>() != null)
                 return true;
 
             return selected.GetComponent<InputField>() != null;

@@ -12,7 +12,7 @@ taking the whole page with it rather than the iframe the build is drawn in — a
 no such address. **Statistics**, **Fairness**, **Hotkeys** and **Sound** find their windows in the scene, or
 build them, and light up while the one they opened is on screen.
 
-*Describes package 1.0.82. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.94. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the bar and its glyphs drawn rather than described.*
 
 **GameObject → UI (Canvas) → FlappyBet → Navbar**, or Add Component → UI → Ui Navbar. It belongs on an
@@ -183,6 +183,16 @@ its button was given.
 | Show Labels | A caption under each glyph. Off is the usual case for small buttons over the game. |
 | Label Font / Size / Color / Style | |
 | Label Gap / Label Height | The band the caption is drawn in, off the bottom of the button. The glyph gets what is left — so a bar with labels wants a higher Icon Scale than one without. |
+| Waves | A wave round a button as it is pressed. On by default. |
+| Wave Color | The ring and the glow inside it — white at 60%. Its alpha is where the wave starts. |
+| Wave Spread | How far past the button's edge the wave runs — 12. More than Button Spacing reaches the button beside it. |
+| Wave Duration | Seconds from the press to the wave fading out — 0.6. |
+
+**Every button waves as it is pressed**: a ring off its edge that runs outwards and fades, while the button dips
+and springs back. It is a [Ripple](../Ripple/) on each button, put there when the buttons are hooked up and set
+from the four **Waves** fields every time they are — so a style assigned from code reaches buttons that already
+exist. The rings are drawn behind the button, as children of the bar, and named `Ripple` rather than `Button …` — so
+the bar neither places them nor sweeps them away, and nothing beside the button moves.
 
 A style is read rather than watched, so assign it back to have it taken up:
 
@@ -293,5 +303,6 @@ See [Translations](../../Translations/) for adding a caption of your own.
 | `ENavbarFlow.cs` | A row or a column. |
 | `ENavbarAlign.cs` | Where the buttons sit along a bar longer than they need. |
 | `UiNavbarExample.cs` | Three bars, built at runtime. Read as much as run. |
+| [`../Ripple/`](../Ripple/) | The wave round each button as it is pressed. |
 | `../../Navigation/Navigator.cs` | Leaving the game, and what an address has to look like to be followed. |
 | `../../JSPlugins/Navigation.jslib` | The four routes to the top window, and the message to the parent. |

@@ -7,7 +7,8 @@ namespace FlappyTemplate.Editor
     // Puts Window, Statistics Window, Bet Info Window, Game History Window, Fairness Window, Hotkeys Window,
     // Sound Window and Bet Info Sheet Window in GameObject > UI (Canvas) > FlappyBet, and makes them behave like
     // Panel: a canvas and an EventSystem appear if the scene has none, the object lands under whatever was
-    // right-clicked, and one undo takes the whole lot back out.
+    // right-clicked, and one undo takes the whole lot back out. Restyle Windows beside them repaints windows
+    // that are already there.
     //
     // The canvas-finding and reparenting are RoundedBoxMenu's - the same three steps UGUI's own menu runs,
     // and there is no reason for a second copy of them.
@@ -90,14 +91,12 @@ namespace FlappyTemplate.Editor
             var created = Create("Bet Info Sheet", BetInfoSheetSize, command, out var window, typeof(BetInfoSheetWindow));
             window.Title = "Bet info";
 
-            // The same bet the bet info window draws, laid out the other way: no caption, a charcoal panel, and a
-            // sheet the window scrolls once it is past the height the design is drawn at. The panel is painted
-            // once, here, the way Create paints it - after that it is the panel's own to restyle. Rebuilt from
-            // the sample bet, so it arrives looking like the dialog rather than like a row of dots.
+            // The same bet the bet info window draws, laid out the other way: no caption, and a sheet that grows
+            // with the bet as far as the screen lets it and scrolls after that. The charcoal panel every window is
+            // born with. Rebuilt from the sample bet, so it arrives looking like the dialog rather than like a
+            // row of dots.
             window.ShowCaption = false;
             window.SetContentPadding(22f, 18f, 22f, 22f);
-            window.MaxHeight = BetInfoSheetSize.y;
-            BetInfoSheetWindow.Charcoal(window.Panel);
 
             created.GetComponent<BetInfoSheetWindow>().Rebuild();
 
@@ -147,6 +146,56 @@ namespace FlappyTemplate.Editor
 
             Undo.SetCurrentGroupName("Create Sound Window");
             Selection.activeGameObject = created;
+        }
+
+        // Every window under the selection, or every window in the open scenes when nothing is selected, brought
+        // over to the charcoal look new ones are born with - see UiWindowTheme for what is repainted and what is
+        // left alone. One undo puts them all back.
+        [MenuItem(FlappyBetMenu.Group + "Restyle Windows", false, MenuPriority + 8)]
+        private static void RestyleWindows(MenuCommand command)
+        {
+            // A GameObject menu item runs once per selected object. The first run does the lot, so the others
+            // have nothing left to do.
+            if (command.context != null && command.context != Selection.activeGameObject)
+                return;
+
+            var windows = new System.Collections.Generic.List<UiWindow>();
+
+            if (Selection.gameObjects.Length > 0)
+            {
+                foreach (var picked in Selection.gameObjects)
+                    windows.AddRange(picked.GetComponentsInChildren<UiWindow>(true));
+            }
+            else
+            {
+                windows.AddRange(Object.FindObjectsByType<UiWindow>(FindObjectsInactive.Include, FindObjectsSortMode.None));
+            }
+
+            if (windows.Count == 0)
+            {
+                Debug.Log("Restyle Windows: no windows " + (Selection.gameObjects.Length > 0 ? "under the selection." : "in the open scenes."));
+                return;
+            }
+
+            Undo.SetCurrentGroupName("Restyle Windows");
+            int group = Undo.GetCurrentGroup();
+
+            foreach (var window in windows)
+            {
+                Undo.RegisterFullObjectHierarchyUndo(window.gameObject, "Restyle Windows");
+                UiWindowTheme.Charcoal(window);
+
+                foreach (var part in window.GetComponentsInChildren<Component>(true))
+                {
+                    if (part != null)
+                        EditorUtility.SetDirty(part);
+                }
+
+                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(window.gameObject.scene);
+            }
+
+            Undo.CollapseUndoOperations(group);
+            Debug.Log("Restyle Windows: " + windows.Count + " window" + (windows.Count == 1 ? "" : "s") + " repainted.");
         }
 
         private static GameObject Create(string name, Vector2 size, MenuCommand command, out UiWindow window, params System.Type[] extras)

@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace FlappyTemplate
 {
@@ -43,13 +44,17 @@ namespace FlappyTemplate
 
         void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Space))
+            var keyboard = Keyboard.current;
+            if (keyboard == null)
+                return;
+
+            if (keyboard.spaceKey.wasPressedThisFrame)
                 Push(1);
 
-            if (Input.GetKeyDown(KeyCode.Alpha1))
+            if (keyboard.digit1Key.wasPressedThisFrame)
                 Push(6);
 
-            if (!Input.GetKeyDown(KeyCode.Backspace))
+            if (!keyboard.backspaceKey.wasPressedThisFrame)
                 return;
 
             plain.Clear();

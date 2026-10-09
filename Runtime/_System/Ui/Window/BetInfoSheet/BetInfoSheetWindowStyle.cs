@@ -8,8 +8,8 @@ namespace FlappyTemplate
     // set on those objects themselves; this is the header, the id line, the sections down the body with a
     // heading and an outlined box each, and the bet's parts in the last of them.
     //
-    // The defaults are the flat charcoal reading the design is drawn in rather than the violet the windows next
-    // door use: every value in a box with a thin rule round it, every box under a small icon and a caption, and
+    // The defaults are the flat charcoal reading the design is drawn in, and the one every other window in
+    // this folder now takes after: every value in a box with a thin rule round it, every box under a small icon and a caption, and
     // a single coloured thing on the whole dialog - the result the game draws at the top.
     [Serializable]
     public class BetInfoSheetWindowStyle
@@ -167,6 +167,22 @@ namespace FlappyTemplate
         [Tooltip("Size of the currency code or dollar sign beside an amount, as a fraction of the text it sits against.")]
         [Range(0.3f, 1f)]
         public float SmallTextScale = 1f;
+
+        [Header("Copy buttons")]
+        [Tooltip("The copy icon at the right of the round id and the three seeds. Zero leaves them out.")]
+        [Min(0f)]
+        public float CopyIconSize = 18f;
+
+        [Tooltip("Room between a value's text and its copy icon.")]
+        [Min(0f)]
+        public float CopyIconGap = 10f;
+
+        public Color CopyIconColor = new Color(1f, 1f, 1f, 0.5f);
+
+        public Color CopyIconHoverColor = new Color(1f, 1f, 1f, 0.9f);
+
+        [Tooltip("The tick that replaces the icon for a moment after a copy.")]
+        public Color CopiedColor = new Color(0.451f, 0.859f, 0.502f, 1f);
 
         [Header("Round bets")]
         [Tooltip("The player's line: the avatar, the name, the two amounts and the chevron.")]

@@ -4,7 +4,8 @@
     "references": [
         "FlappyTemplateRuntimeAssembly",
         "UnityEngine.UI",
-        "UnityEditor.UI"
+        "UnityEditor.UI",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [
         "Editor"

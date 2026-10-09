@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace FlappyTemplate
 {
@@ -84,31 +85,35 @@ namespace FlappyTemplate
 
         private void ReadKeys()
         {
-            if (Input.GetKeyDown(KeyCode.Alpha1))
+            var keyboard = Keyboard.current;
+            if (keyboard == null)
+                return;
+
+            if (keyboard.digit1Key.wasPressedThisFrame)
                 SetPower(0f);
-            if (Input.GetKeyDown(KeyCode.Alpha2))
+            if (keyboard.digit2Key.wasPressedThisFrame)
                 SetPower(1f / 3f);
-            if (Input.GetKeyDown(KeyCode.Alpha3))
+            if (keyboard.digit3Key.wasPressedThisFrame)
                 SetPower(2f / 3f);
-            if (Input.GetKeyDown(KeyCode.Alpha4))
+            if (keyboard.digit4Key.wasPressedThisFrame)
                 SetPower(1f);
 
-            if (Input.GetKeyDown(KeyCode.X))
+            if (keyboard.xKey.wasPressedThisFrame)
                 ToggleAxis(EConstraintAxes.X);
-            if (Input.GetKeyDown(KeyCode.Y))
+            if (keyboard.yKey.wasPressedThisFrame)
                 ToggleAxis(EConstraintAxes.Y);
-            if (Input.GetKeyDown(KeyCode.Z))
+            if (keyboard.zKey.wasPressedThisFrame)
                 ToggleAxis(EConstraintAxes.Z);
 
-            if (Input.GetKeyDown(KeyCode.T))
+            if (keyboard.tKey.wasPressedThisFrame)
                 CycleTweenDuration();
-            if (Input.GetKeyDown(KeyCode.M))
+            if (keyboard.mKey.wasPressedThisFrame)
                 ToggleMode();
-            if (Input.GetKeyDown(KeyCode.S))
+            if (keyboard.sKey.wasPressedThisFrame)
                 ToggleSpace();
-            if (Input.GetKeyDown(KeyCode.F))
+            if (keyboard.fKey.wasPressedThisFrame)
                 ToggleFollow();
-            if (Input.GetKeyDown(KeyCode.R))
+            if (keyboard.rKey.wasPressedThisFrame)
                 ResetToRest();
         }
 

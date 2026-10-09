@@ -8,18 +8,18 @@ namespace FlappyTemplate
     // backdrop - is set on those objects themselves; this is the card, the profit banner, the pairs of
     // columns under it, and the two buttons along the bottom.
     //
-    // The defaults are the violet-and-mint reading the rest of this folder is drawn in: a card that is a wash
-    // of white over the panel, mint buttons, and a banner that is green above a payout of one and red below
-    // it.
+    // The defaults are the charcoal the bet info sheet is drawn in: a card that is the faintest wash of white
+    // over the dark panel, quiet captions over white values, buttons of the same wash, and a banner that is
+    // green above a payout of one and red below it - the one coloured thing on the dialog.
     [Serializable]
     public class BetInfoWindowStyle
     {
         [Header("Card")]
         [Tooltip("Drawn over the panel fill, so an alpha below one is a wash rather than a colour.")]
-        public Color CardFill = new Color(1f, 1f, 1f, 0.1f);
+        public Color CardFill = new Color(1f, 1f, 1f, 0.04f);
 
         [Min(0f)]
-        public float CardCornerRadius = 10f;
+        public float CardCornerRadius = 16f;
 
         [Tooltip("Inset of everything in the card from its edges.")]
         [Min(0f)]
@@ -38,30 +38,30 @@ namespace FlappyTemplate
         public float ColumnGap = 12f;
 
         [Header("Rules")]
-        public Color LineColor = new Color(1f, 1f, 1f, 0.3f);
+        public Color LineColor = new Color(1f, 1f, 1f, 0.1f);
 
         [Min(0.5f)]
-        public float LineThickness = 1.5f;
+        public float LineThickness = 1f;
 
         [Header("Profit banner")]
         [Min(0f)]
         public float ProfitHeight = 104f;
 
         [Min(0f)]
-        public float ProfitCornerRadius = 8f;
+        public float ProfitCornerRadius = 12f;
 
         [Tooltip("A payout of one or more - the bet came back whole or better.")]
-        public Color ProfitPositiveFill = new Color(0.388f, 1f, 0.58f);
+        public Color ProfitPositiveFill = new Color(0.24f, 0.55f, 0.32f);
 
-        public Color ProfitNegativeFill = new Color(1f, 0.388f, 0.388f);
+        public Color ProfitNegativeFill = new Color(0.72f, 0.15f, 0.1f);
 
         public Color ProfitTextColor = Color.white;
 
         [Min(1f)]
-        public float ProfitCaptionSize = 26f;
+        public float ProfitCaptionSize = 20f;
 
         [Min(1f)]
-        public float ProfitAmountSize = 32f;
+        public float ProfitAmountSize = 26f;
 
         [Min(0f)]
         public float ProfitCoinSize = 44f;
@@ -70,28 +70,28 @@ namespace FlappyTemplate
         public TMP_FontAsset CaptionFont;
 
         [Min(1f)]
-        public float CaptionSize = 22f;
+        public float CaptionSize = 17f;
 
-        public Color CaptionColor = Color.white;
+        public Color CaptionColor = new Color(1f, 1f, 1f, 0.6f);
 
-        public FontStyles CaptionStyle = FontStyles.Bold;
+        public FontStyles CaptionStyle = FontStyles.Normal;
 
         public TMP_FontAsset ValueFont;
 
         [Min(1f)]
-        public float ValueSize = 22f;
+        public float ValueSize = 20f;
 
         public Color ValueColor = Color.white;
 
-        public FontStyles ValueStyle = FontStyles.Bold;
+        public FontStyles ValueStyle = FontStyles.Normal;
 
         [Tooltip("The bet amount and the payout, which the design draws larger than everything around them.")]
         [Min(1f)]
-        public float AmountSize = 28f;
+        public float AmountSize = 22f;
 
         [Tooltip("The bet id and the seeds: long strings that wrap rather than fit.")]
         [Min(1f)]
-        public float HashSize = 18f;
+        public float HashSize = 17f;
 
         [Tooltip("Size of the currency code beside an amount, and of the x after a payout, as a fraction of the text they sit against.")]
         [Range(0.3f, 1f)]
@@ -106,15 +106,15 @@ namespace FlappyTemplate
         public float IconGap = 8f;
 
         [Tooltip("The disc drawn where the currency image goes. Left showing when the server sends no image, with the currency's first letter over it.")]
-        public Color CoinFill = new Color(0.98f, 0.8f, 0.08f);
+        public Color CoinFill = new Color(0.98f, 0.72f, 0.2f);
 
-        public Color CoinLetterColor = new Color(0.18f, 0.16f, 0.35f);
+        public Color CoinLetterColor = new Color(0.106f, 0.106f, 0.106f);
 
         [Header("Player")]
         [Min(0f)]
         public float AvatarSize = 36f;
 
-        public Color AvatarFill = new Color(0.18f, 0.16f, 0.36f);
+        public Color AvatarFill = new Color(1f, 1f, 1f, 0.14f);
 
         public Color AvatarLetterColor = Color.white;
 
@@ -122,9 +122,9 @@ namespace FlappyTemplate
         [Min(0f)]
         public float TickSize = 30f;
 
-        public Color TickFill = new Color(0.29f, 0.87f, 0.5f);
+        public Color TickFill = new Color(0.45f, 0.86f, 0.5f);
 
-        public Color TickMarkColor = Color.white;
+        public Color TickMarkColor = new Color(0.106f, 0.106f, 0.106f);
 
         [Min(0.5f)]
         public float TickThickness = 3.5f;
@@ -136,10 +136,10 @@ namespace FlappyTemplate
         public Vector2 GameImageSize = new Vector2(120f, 90f);
 
         [Min(0f)]
-        public float GameImageCornerRadius = 8f;
+        public float GameImageCornerRadius = 10f;
 
         [Tooltip("Drawn where the game image goes, and left showing when the server sends none.")]
-        public Color GameImageFill = new Color(0.18f, 0.16f, 0.36f);
+        public Color GameImageFill = new Color(1f, 1f, 1f, 0.08f);
 
         [Header("Time")]
         [Min(0f)]
@@ -154,19 +154,19 @@ namespace FlappyTemplate
         public Sprite ClockIcon;
 
         [Header("Buttons")]
-        public Vector2 DetailsSize = new Vector2(160f, 52f);
+        public Vector2 DetailsSize = new Vector2(160f, 48f);
 
-        public Vector2 VerifySize = new Vector2(170f, 52f);
+        public Vector2 VerifySize = new Vector2(170f, 48f);
 
         [Min(0f)]
-        public float ButtonCornerRadius = 10f;
+        public float ButtonCornerRadius = 12f;
 
-        public Color ButtonFill = new Color(0.565f, 0.894f, 0.604f);
+        public Color ButtonFill = new Color(1f, 1f, 1f, 0.1f);
 
-        public Color ButtonTextColor = new Color(0.11f, 0.1f, 0.29f);
+        public Color ButtonTextColor = Color.white;
 
         [Min(1f)]
-        public float ButtonTextSize = 22f;
+        public float ButtonTextSize = 20f;
 
         [Header("Seeds")]
         [Min(0f)]
@@ -183,7 +183,7 @@ namespace FlappyTemplate
         [Min(0f)]
         public float LoaderDotGap = 12f;
 
-        public Color LoaderColor = new Color(1f, 1f, 1f, 0.85f);
+        public Color LoaderColor = new Color(1f, 1f, 1f, 0.7f);
 
         [Tooltip("Seconds for one dot to swell and settle again. The three are staggered across it.")]
         [Min(0.05f)]

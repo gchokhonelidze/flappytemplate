@@ -1,6 +1,7 @@
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace FlappyTemplate
 {
@@ -43,28 +44,32 @@ namespace FlappyTemplate
 
         void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Alpha1) && plain != null)
+            var keyboard = Keyboard.current;
+            if (keyboard == null)
+                return;
+
+            if (keyboard.digit1Key.wasPressedThisFrame && plain != null)
                 plain.Toggle();
 
-            if (Input.GetKeyDown(KeyCode.Alpha2) && modal != null)
+            if (keyboard.digit2Key.wasPressedThisFrame && modal != null)
                 modal.Toggle();
 
-            if (Input.GetKeyDown(KeyCode.Alpha3) && statistics != null)
+            if (keyboard.digit3Key.wasPressedThisFrame && statistics != null)
                 statistics.Window.Toggle();
 
-            if (Input.GetKeyDown(KeyCode.Alpha4) && betInfo != null)
+            if (keyboard.digit4Key.wasPressedThisFrame && betInfo != null)
                 betInfo.Window.Toggle();
 
-            if (Input.GetKeyDown(KeyCode.Alpha5) && gameHistory != null)
+            if (keyboard.digit5Key.wasPressedThisFrame && gameHistory != null)
                 gameHistory.Window.Toggle();
 
-            if (Input.GetKeyDown(KeyCode.Alpha6) && fairness != null)
+            if (keyboard.digit6Key.wasPressedThisFrame && fairness != null)
                 fairness.Window.Toggle();
 
-            if (Input.GetKeyDown(KeyCode.Alpha7) && betInfoSheet != null)
+            if (keyboard.digit7Key.wasPressedThisFrame && betInfoSheet != null)
                 betInfoSheet.Window.Toggle();
 
-            if (!Input.GetKeyDown(KeyCode.Escape))
+            if (!keyboard.escapeKey.wasPressedThisFrame)
                 return;
 
             // Newest first, so Escape peels them off in the order they went on rather than closing the one

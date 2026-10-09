@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Selectable Text — FlappyBet Template</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --ink: #1c1f24;
+    --soft: #5b6472;
+    --line: #dfe3e8;
+    --accent: #3f6fd8;
+    --code-bg: #f2f4f7;
+    --note-bg: #eef4ff;
+    --note-line: #6f9bea;
+    --warn-bg: #fff6e5;
+    --warn-line: #e6a23c;
+    --stage: #e9ebef;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --panel: #1d2025;
+      --ink: #e4e7ec;
+      --soft: #9aa3b0;
+      --line: #2c3038;
+      --accent: #7aa2f7;
+      --code-bg: #12141a;
+      --note-bg: #161d2b;
+      --note-line: #4a6ea8;
+      --warn-bg: #2c2415;
+      --warn-line: #b98330;
+      --stage: #0f1114;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 28px 96px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 64px; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 14px;
+    border-left: 2px solid var(--line);
+    padding-left: 16px;
+  }
+  nav.toc strong { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--soft); }
+  nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+  nav.toc a.home {
+    color: var(--ink);
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  header.title { margin-bottom: 28px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 44px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  p { margin: 12px 0; max-width: 74ch; }
+  a { color: var(--accent); }
+  .lede { color: var(--soft); }
+  .stamp { color: var(--soft); font-size: 13.5px; font-style: italic; }
+
+  code, pre { font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 4px; font-size: 0.86em; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--soft); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td:first-child { white-space: nowrap; }
+
+  .note, .warn {
+    border-left: 3px solid var(--note-line);
+    background: var(--note-bg);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+  .warn { border-left-color: var(--warn-line); background: var(--warn-bg); }
+  .note p, .warn p { margin: 0; max-width: none; }
+
+  /* ---- the three labels of the example, selectable for real ---- */
+  .stage {
+    background: var(--stage);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 22px;
+    margin: 18px 0;
+    display: grid;
+    gap: 12px;
+  }
+  .value {
+    background: #2a2b36;
+    color: #fff;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 15px;
+    overflow-wrap: anywhere;
+    cursor: text;
+    user-select: text;
+  }
+  .value::selection, .value *::selection { background: rgba(84, 153, 255, .42); }
+  .value .cap { color: rgba(255, 255, 255, .6); }
+  .stage .why { margin: 0; color: var(--soft); font-size: 13px; max-width: none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc">
+  <a class="home" href="../../../../README.html">&#8592; All documentation</a>
+  <strong>Contents</strong>
+  <a href="#use">Selecting and copying</a>
+  <a href="#copy">The copy button</a>
+  <a href="#why">Why not a read-only input field</a>
+  <a href="#phone">On a phone</a>
+  <a href="#browser">In a browser</a>
+  <a href="#hotkeys">Hotkeys</a>
+  <a href="#cursor">The cursor</a>
+  <a href="#code">From code</a>
+  <a href="#files">Files</a>
+</nav>
+
+<main>
+
+<header class="title">
+  <h1>Selectable Text</h1>
+  <p class="lede">A label the player can select and copy from, and not type into. It goes on any TextMeshPro label,
+  which keeps everything it had — its text, its style, its place in a grid.</p>
+  <pre><code>UiSelectableText.On(seedLabel);</code></pre>
+  <p>The <a href="../Window/README.html">bet info sheet</a> uses it for the round id, the three totals and the three
+  seeds, and puts a copy icon on the id and the seeds — its <strong>Copyable Values</strong> switch.</p>
+  <p class="stamp">Describes package 1.0.93. Update this file with the code — and README.md beside it.</p>
+</header>
+
+<h2 id="use">Selecting and copying</h2>
+
+<div class="stage">
+  <p class="why">The labels <code>UiSelectableTextExample</code> builds. Select them the way the game lets a player
+  — drag, double-click — and copy.</p>
+  <div class="value">6e43ebe3daf247c9892449b94be2d57a</div>
+  <div class="value"><span class="cap">Round ID:</span>&nbsp; d9f77676f0a390e1</div>
+  <div class="value">5cca0e0e2291f73c5999d07c8d336905013026f2fff58fefb2464ef2068c8d4a5274784d4f625e6994005efea832d4f1048d14931174378209421f1d8eeaa9c6</div>
+</div>
+
+<table>
+  <tr><th>With</th><th>To</th></tr>
+  <tr><td>A mouse drag</td><td>select from where it started to where it is</td></tr>
+  <tr><td>A double-click</td><td>select everything</td></tr>
+  <tr><td>Shift-click</td><td>extend the selection</td></tr>
+  <tr><td>Ctrl+C · Cmd+C</td><td>copy the selection</td></tr>
+  <tr><td>Ctrl+A · Cmd+A</td><td>select everything</td></tr>
+  <tr><td>A finger held still for half a second</td><td>select everything, and copy it when the finger lifts</td></tr>
+  <tr><td>A click anywhere else</td><td>drop the selection</td></tr>
+  <tr><td>The <a href="#copy">copy icon</a> at the right</td><td>copy all of it, and show a tick for a moment</td></tr>
+</table>
+
+<h2 id="copy">The copy button</h2>
+
+<p>For a value nobody wants to select by hand — a 128-character hash — a small copy icon sits at the label's right
+edge and copies the whole text with one click or tap:</p>
+
+<pre><code>UiCopyButton.On(hashLabel, 18f, 10f);   // 18 across, 10 clear of the text</code></pre>
+
+<p>It is made <strong>inside</strong> the label rather than beside it, because a label is usually a cell of a
+<a href="../Grid/README.html"><code>UiGrid</code></a> and a sibling would be a cell the grid hides. The label's right
+margin is widened by the icon and the gap, so wrapped text stops short of it. After a copy the icon turns into a
+green tick for <strong>Copied Seconds</strong>, and <code>OnCopied</code> fires.</p>
+
+<p>The icon is drawn — two pages, then the tick — from <a href="../RoundedBox/README.html">Rounded Boxes</a>, so it
+has no sprite to import and takes <strong>Color</strong>, <strong>Hover Color</strong> and <strong>Copied
+Color</strong> like any other part. Its hit area is a little bigger than the icon, so a finger can find it.</p>
+
+<h2 id="why">Why not a read-only input field</h2>
+
+<p><code>TMP_InputField</code> with <strong>Read Only</strong> on selects and copies too, and was the obvious way to
+do this. It is the wrong one inside the template's dialogs:</p>
+
+<ul>
+  <li>It needs a viewport and makes a caret object beside the text. Inside a <a href="../Grid/README.html"><code>UiGrid</code></a>
+  cell, that object is a child the grid has not been told about, so the grid hides it — and the selection highlight
+  is drawn by it.</li>
+  <li>It keeps its own copy of the text and writes it over the label whenever it takes focus, so the label has to be
+  written through the field instead.</li>
+  <li>It takes every drag. In a dialog that scrolls, a finger meant to scroll the body selects text instead.</li>
+</ul>
+
+<p><code>UiSelectableText</code> is one component on the label itself. It draws the highlight in a child of the
+label, which is not a grid cell, and reads the text from the label every time.</p>
+
+<h2 id="phone">On a phone</h2>
+
+<p>A finger dragging over the text is <strong>scrolling</strong>, not selecting: the drag is handed to whatever is
+behind the label — the <a href="../Window/README.html">window</a>'s scrolling body, in a dialog — exactly as if the
+label were not there. A phone has no Ctrl+C, so <strong>holding a finger still</strong> on the label for
+<strong>Long Press Seconds</strong> selects all of it, and lifting the finger copies it. <code>OnCopied</code> fires
+then, and is the place for a "Copied" toast.</p>
+
+<h2 id="browser">In a browser</h2>
+
+<p>A WebGL build cannot write to the clipboard whenever it likes. A browser only allows it inside the key press —
+on Safari — or close to it elsewhere, and a game in a <strong>cross-origin iframe</strong>, which is what a game
+embedded on an operator's site is, has no <code>navigator.clipboard</code> at all unless the page around it allowed
+it.</p>
+
+<p>So the copy is done by the page, not the game, inside the browser's own event — Unity only hears of an event
+a frame after the browser has finished with it. The game says what would be copied ahead of time, and
+<code>JSPlugins/Clipboard.jslib</code> copies it through a hidden textarea and <code>execCommand("copy")</code>,
+which works in an iframe and on Safari alike:</p>
+
+<table>
+  <tr><th></th><th>Offered</th><th>Copied in</th></tr>
+  <tr><td>Ctrl+C</td><td>whenever the selection changes — <code>UiClipboard.Offer</code></td><td>the keydown</td></tr>
+  <tr><td>The copy button</td><td>when it is pressed — <code>UiClipboard.OfferClick</code></td><td>the mouseup or touchend that ends the press</td></tr>
+  <tr><td>A long press on a phone</td><td>—</td><td><code>UiClipboard.Copy</code> on the lift, which the browser counts as the player doing something</td></tr>
+</table>
+
+<p>A press on the copy button that slides off it, or turns into a scroll, withdraws its offer before the release,
+so scrolling past a seed never copies it.</p>
+
+<p><code>UiClipboard.Copy(text)</code> copies at once, for anything else. In a browser it only works close to a
+press or a click, and on Safari not at all outside the event itself — the reason the copy button offers ahead
+instead.</p>
+
+<h2 id="hotkeys">Hotkeys</h2>
+
+<p>While a value is selected, <a href="../Hotkeys/README.html">Hotkeys</a> stand back, as they do for a text field:
+Ctrl+C is not a press of C, and Ctrl+A is not "half the amount". The selection lives on the
+<code>EventSystem</code>'s selected object, so a click anywhere else gives the keys back.</p>
+
+<h2 id="cursor">The cursor</h2>
+
+<p><a href="../Cursor/README.html">Cursor</a> shows the I-beam over selectable text, as it does over a text
+field.</p>
+
+<h2 id="code">From code</h2>
+
+<table>
+  <tr><td><code>UiSelectableText.On(label)</code></td><td>Adds the component to a label, or finds the one already there, and turns raycasting on.</td></tr>
+  <tr><td><code>Select(from, to)</code> · <code>SelectAll()</code> · <code>ClearSelection()</code></td><td>Character positions, either way round. 0 is before the first character.</td></tr>
+  <tr><td><code>HasSelection</code> · <code>SelectedText</code></td><td>What is selected, as the player reads it: rich text tags left out, a wrapped line joined back up.</td></tr>
+  <tr><td><code>Copy()</code></td><td>Copies the selection, or all of the text when nothing is selected. Call it from a click.</td></tr>
+  <tr><td><code>OnCopied</code></td><td>Something was copied, with what.</td></tr>
+  <tr><td><code>HighlightColor</code></td><td>The tint over the selection. Drawn over the glyphs, so keep it see-through.</td></tr>
+  <tr><td><code>LongPressSeconds</code></td><td>How long a finger has to stay still. Zero turns the long press off.</td></tr>
+  <tr><td><code>UiCopyButton.On(label, size, gap)</code></td><td>Puts a copy icon at a label's right edge, or finds the one already there, and keeps the text clear of it.</td></tr>
+  <tr><td><code>UiCopyButton.Copy()</code> · <code>OnCopied</code> · <code>ShowingCopied</code></td><td>Copy from code; something was copied; the tick is showing.</td></tr>
+  <tr><td><code>UiCopyButton.Source</code> · <code>Text</code></td><td>The label it copies, or fixed text when there is none.</td></tr>
+  <tr><td><code>UiClipboard.Copy(text)</code></td><td>Copies any text.</td></tr>
+  <tr><td><code>UiClipboard.Offer(text)</code></td><td>Says what the next Ctrl+C copies in a browser. <code>UiSelectableText</code> does this itself.</td></tr>
+  <tr><td><code>UiClipboard.OfferClick(text)</code></td><td>Says what the release of the press now going on copies in a browser. <code>UiCopyButton</code> does this itself.</td></tr>
+</table>
+
+<h2 id="files">Files</h2>
+
+<table>
+  <tr><th>File</th><th></th></tr>
+  <tr><td><code>UiSelectableText.cs</code></td><td>The selection: pointer, keys, the touch hand-off and the long press.</td></tr>
+  <tr><td><code>UiSelectionHighlight.cs</code></td><td>The tint over the selection, one rectangle a line. Made when first needed, never saved. Internal.</td></tr>
+  <tr><td><code>UiCopyButton.cs</code></td><td>The copy icon, the tick, and the offer made on the press.</td></tr>
+  <tr><td><code>UiClipboard.cs</code></td><td>The clipboard, the same call on every platform.</td></tr>
+  <tr><td><code>UiSelectableTextExample.cs</code></td><td>A seed, a line with a tinted caption, and a hash long enough to wrap, each with a copy icon. Drop it on an empty RectTransform in a canvas.</td></tr>
+  <tr><td><code>../../JSPlugins/Clipboard.jslib</code></td><td>The browser's half: the copy inside the key press or the release.</td></tr>
+  <tr><td><code>../Window/BetInfoSheet/BetInfoSheetWindow.cs</code></td><td>Puts it on the sheet's values.</td></tr>
+</table>
+
+</main>
+</div>
+</body>
+</html>

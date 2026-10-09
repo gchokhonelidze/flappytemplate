@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace FlappyTemplate
 {
@@ -7,7 +8,11 @@ namespace FlappyTemplate
     {
         void Update()
         {
-            if (Input.GetKeyDown(KeyCode.T))
+            var keyboard = Keyboard.current;
+            if (keyboard == null)
+                return;
+
+            if (keyboard.tKey.wasPressedThisFrame)
             {
                 UiManager.Inst.OnShowToast.Invoke(
                     new ToastOptions

@@ -12,7 +12,7 @@ That is the whole of it. There is no manager to put in the scene, no asset to au
 the window** — the [hotkeys window](../Window/) reads this registry, so a key bound anywhere in the game
 appears in its list, named, with its cap lit on the drawn keyboard. Bind and the feature is finished.
 
-*Describes package 1.0.81. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.94. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the keyboard and the caps drawn rather than described.*
 
 The one thing worth knowing before anything else: **hotkeys are off until the player switches them on.** The
@@ -161,7 +161,8 @@ device — because `ON_SETTING` comes back over the socket like anything else.
 
 A press is held while a text field has focus, so somebody typing an amount does not halve it on the way past
 the `A`. The `EventSystem`'s selected object is asked, since a field only takes what is typed while it holds
-the selection — that is the same question. `TMP_InputField` and UGUI's `InputField` both count.
+the selection — that is the same question. `TMP_InputField` and UGUI's `InputField` both count, and so does
+[selectable text](../SelectableText/) with something selected, so Ctrl+C on a seed is not a press of C.
 
 ```csharp
 Hotkeys.SuppressWhileTyping = false;   // a game with no text fields anywhere
@@ -169,8 +170,11 @@ Hotkeys.SuppressWhileTyping = false;   // a game with no text fields anywhere
 
 ## Which input backend
 
-The registry reads the **old Input Manager**, because the package has no dependency on the Input System
-package and adding one to a template would put it in every game that installs this.
+The registry reads the keyboard through the **Input System** package (`Keyboard.current`), which the template
+depends on. Bindings are still named by `KeyCode` — that is what `UiHotkey` and `UiHotkeyMark` have serialized in
+every scene so far, and the Input System's `Key` numbers its members differently, so changing the type would
+quietly move each saved binding onto another key. `HotkeyInput.ToKey` is the one place the two meet. With no
+keyboard attached — a phone — every key reads as up.
 
 Everything is read through one delegate — *is this key held right now* — and the presses, the releases, the
 held keys and the down-state the window paints from are all worked out from it. So a game on another input
@@ -178,15 +182,11 @@ path replaces that one delegate and gets the rest for free:
 
 ```csharp
 // Anywhere before the first bind
-Hotkeys.Reader = key => Keyboard.current[Convert(key)].isPressed;
+Hotkeys.Reader = key => key == KeyCode.Space && Gamepad.current?.buttonSouth.isPressed == true;
 ```
 
 A gamepad, a row of on-screen buttons on a phone, or a replay driving the game from a recording all fit the
 same shape.
-
-With **Active Input Handling** on *Input System Package (New)* and no reader of your own, the old manager
-throws rather than returning false — so it is not asked at all, and one warning is logged instead of a key
-that quietly never fires. Set it to **Both**, or give `Hotkeys.Reader` a delegate.
 
 ## The badge on a button
 
@@ -221,8 +221,8 @@ keys.Window.Open();
 
 Or leave it to the [navbar](../Navbar/), whose **Hotkeys** button finds one in the scene or builds one.
 
-Three parts, top to bottom: the **drawn keyboard**, with every bound cap in the accent colour and whichever is
-held down lit; the **list** of what each key does, which scrolls past `List Max Height` so the button below
+Three parts, top to bottom: the **drawn keyboard**, with every bound cap in the accent colour — green, on the
+charcoal every window is drawn in — and whichever is held down lit; the **list** of what each key does, which scrolls past `List Max Height` so the button below
 stays on screen; and the **switch**. Its caption says which way things stand rather than what pressing it
 would do — `Hotkeys off` while they are off — which is how the web front's button reads, so a player who has
 used one recognises the other.
@@ -335,7 +335,7 @@ A game never reaches either, because a game is playing.
 | `Hotkeys.cs` | The registry: binding, the frame loop, and the setting. |
 | `Hotkey.cs` | One binding, and the handle that drops it. |
 | `HotkeyCaps.cs` | What a key is called, and the shape of the drawn keyboard. |
-| `HotkeyInput.cs` | Whether a key is held, read from the old Input Manager. |
+| `HotkeyInput.cs` | Whether a key is held, read from the Input System's keyboard, and the `KeyCode` to `Key` table. |
 | `HotkeyDriver.cs` | The hidden object that gives the registry a frame. |
 | `UiHotkey.cs` | Binding a key from the inspector. |
 | `UiHotkeyMark.cs` | The badge in the corner of a button. |

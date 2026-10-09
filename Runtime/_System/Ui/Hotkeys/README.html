@@ -132,8 +132,9 @@
   .dialog {
     width: 420px;
     max-width: 100%;
-    background: #3d3163;
-    border-radius: 14px;
+    background: #1b1b1b;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 18px;
     padding: 16px;
     font-size: 13px;
   }
@@ -147,8 +148,8 @@
 
   /* the drawn keyboard: rows of caps, weighted by width in cap units */
   .board {
-    background: #fff;
-    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
     padding: 8px;
     display: flex;
     flex-direction: column;
@@ -159,17 +160,17 @@
     flex: 1 1 0;
     height: 26px;
     border-radius: 4px;
-    background: #fff;
-    border: 1px solid #cbc7d9;
-    color: #4a4066;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.75);
     font: 11px/24px "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
     text-align: center;
     overflow: hidden;
     white-space: nowrap;
   }
   /* bound, and bound-and-held: the two colours the window asks a player to learn */
-  .k.reg { background: #e8c55a; border-color: #e8c55a; color: #33285a; font-weight: 700; }
-  .k.on  { background: #fde488; border-color: #fde488; color: #241b45; font-weight: 700; }
+  .k.reg { background: #73db80; border-color: #73db80; color: #1b1b1b; font-weight: 700; }
+  .k.on  { background: #9feda8; border-color: #9feda8; color: #1b1b1b; font-weight: 700; }
   /* wider caps, in cap units */
   .k.u15 { flex-grow: 1.5; }
   .k.u175 { flex-grow: 1.75; }
@@ -184,37 +185,37 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     padding: 9px 11px;
   }
-  .bind b { color: #fff; font-size: 14px; }
+  .bind b { color: #fff; font-size: 14px; font-weight: 400; }
   .bind .cap {
     min-width: 62px;
     text-align: center;
-    background: #e8c55a;
-    color: #33285a;
+    background: #73db80;
+    color: #1b1b1b;
     border-radius: 7px;
     padding: 7px 10px;
     font-weight: 700;
     font-size: 15px;
   }
-  .bind .cap.on { background: #fde488; }
-  .bind.off { background: rgba(255, 255, 255, 0.05); }
+  .bind .cap.on { background: #9feda8; }
+  .bind.off { background: rgba(255, 255, 255, 0.02); }
   .bind.off b { color: rgba(255, 255, 255, 0.45); }
-  .bind.off .cap { background: rgba(232, 197, 90, 0.35); }
+  .bind.off .cap { background: rgba(115, 219, 128, 0.3); }
 
   .foot {
     margin-top: 12px;
     text-align: center;
     border-radius: 9px;
     padding: 12px;
-    background: #c9c7d4;
-    color: #29233f;
+    background: #bfbfbf;
+    color: #1b1b1b;
     font-weight: 700;
     font-size: 14px;
   }
-  .foot.on { background: #73c27f; }
+  .foot.on { background: #73db80; }
 
   /* the badge in the corner of a button */
   .glyphrow { display: flex; gap: 34px; align-items: center; flex-wrap: wrap; }
@@ -321,7 +322,7 @@
   because the window reads the registry rather than a list somebody kept in step with it. Bindings are gated on
   the player's own <code>keyboard</code> setting, which the window's footer button flips and the socket
   remembers, so the choice follows them to their next session and to the web front.</p>
-  <p class="stamp">Describes package 1.0.81. Update this file with the code — and README.md beside it.</p>
+  <p class="stamp">Describes package 1.0.94. Update this file with the code — and README.md beside it.</p>
   <p><strong>Add Component → UI → Ui Hotkey</strong> to bind from the inspector, or
   <code>Hotkeys.Bind</code> from code. The dialog is <strong>GameObject → UI (Canvas) → FlappyBet → Hotkeys
   Window</strong>.</p>
@@ -517,31 +518,29 @@ second device — because <code>ON_SETTING</code> comes back over the socket lik
 <p>A press is held while a text field has focus, so somebody typing an amount does not halve it on the way past
 the <code>A</code>. The <code>EventSystem</code>'s selected object is asked, since a field only takes what is
 typed while it holds the selection — that is the same question. <code>TMP_InputField</code> and UGUI's
-<code>InputField</code> both count.</p>
+<code>InputField</code> both count, and so does <a href="../SelectableText/README.html">selectable text</a> with
+something selected, so Ctrl+C on a seed is not a press of C.</p>
 
 <pre><code>Hotkeys.SuppressWhileTyping = false;   // a game with no text fields anywhere</code></pre>
 
 <h2 id="backend">Which input backend</h2>
 
-<p>The registry reads the <strong>old Input Manager</strong>, because the package has no dependency on the
-Input System package and adding one to a template would put it in every game that installs this.</p>
+<p>The registry reads the keyboard through the <strong>Input System</strong> package
+(<code>Keyboard.current</code>), which the template depends on. Bindings are still named by <code>KeyCode</code> —
+that is what <code>UiHotkey</code> and <code>UiHotkeyMark</code> have serialized in every scene so far, and the
+Input System's <code>Key</code> numbers its members differently, so changing the type would quietly move each saved
+binding onto another key. <code>HotkeyInput.ToKey</code> is the one place the two meet. With no keyboard attached —
+a phone — every key reads as up.</p>
 
 <p>Everything is read through one delegate — <em>is this key held right now</em> — and the presses, the
 releases, the held keys and the down-state the window paints from are all worked out from it. So a game on
 another input path replaces that one delegate and gets the rest for free:</p>
 
 <pre><code>// Anywhere before the first bind
-Hotkeys.Reader = key =&gt; Keyboard.current[Convert(key)].isPressed;</code></pre>
+Hotkeys.Reader = key =&gt; key == KeyCode.Space &amp;&amp; Gamepad.current?.buttonSouth.isPressed == true;</code></pre>
 
 <p>A gamepad, a row of on-screen buttons on a phone, or a replay driving the game from a recording all fit the
 same shape.</p>
-
-<div class="warn">
-  <p>With <strong>Active Input Handling</strong> on <em>Input System Package (New)</em> and no reader of your
-  own, the old manager throws rather than returning false — so it is not asked at all, and one warning is
-  logged instead of a key that quietly never fires. Set it to <strong>Both</strong>, or give
-  <code>Hotkeys.Reader</code> a delegate.</p>
-</div>
 
 <h2 id="mark">The badge on a button</h2>
 
@@ -605,7 +604,7 @@ keys.Window.Open();</code></pre>
 </div>
 
 <p>Three parts, top to bottom: the <strong>drawn keyboard</strong>, with every bound cap in the accent colour
-and whichever is held down lit; the <strong>list</strong> of what each key does, which scrolls past
+&mdash; green, on the charcoal every window is drawn in &mdash; and whichever is held down lit; the <strong>list</strong> of what each key does, which scrolls past
 <code>List Max Height</code> so the button below stays on screen; and the <strong>switch</strong>. Its caption
 says which way things stand rather than what pressing it would do — <code>Hotkeys off</code> while they are
 off — which is how the web front's button reads, so a player who has used one recognises the other.</p>
@@ -729,7 +728,7 @@ event — so the window and the badge both draw themselves from what they were g
     <tr><td><code>Hotkeys.cs</code></td><td>The registry: binding, the frame loop, and the setting.</td></tr>
     <tr><td><code>Hotkey.cs</code></td><td>One binding, and the handle that drops it.</td></tr>
     <tr><td><code>HotkeyCaps.cs</code></td><td>What a key is called, and the shape of the drawn keyboard.</td></tr>
-    <tr><td><code>HotkeyInput.cs</code></td><td>Whether a key is held, read from the old Input Manager.</td></tr>
+    <tr><td><code>HotkeyInput.cs</code></td><td>Whether a key is held, read from the Input System's keyboard, and the <code>KeyCode</code> to <code>Key</code> table.</td></tr>
     <tr><td><code>HotkeyDriver.cs</code></td><td>The hidden object that gives the registry a frame.</td></tr>
     <tr><td><code>UiHotkey.cs</code></td><td>Binding a key from the inspector.</td></tr>
     <tr><td><code>UiHotkeyMark.cs</code></td><td>The badge in the corner of a button.</td></tr>

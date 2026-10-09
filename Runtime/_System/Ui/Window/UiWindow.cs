@@ -66,6 +66,10 @@ namespace FlappyTemplate
         [SerializeField]
         private bool showCloseButton = true;
 
+        [Tooltip("A wave round the close button as it is pressed. Its colour, reach and timing are the Ripple on the Close object.")]
+        [SerializeField]
+        private bool closeWave = true;
+
         [Tooltip("Hide the window at Awake, so it waits for Open. Off leaves it exactly as the scene saved it.")]
         [SerializeField]
         private bool startClosed = true;
@@ -102,12 +106,12 @@ namespace FlappyTemplate
         [SerializeField]
         private bool fitContentHeight = false;
 
-        [Tooltip("The tallest the window may be, in its own units. Zero means the parent it is drawn in - the screen, for a full-screen canvas - less Screen Margin.")]
+        [Tooltip("The tallest the window may be, in its own units, even with more room than that. Zero means as tall as the parent it is drawn in - the screen, for a full-screen canvas - less Screen Margin, which holds whatever this says.")]
         [Min(0f)]
         [SerializeField]
         private float maxHeight = 0f;
 
-        [Tooltip("Room left above and below a window that has grown as far as it may. Only used while Max Height is zero.")]
+        [Tooltip("Room left above and below a window that has grown as far as the screen lets it.")]
         [Min(0f)]
         [SerializeField]
         private float screenMargin = 32f;
@@ -392,7 +396,8 @@ namespace FlappyTemplate
             set => fitContentHeight = value;
         }
 
-        /// <summary>The tallest the window may be. Zero means the parent, less <see cref="ScreenMargin"/>.</summary>
+        /// <summary>The tallest the window may be even with room to spare. Zero means no ceiling of its own: as
+        /// tall as the parent, less <see cref="ScreenMargin"/> - which holds whatever this says.</summary>
         public float MaxHeight
         {
             get => maxHeight;
@@ -632,6 +637,17 @@ namespace FlappyTemplate
                 showCloseButton = value;
                 if (closeBox != null)
                     closeBox.gameObject.SetActive(value);
+            }
+        }
+
+        /// <summary>The wave round the close button as it is pressed. See Ui/Ripple.</summary>
+        public bool CloseWave
+        {
+            get => closeWave;
+            set
+            {
+                closeWave = value;
+                ApplyCloseWave();
             }
         }
 
@@ -1133,7 +1149,26 @@ namespace FlappyTemplate
             if (madeBarB)
                 UiWindowSeed.Bar(barB, cross.sizeDelta.x, -45f);
 
+            ApplyCloseWave();
+
             closeBox.gameObject.SetActive(showCloseButton);
+        }
+
+        // Put on when it is missing rather than only when the button is made, so a window built before there was
+        // such a thing gets one too. Its colour and timing are the Ripple's own after that, and nothing here
+        // writes over them.
+        private void ApplyCloseWave()
+        {
+            if (closeBox == null)
+                return;
+
+            var wave = closeBox.GetComponent<UiRipple>();
+
+            if (wave == null && closeWave)
+                wave = UiRipple.On(closeBox.gameObject);
+
+            if (wave != null)
+                wave.enabled = closeWave;
         }
 
         /// <summary>Puts the window's own listeners back on its buttons. Called on every build and every
@@ -1480,17 +1515,19 @@ namespace FlappyTemplate
         // Height, in the window's own units, that the parent has room for. Divided by the scale because the
         // window is measured in its own space and drawn in its parent's - a window at half scale fits twice as
         // much of itself on screen, which is the same reasoning the drag clamp uses.
+        //
+        // The screen always has its say, and Max Height only ever lowers it. A ceiling that replaced the room
+        // instead would be a 720 dialog hanging off a 600 screen with nothing scrolling.
         private float Limit()
         {
-            if (maxHeight > 0f)
-                return maxHeight;
-
             var parent = Rect.parent as RectTransform;
             float room = parent != null ? parent.rect.height : Screen.height;
             room -= Mathf.Max(0f, screenMargin) * 2f;
 
             float scale = Mathf.Max(0.0001f, Mathf.Abs(restScale.y));
-            return Mathf.Max(0f, room / scale);
+            float limit = Mathf.Max(0f, room / scale);
+
+            return maxHeight > 0f ? Mathf.Min(limit, maxHeight) : limit;
         }
 
         private void Clamp()

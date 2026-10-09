@@ -641,6 +641,14 @@ namespace FlappyTemplate
                 button.targetGraphic = box;
                 button.transition = Selectable.Transition.None;
 
+                // The wave a press sends out. Set from the style on every hook, so a bar restyled from code
+                // reaches buttons that already exist.
+                var wave = UiRipple.On(box.gameObject);
+                wave.enabled = style.Waves;
+                wave.Color = style.WaveColor;
+                wave.Spread = style.WaveSpread;
+                wave.Duration = style.WaveDuration;
+
                 var slot = shown[i];
                 button.onClick.RemoveAllListeners();
                 button.onClick.AddListener(() =>

@@ -170,7 +170,11 @@ namespace FlappyTemplate
         [SerializeField]
         private bool loadImages = true;
 
-        [Tooltip("Resize the window to the sheet it is showing. Past the window's Max Height the body scrolls instead, which is the window's own business.")]
+        [Tooltip("Let the player select the round id, the totals and the seeds and copy them - Ctrl+C, or a long press on a phone. Never editable.")]
+        [SerializeField]
+        private bool copyableValues = true;
+
+        [Tooltip("Resize the window to the sheet it is showing. Past what the screen - or the window's Max Height - allows, the body scrolls instead, which is the window's own business.")]
         [SerializeField]
         private bool fitWindowHeight = true;
 
@@ -285,6 +289,17 @@ namespace FlappyTemplate
             {
                 style = value ?? new BetInfoSheetWindowStyle();
                 Rebuild();
+            }
+        }
+
+        /// <summary>Whether the round id, the totals and the seeds can be selected and copied.</summary>
+        public bool CopyableValues
+        {
+            get => copyableValues;
+            set
+            {
+                copyableValues = value;
+                Layout();
             }
         }
 
@@ -426,10 +441,6 @@ namespace FlappyTemplate
             if (sheet == null)
                 return null;
 
-            // Held at the height the design is drawn at, so a bet made of many parts scrolls inside a dialog of a
-            // sensible size rather than growing to the edge of the screen first.
-            sheet.Window.MaxHeight = 720f;
-
             // Awake has done this already in play mode. In the editor nothing else ever will, and a window
             // built from a context menu that came out empty would be a poor way to find that out.
             sheet.EnsureBuilt();
@@ -437,17 +448,14 @@ namespace FlappyTemplate
         }
 
         /// <summary>The flat dark panel the design is drawn on. Public so a window made some other way - the
-        /// menu, a prefab - can be given the same look in one line.</summary>
+        /// menu, a prefab - can be given the same look in one line. Every window is born on this panel now;
+        /// see UiWindowTheme for bringing over one that was made before.</summary>
         public static void Charcoal(RoundedBox panel)
         {
             if (panel == null)
                 return;
 
-            panel.FillGradientMode = EFillGradient.None;
-            panel.FillColor = new Color(0.106f, 0.106f, 0.106f);
-            panel.SetCornerRadius(18f);
-            panel.SetBorderSize(1f);
-            panel.SetBorderColor(new Color(1f, 1f, 1f, 0.06f));
+            UiWindowSeed.Panel(panel);
         }
 
         void Awake()
@@ -947,6 +955,7 @@ namespace FlappyTemplate
 
             Label(idText, style.RoundIdSize, style.RoundIdValueColor, FontStyles.Normal);
             idText.alignment = TextAlignmentOptions.Left;
+            Copyable(idText, true);
 
             // The dots, held in the middle by a flexible track on each side.
             float dot = style.LoaderDotSize;
@@ -1051,6 +1060,7 @@ namespace FlappyTemplate
                 Label(totalValues[i], style.StatSize, style.ValueColor, style.StatValueStyle);
                 totalCaptions[i].alignment = align[i];
                 totalValues[i].alignment = align[i];
+                Copyable(totalValues[i], false);
             }
 
             // The three seeds: one long string each, left-aligned and wrapping, the row as tall as the wrapping
@@ -1062,6 +1072,7 @@ namespace FlappyTemplate
                 Put(section.Value.rectTransform, 0, 0);
                 Label(section.Value, style.ValueSize, style.ValueColor, style.ValueStyle);
                 section.Value.alignment = TextAlignmentOptions.Left;
+                Copyable(section.Value, true);
             }
 
             // The list: the player's row, laid out by Arrange.
@@ -2063,6 +2074,47 @@ namespace FlappyTemplate
             box.SetCornerRadius(radius);
             box.EdgeSoftness = 1.25f;
             box.raycastTarget = false;
+        }
+
+        // A value the player may want somewhere else - a seed to check by hand, an id to quote to support - can be
+        // selected and copied, and never typed into; the long ones get a copy icon at their right as well, for a
+        // player who would rather not select a 128-character hash by hand. After Label, which turns raycasting
+        // off on every label.
+        private void Copyable(TextMeshProUGUI label, bool withButton)
+        {
+            var selectable = label.GetComponent<UiSelectableText>();
+            var copy = label.transform.Find("Copy");
+
+            if (!copyableValues)
+            {
+                if (selectable != null)
+                    selectable.enabled = false;
+
+                label.raycastTarget = false;
+            }
+            else
+            {
+                UiSelectableText.On(label).enabled = true;
+            }
+
+            bool button = copyableValues && withButton && style.CopyIconSize > 0f;
+            if (!button)
+            {
+                // Taken back out of the margin it was given, so the text runs the full width again.
+                if (copy != null)
+                    copy.gameObject.SetActive(false);
+
+                var margin = label.margin;
+                margin.z = 0f;
+                label.margin = margin;
+                return;
+            }
+
+            var icon = UiCopyButton.On(label, style.CopyIconSize, style.CopyIconGap);
+            icon.gameObject.SetActive(true);
+            icon.Color = style.CopyIconColor;
+            icon.HoverColor = style.CopyIconHoverColor;
+            icon.CopiedColor = style.CopiedColor;
         }
 
         private void Label(TextMeshProUGUI label, float size, Color color, FontStyles fontStyle)

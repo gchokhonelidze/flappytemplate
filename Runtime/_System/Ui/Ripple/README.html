@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ripple — FlappyBet Template</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --ink: #1c1f24;
+    --soft: #5b6472;
+    --line: #dfe3e8;
+    --accent: #3f6fd8;
+    --code-bg: #f2f4f7;
+    --note-bg: #eef4ff;
+    --note-line: #6f9bea;
+    --warn-bg: #fff6e5;
+    --warn-line: #e6a23c;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --panel: #1d2025;
+      --ink: #e4e7ec;
+      --soft: #9aa3b0;
+      --line: #2c3038;
+      --accent: #7aa2f7;
+      --code-bg: #12141a;
+      --note-bg: #161d2b;
+      --note-line: #4a6ea8;
+      --warn-bg: #2c2415;
+      --warn-line: #b98330;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 28px 96px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 64px; }
+    nav.toc { position: static !important; max-height: none !important; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 14px;
+    border-left: 2px solid var(--line);
+    padding-left: 16px;
+  }
+  nav.toc strong { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--soft); }
+  nav.toc a { display: block; padding: 3px 0; color: var(--soft); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a.sub { padding-left: 14px; font-size: 13px; }
+  nav.toc a.home {
+    color: var(--ink);
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  header.title { margin-bottom: 28px; }
+  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 44px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  p { margin: 12px 0; max-width: 74ch; }
+  ul { max-width: 74ch; }
+  a { color: var(--accent); }
+  .lede { color: var(--soft); }
+  .stamp { color: var(--soft); font-size: 13.5px; font-style: italic; }
+
+  code, pre { font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 4px; font-size: 0.86em; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--soft); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td:first-child { white-space: nowrap; }
+
+  .note, .warn {
+    border-left: 3px solid var(--note-line);
+    background: var(--note-bg);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+  .warn { border-left-color: var(--warn-line); background: var(--warn-bg); }
+  .note p, .warn p { margin: 0; max-width: none; }
+  .note p + p, .warn p + p { margin-top: 10px; }
+
+  /* ---- the waves, drawn: each control on the charcoal a window is drawn in ---- */
+  .stage {
+    background: #1b1b1b;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 30px 22px 18px;
+    margin: 18px 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 30px 14px;
+    color: #fff;
+  }
+  .stage .why { grid-column: 1 / -1; margin: 0; color: rgba(255, 255, 255, .6); font-size: 13px; max-width: none; }
+  .demo { text-align: center; }
+  .demo small { display: block; margin-top: 26px; font-size: 12px; color: rgba(255, 255, 255, .6); line-height: 1.45; }
+  .demo small code { background: rgba(255, 255, 255, .08); color: #fff; }
+
+  /* the control and its rings share a box; the rings sit behind it, as the sibling before it does */
+  .spot { position: relative; display: inline-block; vertical-align: middle; }
+  .ctl { position: relative; z-index: 1; }
+  .ring {
+    --rgb: 255, 255, 255;
+    --a: .55;
+    position: absolute;
+    border: 2px solid rgba(var(--rgb), var(--a));
+    background: rgba(var(--rgb), calc(var(--a) * .12));
+    border-radius: calc(var(--r) + 6px);
+    inset: -6px;
+    pointer-events: none;
+  }
+
+  /* frozen part-way through a two-ring wave: the first ring further out and fainter */
+  .ring.r1 { inset: calc(var(--spread) * -.72); border-width: 1.2px; opacity: .4; border-radius: calc(var(--r) + var(--spread) * .72); background: transparent; }
+  .ring.r2 { inset: calc(var(--spread) * -.32); border-width: 2.2px; opacity: .8; border-radius: calc(var(--r) + var(--spread) * .32); }
+
+  .btn { --r: 12px; --spread: 14px; }
+  .btn .ctl {
+    width: 150px;
+    height: 48px;
+    border-radius: var(--r);
+    background: rgba(255, 255, 255, .1);
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+  }
+
+  .switch { --r: 17px; --spread: 12px; }
+  .switch .ring { --rgb: 115, 219, 128; --a: .6; }
+  .switch .ctl { width: 64px; height: 34px; border-radius: var(--r); background: #73db80; }
+  .switch .ctl i { position: absolute; top: 3px; right: 3px; width: 28px; height: 28px; border-radius: 999px; background: #fff; }
+
+  .round { --r: 32px; --spread: 40px; }
+  .round .ring { --rgb: 250, 184, 51; --a: .8; }
+  .round .ring.r1 { inset: -24px; border-radius: 56px; border-width: 1.4px; opacity: .5; }
+  .round .ctl { width: 64px; height: 64px; border-radius: var(--r); background: #fab833; }
+
+  .close { --r: 22px; --spread: 14px; }
+  .close .ctl { width: 44px; height: 44px; border-radius: var(--r); background: rgba(255, 255, 255, .08); display: grid; place-items: center; font-size: 17px; color: rgba(255, 255, 255, .85); }
+
+  /* hover a control and it waves: rings off the edge, easing out and thinning, and the control dips */
+  @keyframes wave {
+    0%   { inset: 0; border-width: 3px; border-radius: var(--r); opacity: 1; }
+    43%  { inset: calc(var(--spread) * -1); border-width: .75px; border-radius: calc(var(--r) + var(--spread)); opacity: 0; }
+    100% { inset: calc(var(--spread) * -1); border-width: .75px; border-radius: calc(var(--r) + var(--spread)); opacity: 0; }
+  }
+  @keyframes dip {
+    0%   { transform: scale(1); }
+    10%  { transform: scale(.94); }
+    20%  { transform: scale(1); }
+    100% { transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .demo:hover .ring { animation: wave 1.4s cubic-bezier(.33, 1, .68, 1) infinite; }
+    .demo:hover .ring.r2 { animation-delay: .12s; }
+    .demo:hover .ctl { animation: dip 1.4s ease-out infinite; }
+    .demo.still:hover .ctl { animation: none; }
+  }
+
+  /* the caveat: a ring that runs past the body's padding is cut off square at the clip */
+  .clip {
+    display: inline-block;
+    overflow: hidden;
+    padding: 6px;
+    outline: 1px dashed rgba(255, 255, 255, .35);
+    outline-offset: 0;
+  }
+  .clip .spot { --spread: 22px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc">
+  <a class="home" href="../../../../README.html">&#8592; All documentation</a>
+  <strong>Contents</strong>
+  <a href="#draws">What it draws</a>
+  <a href="#fields">Fields</a>
+  <a href="#code">From code</a>
+  <a class="sub" href="#did">Answering what it did</a>
+  <a href="#uses">Where the template uses it</a>
+  <a href="#notes">Worth knowing</a>
+  <a href="#files">Files</a>
+</nav>
+
+<main>
+
+<header class="title">
+  <h1>Ripple</h1>
+  <p class="lede">A wave round a control when it is pressed. A ring starts on the control's own outline, runs
+  outwards and fades, with a soft glow inside it, while the control itself dips a little and springs back — so the
+  thing under the player's finger answers before anything else does.</p>
+  <p><strong>Add Component → UI → Ripple</strong> on anything that can be pressed, or <code>UiRipple.On</code>
+  from code. That is the whole of the usual case: Play On Press is on, and the wave goes out whenever the object
+  takes a left-button press.</p>
+  <p class="stamp">Describes package 1.0.94. Update this file with the code — and README.md beside it.</p>
+</header>
+
+<pre><code>UiRipple.On(button.gameObject);                  // a wave round the button on every press
+UiRipple.On(slider.gameObject, handle).Play();   // round the handle, once, now</code></pre>
+
+<div class="stage">
+  <p class="why">The three controls <code>UiRippleExample</code> builds, and a window's close button — each caught
+  part-way through a wave. Hover one to set it going.</p>
+  <div class="demo">
+    <span class="spot btn"><i class="ring r1"></i><i class="ring r2"></i><span class="ctl">Press</span></span>
+    <small>A button. Play On Press, the defaults.</small>
+  </div>
+  <div class="demo">
+    <span class="spot switch"><i class="ring r1"></i><i class="ring r2"></i><span class="ctl"><i></i></span></span>
+    <small>A switch. Played as it flips, in the colour it flipped to.</small>
+  </div>
+  <div class="demo still">
+    <span class="spot round"><i class="ring r1"></i><span class="ctl"></span></span>
+    <small>One wide, slow ring — Spread 40, Duration 1.1 — and no dip.</small>
+  </div>
+  <div class="demo">
+    <span class="spot close"><i class="ring r1"></i><i class="ring r2"></i><span class="ctl">&#10005;</span></span>
+    <small>A window's close button: <strong>Close Wave</strong>.</small>
+  </div>
+</div>
+
+<h2 id="draws">What it draws</h2>
+
+<table>
+  <tr><td><strong>The ring</strong></td><td>The control's own shape grown outwards. The corner radius is read off the control's <a href="../RoundedBox/README.html"><code>RoundedBox</code></a>, so a pill stays a pill and a circle a circle; a plain <code>Image</code> has square corners and gets a square ring. It sets off at <strong>Thickness</strong> and thins to a quarter of that as it travels <strong>Spread</strong> past the edge, easing out — fast off the edge, slowing as it fades — over <strong>Duration</strong>.</td></tr>
+  <tr><td><strong>The glow</strong></td><td>A soft fill inside the ring, <strong>Glow</strong> of the ring's own alpha, fading faster than the ring does. Nought leaves a bare ring.</td></tr>
+  <tr><td><strong>More rings</strong></td><td><strong>Rings</strong> per wave, one to three, each setting off <strong>Stagger</strong> seconds after the one before.</td></tr>
+  <tr><td><strong>The dip</strong></td><td>The control shrinks by <strong>Punch</strong> of its size and springs back, over the first half of the wave — over by the time the ring is properly on its way, so the control is back where the eye left it.</td></tr>
+</table>
+
+<p><strong>The ring is drawn behind the control, not across it.</strong> It is a sibling placed just before the
+target in the hierarchy, so it comes out from under the control's edge. It carries a <code>LayoutElement</code>
+with <strong>Ignore Layout</strong> on, the same way a window's close button does, so a
+<a href="../Grid/README.html">grid</a> or a layout group does not take it for one more cell and shuffle everything
+beside the control on every press.</p>
+
+<pre><code>Card
+├ Caption
+├ Ripple      a ring: a RoundedBox just before the control · Ignore Layout · one per ring, made on the first press
+└ Switch      the control, with the Ui Ripple on it</code></pre>
+
+<h2 id="fields">Fields</h2>
+
+<table>
+  <tr><th>Field</th><th>Default</th><th>What it does</th></tr>
+  <tr><td>Target</td><td>empty</td><td>What the wave runs round. Empty is the object the ripple is on.</td></tr>
+  <tr><td>Play On Press</td><td>on</td><td>Start a wave whenever this object is pressed. Off leaves it to <code>Play</code> — see <a href="#did">Answering what it did</a>.</td></tr>
+  <tr><td>Color</td><td>white, 55%</td><td>The ring and the glow inside it. Its alpha is where the wave starts; it fades from there to nothing.</td></tr>
+  <tr><td>Spread</td><td>14</td><td>How far past the control's edge the wave runs before it is gone.</td></tr>
+  <tr><td>Duration</td><td>0.6</td><td>Seconds from the press to the last ring fading out.</td></tr>
+  <tr><td>Thickness</td><td>3</td><td>Width of the ring as it sets off. It thins as it travels.</td></tr>
+  <tr><td>Glow</td><td>0.35</td><td>The fill inside the ring, as a share of the ring's own alpha.</td></tr>
+  <tr><td>Rings</td><td>2</td><td>Rings per wave, one to three.</td></tr>
+  <tr><td>Stagger</td><td>0.12</td><td>Seconds between one ring of a wave and the next.</td></tr>
+  <tr><td>Punch</td><td>0.06</td><td>How far the control dips, as a share of its size. Nought keeps it still.</td></tr>
+</table>
+
+<p>A press is a <strong>left-button</strong> press — or a touch — on the object or anything under it that does not
+catch the press itself. A <code>Selectable</code> on the same object that is <strong>not interactable</strong>
+sends no wave: a wave off a greyed-out button would say the press did something.</p>
+
+<h2 id="code">From code</h2>
+
+<table>
+  <tr><td><code>UiRipple.On(gameObject, target)</code></td><td>Puts a ripple on an object, or hands back the one already there. The target, when given, is what the wave runs round instead of the object itself.</td></tr>
+  <tr><td><code>Play()</code></td><td>Sends a wave out in the ripple's own colour.</td></tr>
+  <tr><td><code>Play(color)</code></td><td>Sends one in a colour of its own — a switch's on colour, say. The alpha is where it starts.</td></tr>
+  <tr><td><code>Stop()</code></td><td>Takes every ring down at once and puts the control back at its own size. Called for you when the ripple is switched off or destroyed.</td></tr>
+  <tr><td><code>Target</code> · <code>PlayOnPress</code> · <code>Color</code> · <code>Spread</code> · <code>Duration</code> · <code>Punch</code></td><td>The fields above, from code.</td></tr>
+</table>
+
+<pre><code>// One wide, slow ring and a button that stays still
+var wide = UiRipple.On(round.gameObject);
+wide.Spread = 40f;
+wide.Duration = 1.1f;
+wide.Punch = 0f;
+wide.Color = new Color(0.98f, 0.72f, 0.2f, 0.8f);</code></pre>
+
+<h3 id="did">Answering what it did</h3>
+
+<p>Play On Press answers the press. A <strong>switch</strong> wants to answer what the press <em>did</em> — and to
+answer a hotkey, or a setting arriving from another tab, the same way. So turn Play On Press off and call
+<code>Play</code> from wherever the switch is flipped, in the colour of where it is going:</p>
+
+<pre><code>var wave = UiRipple.On(pill.gameObject);
+wave.PlayOnPress = false;
+
+void Flip()
+{
+    on = !on;
+    pill.FillColor = on ? green : grey;
+    wave.Play(on ? green : new Color(1f, 1f, 1f, 0.5f));   // green going on, white-grey going off
+}</code></pre>
+
+<p>Each wave keeps its own colour, so a green one on its way out is not repainted grey by the press that follows
+it.</p>
+
+<h2 id="uses">Where the template uses it</h2>
+
+<table>
+  <tr><th>Where</th><th>How</th></tr>
+  <tr><td>Every <a href="../Window/README.html">window's</a> close button</td><td>A ripple on the <code>Close</code> object, at its own defaults. The window's <strong>Close Wave</strong> switches it on and off, and puts one on a window built before there was such a thing. Its colour and reach are the ripple's own from then on — select <code>Close</code> to change them.</td></tr>
+  <tr><td>Every <a href="../Navbar/README.html">navbar</a> button</td><td>Set from the bar's style — <strong>Waves</strong>, <strong>Wave Color</strong>, <strong>Wave Spread</strong>, <strong>Wave Duration</strong> — on every hook, so a style changed from code reaches buttons that already exist.</td></tr>
+  <tr><td>The <a href="../Window/README.html#sound">sound window's</a> switches</td><td>Play On Press off, and played as the channel flips: green going on, white-grey going off.</td></tr>
+  <tr><td>The sound window's slider handles</td><td>On the rail, round the handle, the moment it is taken hold of. Green, from the slider's fill colour.</td></tr>
+</table>
+
+<h2 id="notes">Worth knowing</h2>
+
+<div class="stage">
+  <p class="why">The same switch inside a window's body, with a wave spread wider than the padding round it. The
+  dashed line is the body's clip.</p>
+  <div class="demo">
+    <span class="clip"><span class="spot switch"><i class="ring r1"></i><i class="ring r2"></i><span class="ctl"><i></i></span></span></span>
+    <small>Cut off square at the clip, however round the ring.</small>
+  </div>
+</div>
+
+<ul>
+  <li><strong>A ring is clipped by whatever clips the control.</strong> It is a sibling of the control, so a
+  <code>RectMask2D</code> or a <code>Mask</code> above the control cuts the ring off at the same edge — a square
+  edge, however round the ring. Inside a window's body that edge is the <strong>Content Padding</strong>: the body's
+  <code>Clip</code> masks there. That is why the sound window holds its switch's spread to the card's padding,
+  which is all the room there is before the clip; the close button sits outside the body and has no such limit.
+  Keep <strong>Spread</strong> within the room around the control, or put the control somewhere nothing clips
+  it.</li>
+  <li><strong>Rings are only made in play mode.</strong> They are scene objects, so a switch flipped from an editor
+  script would otherwise leave rings saved into the scene. None of them is serialized, and they go with the
+  scene.</li>
+  <li><strong>It runs on unscaled time</strong>, so a wave still plays over a paused game — the same as a window
+  opening.</li>
+  <li><strong>The dip is the target's <code>localScale</code>.</strong> The size it rests at is taken only while it
+  is resting, so a second press mid-dip springs back to the real size rather than to the dip. Something else
+  animating the same scale — a tween of the game's own — will fight it; set <strong>Punch</strong> to nought on
+  that control.</li>
+  <li><strong>The rings are pooled.</strong> A ring that has finished is switched off and kept for the next wave,
+  rather than destroyed and made again. They are destroyed with the ripple — siblings do not go with it on their
+  own.</li>
+  <li><strong>A target with no parent draws nothing.</strong> The ring has to be a sibling, and a root has
+  none.</li>
+</ul>
+
+<h2 id="files">Files</h2>
+
+<table>
+  <tr><th>File</th><th></th></tr>
+  <tr><td><code>UiRipple.cs</code></td><td>The component: the press, the rings and the dip.</td></tr>
+  <tr><td><code>UiRippleExample.cs</code></td><td>A button that waves on every press, a switch that waves when it flips, and a round button with one wide, slow ring and no dip. Drop it on an empty RectTransform in a canvas and press play.</td></tr>
+  <tr><td><code>../Window/UiWindow.cs</code></td><td><strong>Close Wave</strong>: a ripple on every window's close button.</td></tr>
+  <tr><td><code>../Window/Sound/SoundWindow.cs</code></td><td>The switch and slider waves.</td></tr>
+  <tr><td><code>../Navbar/UiNavbar.cs</code></td><td>A ripple on every navbar button, set from the style.</td></tr>
+  <tr><td><code>../RoundedBox/</code></td><td>What a ring is drawn with, and where the control's corner radius is read from.</td></tr>
+</table>
+
+</main>
+</div>
+</body>
+</html>

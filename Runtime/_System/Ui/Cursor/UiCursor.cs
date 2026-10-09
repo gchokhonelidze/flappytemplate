@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 #if UNITY_WEBGL && !UNITY_EDITOR
 using System.Runtime.InteropServices;
@@ -96,6 +97,11 @@ namespace FlappyTemplate
                 if (hint != null && hint.isActiveAndEnabled)
                     return hint.Cursor;
 
+                // Text that can be selected and copied: the I-beam, as over a field, though nothing can be typed.
+                var text = level.GetComponent<UiSelectableText>();
+                if (text != null && text.isActiveAndEnabled)
+                    return ECursor.Text;
+
                 var selectable = level.GetComponent<Selectable>();
                 if (selectable != null && selectable.isActiveAndEnabled)
                 {
@@ -161,7 +167,12 @@ namespace FlappyTemplate
                 return;
             }
 
-            Vector2 position = Input.mousePosition;
+            // No mouse is a touch screen, where there is no cursor to change.
+            var mouse = Mouse.current;
+            if (mouse == null)
+                return;
+
+            Vector2 position = mouse.position.ReadValue();
             float now = Time.unscaledTime;
 
             if (position == lastPosition && now < nextCheck)
@@ -173,7 +184,7 @@ namespace FlappyTemplate
             // Held down, the cursor stays what it was when the press began: a drag that leaves the slider it
             // started on is still dragging that slider, and the hand flicking to an arrow mid-drag reads as the
             // drag having let go.
-            if (Input.GetMouseButton(0))
+            if (mouse.leftButton.isPressed)
                 return;
 
             if (pointer == null || pointerSystem != system)

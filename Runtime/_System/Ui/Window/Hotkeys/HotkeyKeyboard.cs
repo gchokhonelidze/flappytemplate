@@ -7,7 +7,7 @@ namespace FlappyTemplate
 {
     // The keyboard drawn across the top of the hotkeys window: every cap in HotkeyCaps.Rows, with the bound ones
     // in the accent colour and whichever is held down lit. It is what turns a list of key names into something a
-    // player reads at a glance - "the gold ones do something, and the one under my finger is the one I pressed".
+    // player reads at a glance - "the green ones do something, and the one under my finger is the one I pressed".
     //
     // Built once and repainted, rather than rebuilt: sixty caps is sixty rounded boxes and sixty labels, and a
     // key going down happens in the middle of a round. Every part is found by the name it was made under, so a

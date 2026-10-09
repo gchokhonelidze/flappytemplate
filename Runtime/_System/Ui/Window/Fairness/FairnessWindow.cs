@@ -623,7 +623,7 @@ namespace FlappyTemplate
             public Image Picture;
         }
 
-        // The circular arrow on both buttons: a ring, a notch painted out of it in the button's own colour,
+        // The circular arrow on both buttons: a ring, a notch painted out of it to look like the button,
         // and a diamond for the head.
         private class Arrow
         {
@@ -853,9 +853,17 @@ namespace FlappyTemplate
             randomizeText.alignment = TextAlignmentOptions.Left;
         }
 
-        // A circular arrow out of three boxes: a ring, a notch cut out of it in the button's own colour, and a
+        // A notch painted to show as the button does over the panel - see UiWindowParts.Notch. A translucent
+        // button painted over in its own colour alone would show the ring straight through.
+        private void Notch(RoundedBox gap, Color fill)
+        {
+            var host = Window;
+            UiWindowParts.Notch(gap, fill, host != null && host.Panel != null ? host.Panel.FillColor : Color.black);
+        }
+
+        // A circular arrow out of three boxes: a ring, a notch painted out of it to look like the button, and a
         // diamond for the head. Cheaper than an atlas entry and sharp at any size - the one thing to know is
-        // that the notch is painted, not cut, so it only disappears against a flat button.
+        // that the notch is painted, not cut, so it only disappears against a flat button on the panel.
         private void PaintArrow(Arrow arrow, Color behind)
         {
             float span = style.ArrowSize;
@@ -889,8 +897,7 @@ namespace FlappyTemplate
 
             var notch = new Vector2(Mathf.Cos(55f * Mathf.Deg2Rad), Mathf.Sin(55f * Mathf.Deg2Rad)) * radius;
             UiWindowParts.Pin(arrow.Gap.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(thickness * 2.6f, thickness * 2.6f), notch);
-            arrow.Gap.FillGradientMode = EFillGradient.None;
-            arrow.Gap.FillColor = behind;
+            Notch(arrow.Gap, behind);
             arrow.Gap.SetBorderSize(0f);
             arrow.Gap.SetCornerRadius(0f);
             arrow.Gap.raycastTarget = false;
@@ -987,13 +994,13 @@ namespace FlappyTemplate
             randomizeBox.FillColor = fill;
             renewBox.FillColor = fill;
 
-            // The notch is painted in the button's own colour, so it has to follow the button being dimmed or
+            // The notch is painted to look like the button, so it has to follow the button being dimmed or
             // it comes back as a bright dash across the ring.
             if (randomizeArrow.Gap != null)
-                randomizeArrow.Gap.FillColor = fill;
+                Notch(randomizeArrow.Gap, fill);
 
             if (renewArrow.Gap != null)
-                renewArrow.Gap.FillColor = fill;
+                Notch(renewArrow.Gap, fill);
 
             randomizeButton.interactable = !locked;
             renewButton.interactable = !locked;

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace FlappyTemplate
 {
@@ -410,32 +411,19 @@ namespace FlappyTemplate
             if (Sounds.IsUnlocked)
                 return;
 
-#if ENABLE_LEGACY_INPUT_MANAGER
-            if (!Input.anyKeyDown && !Input.GetMouseButtonDown(0) && Input.touchCount == 0)
+            var keyboard = Keyboard.current;
+            var mouse = Mouse.current;
+            var touch = Touchscreen.current;
+
+            bool gesture = (keyboard != null && keyboard.anyKey.wasPressedThisFrame)
+                || (mouse != null && mouse.leftButton.wasPressedThisFrame)
+                || (touch != null && touch.primaryTouch.press.isPressed);
+
+            if (!gesture)
                 return;
 
             Sounds.Unlock();
-#else
-            // Active Input Handling is on Input System Package (New), which the template does not read - see
-            // Ui/Hotkeys/README.md for why it takes no dependency on it. Waiting for a gesture we cannot see
-            // would be music that never plays, so the wait is dropped and said once instead.
-            if (!warnedInput)
-            {
-                warnedInput = true;
-
-                Debug.LogWarning(
-                    "Sounds: the old Input Manager is switched off, so the first click cannot be seen. Music "
-                    + "will start straight away and a browser may mute it - call Sounds.Unlock() from your own "
-                    + "first interaction, or set Active Input Handling to Both.");
-            }
-
-            Sounds.Unlock();
-#endif
         }
-
-#if !ENABLE_LEGACY_INPUT_MANAGER
-        private bool warnedInput;
-#endif
 
         // ------------------------------------------------------------------ small change
 

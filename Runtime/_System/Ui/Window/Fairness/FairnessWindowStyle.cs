@@ -5,11 +5,11 @@ using UnityEngine;
 namespace FlappyTemplate
 {
     // What the inside of a fairness window looks like. The window around it - panel, caption, close button,
-    // backdrop - is set on those objects themselves; this is the client seed box, the two green buttons, the
+    // backdrop - is set on those objects themselves; this is the client seed box, the two buttons, the
     // section headings and the label-over-value blocks under them.
     //
-    // The defaults are the violet-and-mint reading the rest of this folder is drawn in: a wash of white for
-    // the input, mint buttons, and captions in bold over plain values.
+    // The defaults are the charcoal the bet info sheet is drawn in: a faint wash of white for the input and
+    // the buttons, white headings, and quiet captions over white values.
     [Serializable]
     public class FairnessWindowStyle
     {
@@ -30,54 +30,54 @@ namespace FlappyTemplate
         public TMP_FontAsset HeadingFont;
 
         [Min(1f)]
-        public float HeadingSize = 28f;
+        public float HeadingSize = 22f;
 
         public Color HeadingColor = Color.white;
 
-        public FontStyles HeadingStyle = FontStyles.Bold;
+        public FontStyles HeadingStyle = FontStyles.Normal;
 
         [Header("Text")]
         public TMP_FontAsset CaptionFont;
 
         [Min(1f)]
-        public float CaptionSize = 22f;
+        public float CaptionSize = 17f;
 
-        public Color CaptionColor = Color.white;
+        public Color CaptionColor = new Color(1f, 1f, 1f, 0.6f);
 
-        public FontStyles CaptionStyle = FontStyles.Bold;
+        public FontStyles CaptionStyle = FontStyles.Normal;
 
         public TMP_FontAsset ValueFont;
 
         [Min(1f)]
-        public float ValueSize = 22f;
+        public float ValueSize = 20f;
 
         public Color ValueColor = Color.white;
 
-        public FontStyles ValueStyle = FontStyles.Bold;
+        public FontStyles ValueStyle = FontStyles.Normal;
 
         [Tooltip("The seeds and the hash: long strings that wrap rather than fit.")]
         [Min(1f)]
-        public float HashSize = 18f;
+        public float HashSize = 17f;
 
         [Header("Client seed box")]
         [Min(0f)]
         public float InputHeight = 56f;
 
         [Min(0f)]
-        public float InputCornerRadius = 8f;
+        public float InputCornerRadius = 12f;
 
         [Tooltip("Drawn over the panel fill, so an alpha below one is a wash rather than a colour.")]
-        public Color InputFill = new Color(1f, 1f, 1f, 0.18f);
+        public Color InputFill = new Color(1f, 1f, 1f, 0.06f);
 
         [Tooltip("The box while the controls are locked - a round in play, or a request already on its way.")]
-        public Color InputLockedFill = new Color(1f, 1f, 1f, 0.08f);
+        public Color InputLockedFill = new Color(1f, 1f, 1f, 0.03f);
 
         [Min(1f)]
-        public float InputTextSize = 24f;
+        public float InputTextSize = 20f;
 
         public Color InputTextColor = Color.white;
 
-        public Color InputPlaceholderColor = new Color(1f, 1f, 1f, 0.45f);
+        public Color InputPlaceholderColor = new Color(1f, 1f, 1f, 0.4f);
 
         [Tooltip("Inset of the text from the left and right of the box.")]
         [Min(0f)]
@@ -88,13 +88,13 @@ namespace FlappyTemplate
         [Min(1f)]
         public float CaretWidth = 2f;
 
-        public Color SelectionColor = new Color(1f, 1f, 1f, 0.35f);
+        public Color SelectionColor = new Color(1f, 1f, 1f, 0.25f);
 
         [Header("Padlock")]
         [Min(0f)]
         public float LockSize = 30f;
 
-        public Color LockColor = Color.white;
+        public Color LockColor = new Color(1f, 1f, 1f, 0.7f);
 
         [Min(0.5f)]
         public float LockThickness = 3f;
@@ -111,20 +111,20 @@ namespace FlappyTemplate
         public Vector2 RenewSize = new Vector2(56f, 56f);
 
         [Min(0f)]
-        public float RandomizeHeight = 60f;
+        public float RandomizeHeight = 52f;
 
         [Min(0f)]
-        public float ButtonCornerRadius = 10f;
+        public float ButtonCornerRadius = 12f;
 
-        public Color ButtonFill = new Color(0.565f, 0.894f, 0.604f);
+        public Color ButtonFill = new Color(1f, 1f, 1f, 0.1f);
 
         [Tooltip("Both buttons while the controls are locked - a round in play, no seeds yet, or a request already on its way.")]
-        public Color ButtonLockedFill = new Color(0.565f, 0.894f, 0.604f, 0.35f);
+        public Color ButtonLockedFill = new Color(1f, 1f, 1f, 0.04f);
 
-        public Color ButtonTextColor = new Color(0.11f, 0.1f, 0.29f);
+        public Color ButtonTextColor = Color.white;
 
         [Min(1f)]
-        public float ButtonTextSize = 24f;
+        public float ButtonTextSize = 20f;
 
         [Header("Arrows")]
         [Tooltip("How far the circular arrow spans on either button.")]
@@ -138,7 +138,7 @@ namespace FlappyTemplate
         [Min(0f)]
         public float ArrowGap = 10f;
 
-        [Tooltip("Leave empty and the arrow is drawn from a ring, a notch and a diamond. Note the notch is painted in the button's own colour rather than cut, so it only disappears against a flat button.")]
+        [Tooltip("Leave empty and the arrow is drawn from a ring, a notch and a diamond. Note the notch is painted rather than cut - the panel's colour with the button's fill over it - so it only disappears against a flat button drawn straight on the panel.")]
         public Sprite ArrowIcon;
 
         [Header("Loader")]
@@ -152,7 +152,7 @@ namespace FlappyTemplate
         [Min(0f)]
         public float LoaderDotGap = 12f;
 
-        public Color LoaderColor = new Color(1f, 1f, 1f, 0.85f);
+        public Color LoaderColor = new Color(1f, 1f, 1f, 0.7f);
 
         [Tooltip("Seconds for one dot to swell and settle again. The three are staggered across it.")]
         [Min(0.05f)]

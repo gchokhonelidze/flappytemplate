@@ -8,18 +8,18 @@ namespace FlappyTemplate
     // button, backdrop - is set on those objects themselves; this is the round's outcome strip, the list of
     // transactions under it, the totals, and the two buttons along the bottom.
     //
-    // The defaults are the violet-and-mint reading the rest of this folder is drawn in, with one addition the
-    // other windows have no use for: a row is tinted by what the bet did - green for a round that paid, red
-    // for one that did not - and the player's own row is outlined so it can be found in a list of forty.
+    // The defaults are the charcoal the bet info sheet is drawn in, with one addition the other windows have no
+    // use for: a row is tinted by what the bet did - a wash of green for a round that paid, of red for one that
+    // did not - and the player's own row is outlined in gold so it can be found in a list of forty.
     [Serializable]
     public class GameHistoryWindowStyle
     {
         [Header("Card")]
         [Tooltip("Drawn over the panel fill, so an alpha below one is a wash rather than a colour.")]
-        public Color CardFill = new Color(1f, 1f, 1f, 0.1f);
+        public Color CardFill = new Color(1f, 1f, 1f, 0.04f);
 
         [Min(0f)]
-        public float CardCornerRadius = 10f;
+        public float CardCornerRadius = 16f;
 
         [Tooltip("Inset of everything in a card from its edges.")]
         [Min(0f)]
@@ -43,14 +43,14 @@ namespace FlappyTemplate
         public Vector2 ToggleSize = new Vector2(52f, 52f);
 
         [Min(0f)]
-        public float ToggleCornerRadius = 10f;
+        public float ToggleCornerRadius = 12f;
 
-        public Color ToggleFill = new Color(0.69f, 0.35f, 0.95f);
+        public Color ToggleFill = new Color(1f, 1f, 1f, 0.08f);
 
         public Color ToggleTextColor = Color.white;
 
         [Min(1f)]
-        public float ToggleTextSize = 24f;
+        public float ToggleTextSize = 20f;
 
         [Header("Transactions")]
         [Tooltip("The tallest the list may be. Past this it scrolls rather than growing, which is the whole reason it has a scroller of its own instead of leaving it to the window.")]
@@ -68,19 +68,19 @@ namespace FlappyTemplate
         public float RowGap = 6f;
 
         [Min(0f)]
-        public float RowCornerRadius = 8f;
+        public float RowCornerRadius = 10f;
 
         [Tooltip("Inset of a row's contents from its edges.")]
         [Min(0f)]
         public float RowPadding = 8f;
 
         [Tooltip("A round that paid the bet back whole or better.")]
-        public Color RowWinFill = new Color(0.36f, 0.72f, 0.35f);
+        public Color RowWinFill = new Color(0.45f, 0.86f, 0.5f, 0.16f);
 
-        public Color RowLoseFill = new Color(0.72f, 0.33f, 0.36f);
+        public Color RowLoseFill = new Color(0.94f, 0.36f, 0.36f, 0.14f);
 
         [Tooltip("Drawn around the player's own row, which is what makes it findable in a list of forty.")]
-        public Color RowMineBorder = new Color(0.98f, 0.9f, 0.35f);
+        public Color RowMineBorder = new Color(0.98f, 0.8f, 0.2f);
 
         [Min(0f)]
         public float RowMineBorderSize = 2f;
@@ -88,10 +88,10 @@ namespace FlappyTemplate
         public Color RowTextColor = Color.white;
 
         [Min(1f)]
-        public float RowNameSize = 22f;
+        public float RowNameSize = 20f;
 
         [Min(1f)]
-        public float RowAmountSize = 18f;
+        public float RowAmountSize = 17f;
 
         [Tooltip("Between a picture and the text beside it - the coin and its amount, the avatar and the name.")]
         [Min(0f)]
@@ -105,7 +105,7 @@ namespace FlappyTemplate
         [Min(0f)]
         public float MarkCornerRadius = 8f;
 
-        public Color MarkFill = new Color(1f, 1f, 1f, 0.22f);
+        public Color MarkFill = new Color(1f, 1f, 1f, 0.1f);
 
         public Color MarkColor = Color.white;
 
@@ -119,7 +119,7 @@ namespace FlappyTemplate
         [Min(0f)]
         public float AvatarSize = 32f;
 
-        public Color AvatarFill = new Color(0.18f, 0.16f, 0.36f);
+        public Color AvatarFill = new Color(1f, 1f, 1f, 0.14f);
 
         public Color AvatarLetterColor = Color.white;
 
@@ -128,18 +128,18 @@ namespace FlappyTemplate
         public float CoinSize = 20f;
 
         [Tooltip("The disc drawn where the currency image goes. Left showing when the server sends no image, with the currency's first letter over it.")]
-        public Color CoinFill = new Color(0.98f, 0.8f, 0.08f);
+        public Color CoinFill = new Color(0.98f, 0.72f, 0.2f);
 
-        public Color CoinLetterColor = new Color(0.18f, 0.16f, 0.35f);
+        public Color CoinLetterColor = new Color(0.106f, 0.106f, 0.106f);
 
         [Header("Totals")]
         [Min(0f)]
         public float StatRowGap = 8f;
 
         [Min(1f)]
-        public float StatSize = 22f;
+        public float StatSize = 20f;
 
-        public Color StatCaptionColor = Color.white;
+        public Color StatCaptionColor = new Color(1f, 1f, 1f, 0.6f);
 
         public Color StatValueColor = Color.white;
 
@@ -147,40 +147,40 @@ namespace FlappyTemplate
         public TMP_FontAsset CaptionFont;
 
         [Min(1f)]
-        public float CaptionSize = 22f;
+        public float CaptionSize = 17f;
 
-        public Color CaptionColor = Color.white;
+        public Color CaptionColor = new Color(1f, 1f, 1f, 0.6f);
 
-        public FontStyles CaptionStyle = FontStyles.Bold;
+        public FontStyles CaptionStyle = FontStyles.Normal;
 
         public TMP_FontAsset ValueFont;
 
         public Color ValueColor = Color.white;
 
-        public FontStyles ValueStyle = FontStyles.Bold;
+        public FontStyles ValueStyle = FontStyles.Normal;
 
         [Tooltip("The seeds: long strings that wrap rather than fit.")]
         [Min(1f)]
-        public float HashSize = 18f;
+        public float HashSize = 17f;
 
         [Tooltip("Size of the currency code beside an amount, as a fraction of the text it sits against.")]
         [Range(0.3f, 1f)]
         public float SmallTextScale = 0.72f;
 
         [Header("Buttons")]
-        public Vector2 DetailsSize = new Vector2(160f, 52f);
+        public Vector2 DetailsSize = new Vector2(160f, 48f);
 
-        public Vector2 VerifySize = new Vector2(170f, 52f);
+        public Vector2 VerifySize = new Vector2(170f, 48f);
 
         [Min(0f)]
-        public float ButtonCornerRadius = 10f;
+        public float ButtonCornerRadius = 12f;
 
-        public Color ButtonFill = new Color(0.565f, 0.894f, 0.604f);
+        public Color ButtonFill = new Color(1f, 1f, 1f, 0.1f);
 
-        public Color ButtonTextColor = new Color(0.11f, 0.1f, 0.29f);
+        public Color ButtonTextColor = Color.white;
 
         [Min(1f)]
-        public float ButtonTextSize = 22f;
+        public float ButtonTextSize = 20f;
 
         [Header("Seeds")]
         [Min(0f)]
@@ -211,7 +211,7 @@ namespace FlappyTemplate
         [Min(0f)]
         public float LoaderDotGap = 12f;
 
-        public Color LoaderColor = new Color(1f, 1f, 1f, 0.85f);
+        public Color LoaderColor = new Color(1f, 1f, 1f, 0.7f);
 
         [Tooltip("Seconds for one dot to swell and settle again. The three are staggered across it.")]
         [Min(0.05f)]

@@ -259,7 +259,7 @@
   be told: Home leaves for the address the server sent, taking the whole page with it rather than the iframe
   the build is drawn in, and hides itself while there is no such address; Statistics, Fairness, Hotkeys and Sound
   find their windows in the scene, or build them, and light up while the one they opened is on screen.</p>
-  <p class="stamp">Describes package 1.0.82. Update this file with the code — and README.md beside it.</p>
+  <p class="stamp">Describes package 1.0.94. Update this file with the code — and README.md beside it.</p>
   <p><strong>GameObject → UI (Canvas) → FlappyBet → Navbar</strong>, or Add Component → UI → Ui Navbar.</p>
 </header>
 
@@ -529,8 +529,19 @@ follow the colour its button was given.</p>
     <tr><td>Show Labels</td><td>A caption under each glyph. Off is the usual case for small buttons over the game.</td></tr>
     <tr><td>Label Font / Size / Color / Style</td><td></td></tr>
     <tr><td>Label Gap<br>Label Height</td><td>The band the caption is drawn in, off the bottom of the button. The glyph gets what is left — so a bar with labels wants a higher Icon Scale than one without.</td></tr>
+    <tr><td>Waves</td><td>A wave round a button as it is pressed. On by default.</td></tr>
+    <tr><td>Wave Color</td><td>The ring and the glow inside it — white at 60%. Its alpha is where the wave starts.</td></tr>
+    <tr><td>Wave Spread</td><td>How far past the button's edge the wave runs — 12. More than Button Spacing reaches the button beside it.</td></tr>
+    <tr><td>Wave Duration</td><td>Seconds from the press to the wave fading out — 0.6.</td></tr>
   </tbody>
 </table>
+
+<p><strong>Every button waves as it is pressed</strong>: a ring off its edge that runs outwards and fades, while the
+button dips and springs back. It is a <a href="../Ripple/README.html">Ripple</a> on each button, put there when the
+buttons are hooked up and set from the four <strong>Waves</strong> fields every time they are — so a style assigned
+from code reaches buttons that already exist. The rings are drawn behind the button, as children of the bar, and named
+<code>Ripple</code> rather than <code>Button …</code> — so the bar neither places them nor sweeps them away, and
+nothing beside the button moves.</p>
 
 <p>A style is read rather than watched, so assign it back to have it taken up:</p>
 
@@ -637,6 +648,7 @@ button named one thing and a dialog named another read as two features.</p>
     <tr><td><code>ENavbarFlow.cs</code></td><td>A row or a column.</td></tr>
     <tr><td><code>ENavbarAlign.cs</code></td><td>Where the buttons sit along a bar longer than they need.</td></tr>
     <tr><td><code>UiNavbarExample.cs</code></td><td>Three bars, built at runtime. Read as much as run.</td></tr>
+    <tr><td><code><a href="../Ripple/README.html">../Ripple/</a></code></td><td>The wave round each button as it is pressed.</td></tr>
     <tr><td><code>../../Navigation/Navigator.cs</code></td><td>Leaving the game, and what an address has to look like to be followed.</td></tr>
     <tr><td><code>../../JSPlugins/Navigation.jslib</code></td><td>The four routes to the top window, and the message to the parent.</td></tr>
   </tbody>

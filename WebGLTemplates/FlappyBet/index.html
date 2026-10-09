@@ -5,33 +5,55 @@
 	<meta charset="utf-8">
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<title>{{{ PRODUCT_NAME }}}</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<style>
+		/* Viewport size the game is laid out against. Falls back through
+		   vh -> svh -> a JS-measured pixel value (see applyViewportLayout). */
+		:root {
+			--app-w: 100vw;
+			--app-h: 100vh;
+		}
+
+		@supports (height: 100svh) {
+			:root {
+				/* svh = "small viewport": the height that stays visible even when
+				   iOS Safari's URL bar and bottom toolbar are both expanded. */
+				--app-h: 100svh;
+			}
+		}
+
 		html,
 		body {
 			background: {{{ BACKGROUND || '#000' }}};
 			width: 100%;
 			height: 100%;
-			overflow: visible;
+			overflow: hidden;
+			overscroll-behavior: none;
 			padding: 0;
 			margin: 0;
+			position: fixed;
+			inset: 0;
+			touch-action: none;
 		}
 
 		div#gameContainer {
 			background: transparent !important;
 			position: fixed;
-			inset: 0;
-			width: 100vw;
-			height: 100vh;
+			top: 0;
+			left: 0;
+			width: var(--app-w);
+			height: var(--app-h);
 		}
 
 		div#gameContainer canvas {
 			position: absolute;
 			inset: 0;
-			width: 100vw !important;
-			height: 100vh !important;
+			width: 100% !important;
+			height: 100% !important;
 			display: block;
 			-webkit-user-select: none;
 			user-select: none;
+			touch-action: none;
 		}
 
 		div#gameContainer canvas[data-pixel-art="true"] {
@@ -88,6 +110,62 @@
 			letter-spacing: 1px;
 		}
 	</style>
+	<script>
+		// Browser extensions (crypto wallets above all) inject scripts into every page,
+		// and when they break, the error lands on this window. Unity's loader turns any
+		// page error into a blocking alert() naming our domain, so drop the extension's
+		// errors before the loader hears of them. Registered here in <head>, ahead of
+		// the loader's own listeners, so stopImmediatePropagation keeps them from it -
+		// even while the game is still loading, when the loader would otherwise
+		// reject createUnityInstance over them.
+		(function ignoreExtensionErrors() {
+			var EXTENSION_URL = /(chrome|moz|safari(-web)?|ms-browser)-extension:\/\//;
+			function fromExtension(e) {
+				var err = e.error || e.reason;
+				var where = (e.filename || '') + '\n' + (err && err.fileName || '') + '\n' + (err && err.stack || '');
+				return EXTENSION_URL.test(where);
+			}
+			function swallow(e) {
+				if (!fromExtension(e)) return;
+				e.stopImmediatePropagation();
+				e.preventDefault();
+				console.warn('Ignored an error from a browser extension:', e.error || e.reason || e.message);
+			}
+			window.addEventListener('error', swallow);
+			window.addEventListener('unhandledrejection', swallow);
+		})();
+	</script>
+	<script>
+		// Ceiling on the WebGL backing buffer, which Unity sizes as
+		// (CSS size x window.devicePixelRatio).
+		//
+		// Measured: clamping this to 2 on an iPhone 15 Pro halved the pixel count and
+		// changed the frame rate not at all - the cost was in the shadow pass, which is
+		// sized by the shadow map, not the screen. So 3 is left alone; native density on
+		// a modern phone anti-aliases better than MSAA and costs less. Lower this only if
+		// profiling actually shows a fragment/fill bottleneck.
+		// Must run before the Unity loader reads the ratio, hence <head>.
+		var MAX_DEVICE_PIXEL_RATIO = 3;
+		(function clampDevicePixelRatio() {
+			try {
+				var proto = Object.getPrototypeOf(window) || window.Window.prototype;
+				var desc = Object.getOwnPropertyDescriptor(window, 'devicePixelRatio') ||
+					Object.getOwnPropertyDescriptor(proto, 'devicePixelRatio');
+				if (!desc || typeof desc.get !== 'function') return;
+
+				var nativeGet = desc.get;
+				Object.defineProperty(window, 'devicePixelRatio', {
+					configurable: true,
+					get: function () {
+						// Only ever clamp down, never scale a low-DPI display up.
+						return Math.min(nativeGet.call(window), MAX_DEVICE_PIXEL_RATIO);
+					}
+				});
+			} catch (e) {
+				// Non-fatal - we just render at the device's native pixel ratio.
+			}
+		})();
+	</script>
 	<script src="https://unpkg.com/@microsoft/signalr@10.0.0/dist/browser/signalr.min.js" integrity="sha384-WlPNGnp2GG/eMuGnbuG2p5ov9pzHsqoPQbzjOz61V608d7JfDa+3abt0YOoyUwU5" crossorigin="anonymous"></script>
 </head>
 
@@ -118,6 +196,18 @@
 				productName: "{{{ PRODUCT_NAME }}}",
 				productVersion: "{{{ PRODUCT_VERSION }}}",
 				autoSyncPersistentDataPath: true,
+				// Unity's loader checks Module.devicePixelRatio BEFORE falling back to
+				// window.devicePixelRatio, so this is the supported way to cap the backing
+				// buffer. The window getter patch above does not take on every browser
+				// (notably Chrome/Samsung Internet on Android); this path always does.
+				devicePixelRatio: Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO),
+				// Returning true tells the loader the error is handled, so it never puts up
+				// its "An error occurred running the Unity content" alert - a player can do
+				// nothing with it. The error still goes to the console for us.
+				errorHandler: function (message, filename, lineno) {
+					console.error('Unity error' + (filename ? ' at ' + filename + ':' + lineno : '') + '\n' + message);
+					return true;
+				},
 			};
 			var scaleToFit;
 			try {
@@ -169,7 +259,26 @@
 					canvas.focus();
 				}
 			}
+			// iOS Safari's 100vh includes the strip hidden behind the URL bar and
+			// the bottom toolbar, so anything anchored to the bottom of the game
+			// (buttons) ends up rendered off-screen. visualViewport reports the
+			// area that is actually visible right now, so pin the layout to that.
+			var layoutFrame = null;
 			function applyViewportLayout() {
+				if (layoutFrame) return;
+				layoutFrame = requestAnimationFrame(function () {
+					layoutFrame = null;
+					var vv = window.visualViewport;
+					var w = Math.round(vv ? vv.width : window.innerWidth);
+					var h = Math.round(vv ? vv.height : window.innerHeight);
+					if (w <= 0 || h <= 0) return;
+					var root = document.documentElement;
+					root.style.setProperty('--app-w', w + 'px');
+					root.style.setProperty('--app-h', h + 'px');
+					// Keep the page itself pinned to the top-left of the visible area
+					// in case iOS scrolled it while the toolbars animated.
+					window.scrollTo(0, 0);
+				});
 			}
 			function onResizeOld() {
 				var container = canvas.parentElement;
@@ -207,8 +316,19 @@
 				requestAnimationFrame(function () {
 					focusCanvas();
 				});
+			}).catch(function (error) {
+				console.error('Unity failed to start\n' + error);
 			});
 			window.addEventListener('resize', applyViewportLayout);
+			window.addEventListener('orientationchange', function () {
+				// iOS reports stale metrics right after the rotation event.
+				applyViewportLayout();
+				setTimeout(applyViewportLayout, 300);
+			});
+			if (window.visualViewport) {
+				window.visualViewport.addEventListener('resize', applyViewportLayout);
+				window.visualViewport.addEventListener('scroll', applyViewportLayout);
+			}
 			window.addEventListener('pointerdown', focusCanvas, { passive: true });
 			window.addEventListener('touchstart', focusCanvas, { passive: true });
 			document.addEventListener('visibilitychange', function () {
@@ -220,14 +340,6 @@
 				}
 			});
 			applyViewportLayout();
-
-			if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-				// Mobile device style: fill the whole browser client area with the game canvas:
-				const meta = document.createElement('meta');
-				meta.name = 'viewport';
-				meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-				document.getElementsByTagName('head')[0].appendChild(meta);
-			}
 		</script>
 	</div>
 </body>

@@ -10,30 +10,39 @@ namespace FlappyTemplate
     // would read as broken rather than as unstyled. So each part is born looking like something, and from
     // then on it is whatever anybody has made of it.
     //
-    // A dark violet dialog, which is the one the readme is written around. A game with its own palette
-    // selects Panel, Caption, Title and Close and sets them to whatever it likes; nothing here runs again.
+    // The flat charcoal the bet info sheet is drawn in: a near-black panel with a hairline round it, white
+    // text, and a close button that is a faint disc with a white cross. A game with its own palette selects
+    // Panel, Caption, Title and Close and sets them to whatever it likes; nothing here runs again - unless
+    // UiWindowTheme.Charcoal is asked to, which repaints a window that was made before this was the look.
+    //
+    // Where a part goes and what it looks like are separate methods, so a repaint changes the colours without
+    // moving anything a game has placed.
     internal static class UiWindowSeed
     {
+        public static readonly Color PanelFill = new Color(0.106f, 0.106f, 0.106f);
+
         public static void Panel(RoundedBox box)
         {
             box.FillGradientMode = EFillGradient.None;
-            box.FillColor = new Color(0.357f, 0.298f, 0.62f);
-            box.SetCornerRadius(26f);
-            box.SetBorderSize(3f);
-            box.SetBorderColor(new Color(0.227f, 0.18f, 0.42f));
+            box.FillColor = PanelFill;
+            box.SetCornerRadius(18f);
+            box.SetBorderSize(1f);
+            box.SetBorderColor(new Color(1f, 1f, 1f, 0.06f));
             box.EdgeSoftness = 1.25f;
             box.raycastTarget = true;
         }
 
-        // Drawn over the panel's fill rather than instead of it, so the header is the same violet a shade
-        // darker. Square at the bottom and round at the top, inside the panel's own border.
+        // Clear over the panel, with a hairline under it: the header is the same charcoal as the body, set off
+        // by a rule rather than by a second shade. Round at the top, inside the panel's own border.
         public static void Caption(RoundedBox box)
         {
             box.FillGradientMode = EFillGradient.None;
-            box.FillColor = new Color(0f, 0f, 0f, 0.12f);
+            box.FillColor = new Color(1f, 1f, 1f, 0f);
             box.SetBorderSize(0f);
-            box.RadiusTopLeft = 23f;
-            box.RadiusTopRight = 23f;
+            box.BorderBottom = 1f;
+            box.BorderColorBottom = new Color(1f, 1f, 1f, 0.08f);
+            box.RadiusTopLeft = 17f;
+            box.RadiusTopRight = 17f;
             box.RadiusBottomRight = 0f;
             box.RadiusBottomLeft = 0f;
             box.EdgeSoftness = 1.25f;
@@ -45,19 +54,28 @@ namespace FlappyTemplate
         public static void Title(TextMeshProUGUI label)
         {
             UiWindowParts.Stretch(label.rectTransform, 12f, 44f, 12f, 6f);
-            label.fontSize = 34f;
+            label.alignment = TextAlignmentOptions.Center;
+            TitleLook(label);
+        }
+
+        public static void TitleLook(TextMeshProUGUI label)
+        {
+            label.fontSize = 26f;
             label.color = Color.white;
             label.fontStyle = FontStyles.Bold;
-            label.alignment = TextAlignmentOptions.Center;
             label.raycastTarget = false;
         }
 
         public static void Close(RoundedBox box)
         {
             UiWindowParts.Pin(box.rectTransform, new Vector2(1f, 1f), new Vector2(44f, 44f), new Vector2(-18f, -18f));
+            CloseLook(box);
+        }
 
+        public static void CloseLook(RoundedBox box)
+        {
             box.FillGradientMode = EFillGradient.None;
-            box.FillColor = Color.white;
+            box.FillColor = new Color(1f, 1f, 1f, 0.08f);
             box.SetBorderSize(0f);
 
             // A radius larger than the box is held to it, so this stays a circle whatever the button is
@@ -70,7 +88,7 @@ namespace FlappyTemplate
         /// <summary>The square the two bars are drawn in, sized from the button it sits in.</summary>
         public static void Cross(RectTransform rect, Vector2 closeSize)
         {
-            float span = Mathf.Min(closeSize.x, closeSize.y) * 0.42f;
+            float span = Mathf.Min(closeSize.x, closeSize.y) * 0.4f;
             UiWindowParts.Pin(rect, new Vector2(0.5f, 0.5f), new Vector2(span, span), Vector2.zero);
         }
 
@@ -78,22 +96,26 @@ namespace FlappyTemplate
         /// make the cross, which costs no atlas entry and stays sharp at any size.</summary>
         public static void Bar(RoundedBox bar, float span, float angle)
         {
-            UiWindowParts.Pin(bar.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(span, 4.5f), Vector2.zero);
+            UiWindowParts.Pin(bar.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(span, 3f), Vector2.zero);
             bar.rectTransform.localRotation = Quaternion.Euler(0f, 0f, angle);
+            BarLook(bar);
+        }
 
+        public static void BarLook(RoundedBox bar)
+        {
             bar.FillGradientMode = EFillGradient.None;
-            bar.FillColor = new Color(0.18f, 0.16f, 0.35f);
+            bar.FillColor = new Color(1f, 1f, 1f, 0.85f);
             bar.SetBorderSize(0f);
             bar.SetCornerRadius(100000f);
             bar.EdgeSoftness = 1.25f;
             bar.raycastTarget = false;
         }
 
-        public static void ScrollTrack(RoundedBox box) => Bar(box, new Color(0f, 0f, 0f, 0.22f));
+        public static void ScrollTrack(RoundedBox box) => Bar(box, new Color(1f, 1f, 1f, 0.06f));
 
-        public static void ScrollHandle(RoundedBox box) => Bar(box, new Color(1f, 1f, 1f, 0.5f));
+        public static void ScrollHandle(RoundedBox box) => Bar(box, new Color(1f, 1f, 1f, 0.3f));
 
-        public static void Backdrop(Image sheet) => sheet.color = new Color(0f, 0f, 0f, 0.55f);
+        public static void Backdrop(Image sheet) => sheet.color = new Color(0f, 0f, 0f, 0.6f);
 
         // Track and handle are the same shape in two colours: fully rounded, so each reads as a bar rather
         // than as a strip however wide the scrollbar is set.

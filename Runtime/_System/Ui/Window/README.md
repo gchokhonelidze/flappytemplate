@@ -25,7 +25,12 @@ on it included; `Fairness/` — the seed pair the game is rolling from, and the 
 Every caption in all seven, and the title of any window, is **translated** — see
 [Translations](#translations) below.
 
-*Describes package 1.0.89. Update this file with the code — and **README.html** beside it, which is the same
+**Every window is born in the same flat charcoal** the bet info sheet was drawn in: a near-black panel with a
+hairline round it, white text, quiet captions, faint white washes for cards and buttons, and one accent — green.
+A window made before that was the look keeps the look it was made with until it is
+[restyled](#restyling-a-window-that-already-exists).
+
+*Describes package 1.0.94. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the windows drawn rather than described.*
 
 **GameObject → UI (Canvas) → FlappyBet → Window**, and **Statistics Window**, **Bet Info Window**, **Game
@@ -56,13 +61,14 @@ UiWindowBuilder.Create(canvas, "Settings")
 | Title | The caption text. Also `Title` from code, live. What the label looks like is the label's own — select **Title** under the caption. |
 | Show Caption | Off drops the whole header and starts the content at the top of the panel. The close button stays. |
 | Show Close Button | |
+| Close Wave | A wave round the close button as it is pressed — a [Ripple](../Ripple/) on the `Close` object. On by default, and put on a window built before there was such a thing the next time it is built or loaded. Its colour, reach and timing are the ripple's own: select `Close` to change them. |
 | Start Closed | Hide at Awake and wait for `Open`. Off leaves the window exactly as the scene saved it. |
 | Destroy On Close | For a window built for one message — it takes itself down with it. |
 | Caption Height | The whole header block: the drag strip, the close button and the title. Content starts under it. |
 | Content Padding Left / Top / Right / Bottom | Inset of the content area. Top is measured from the bottom of the caption, not the top of the panel. Four floats rather than a `RectOffset`: that type is a handle onto a native object and cannot be built in a field initialiser. |
 | Fit Content Height | Ask the content how tall it wants to be on every open, and be that tall. Needs something under `Content` that reports a height — see below. |
-| Max Height | The tallest the window may be, in its own units. Zero means the parent it is drawn in — the screen, for a full-screen canvas — less Screen Margin. |
-| Screen Margin | Room left above and below a window that has grown as far as it may. |
+| Max Height | The tallest the window may be, in its own units, even with more room than that. Zero means no ceiling of its own — as tall as the parent it is drawn in (the screen, for a full-screen canvas) less Screen Margin, which holds whatever Max Height says. |
+| Screen Margin | Room left above and below a window that has grown as far as the screen lets it. |
 | Scroll | `Never`, `WhenTooTall` (the default) or `Always`. |
 | Show Scrollbar | The bar down the right of the body. Off leaves the wheel and the drag, and no hint that there is more below. |
 | Scrollbar Width / Inset | Inset is measured from the right edge of the body inwards; the content is moved over by the width and the inset together, so the two never overlap. |
@@ -91,9 +97,9 @@ There is no style object. **Select the part and set it**, the way you would any 
 | Part | Where | What it is |
 | --- | --- | --- |
 | Panel | the window object itself | `RoundedBox` — fill, gradient, border, corners, edge softness |
-| Caption | child | `RoundedBox`. Its fill is usually a wash *over* the panel's, so alpha at nothing leaves the header the colour of the body |
+| Caption | child | `RoundedBox`. Clear by default, with a hairline along its bottom edge, so the header is the panel's own colour set off by a rule. A fill is drawn *over* the panel's, so a wash of alpha shades the header rather than replacing it |
 | Title | under Caption | `TextMeshProUGUI` — font, size, colour, style, alignment, and where in the caption it sits |
-| Close | child, ignored by the grid | `RoundedBox` — move it, resize it, round it. `Close/Cross/Bar A` and `Bar B` are the two rotated boxes the cross is drawn from; drop an `Image` with a sprite in the button and turn the cross off instead if you would rather |
+| Close | child, ignored by the grid | `RoundedBox` — move it, resize it, round it. `Close/Cross/Bar A` and `Bar B` are the two rotated boxes the cross is drawn from; drop an `Image` with a sprite in the button and turn the cross off instead if you would rather. The `Ui Ripple` on it is the press wave |
 | Scrollbar | under Viewport | `RoundedBox` for the track, `Handle` under it. The window sets the **width** and where it sits; both colours are its own |
 | Window Backdrop | beside the window, in its parent | `Image`. Only its colour — the window fades it through a `CanvasGroup`, so opening and closing never touch it |
 
@@ -115,10 +121,48 @@ that starts on it.
 the side — and is safe to call on a window somebody has styled. It runs on `Awake`, on every `Open`, and on
 any inspector change.
 
-**A window arrives styled once.** Each part is given a plain dark look at the moment it is *made*, so a
-window created from the menu is a dialog rather than a white square. That is `UiWindowSeed`, it happens once
-per part, and it never runs over a part that already exists — a hand-styled window stays as it was, through
-`Rebuild()` and through every reload.
+**A window arrives styled once.** Each part is given its look at the moment it is *made*, so a window created
+from the menu is a dialog rather than a white square. That is `UiWindowSeed`, it happens once per part, and it
+never runs over a part that already exists — a hand-styled window stays as it was, through `Rebuild()` and
+through every reload.
+
+| Part | Born as |
+| --- | --- |
+| Panel | `#1B1B1B`, corner radius 18, a 1 px border of white at 6% |
+| Caption | Clear, with a 1 px rule of white at 8% along its bottom |
+| Title | 26, bold, white |
+| Close | A disc of white at 8%, with a cross of two 3 px bars in white at 85%, and a [Ripple](../Ripple/) |
+| Scrollbar | Track white at 6%, handle white at 30% |
+| Backdrop | Black at 60% |
+
+The windows built on it take the same palette for what they draw inside, each from its own **Style**: values
+in white, captions smaller and at 60% white, headings and values in a normal weight rather than bold, cards and
+rows a faint wash of white, buttons a 10% wash with white text. **One accent, green**, for whatever is on or
+good — a switch that is on, a bound key, a figure above zero, a round that paid — with red for a figure below
+zero, and gold for a count and for the player's own row.
+
+### Restyling a window that already exists
+
+A window is styled only when its parts are made, and **its style is saved with the scene**. So changing the
+package's defaults never repaints a window that is already in a scene: one made before the charcoal look stays
+in the look it was made with. Bringing it over is a deliberate step:
+
+**GameObject → UI (Canvas) → FlappyBet → Restyle Windows** repaints every window under the selection — or every
+window in the open scenes, when nothing is selected — as one undo. From code it is `UiWindowTheme`:
+
+```csharp
+UiWindowTheme.Charcoal(window);          // the frame and what is drawn inside it
+UiWindowTheme.Charcoal(window, false);   // the frame alone
+```
+
+| | Reset | Kept |
+| --- | --- | --- |
+| **The frame** | The colours of the panel, caption, title, close button and its cross, and the scrollbar; the panel's corner and border; the title's size and weight. **Close Wave** is switched on. | Where everything is — a close button a game has moved stays where it was put, and the caption keeps its height — and the backdrop's colour. |
+| **The contents** | Each window component's **Style** — every colour, every text weight (`FontStyles`), and every number or size whose name ends in `Size` or `Radius` — back to the package's default. | Fonts, sprites and icons, whole numbers, switches and strings, and every other number: heights, widths, gaps, insets, thicknesses and timings. Number formats, which blocks are showing, an outcome strip or a list a game has made taller all survive — and so a restyled window can still differ from a new one in those. |
+
+Anything that is not a window's own style — a label a game parented into `Content`, an outcome view — is not
+touched. From the menu, a window restyled and then not liked is one undo away; from code, the undo is the caller's
+to record.
 
 ## From code
 
@@ -236,7 +280,8 @@ Once the wanted height is past what is allowed, `Scroll` decides what happens:
 - `WhenTooTall` — the body scrolls, and only then. The default.
 - `Always` — the bar and the room it takes are there whatever the content does, so the layout never shifts.
 
-The limit is **Max Height**, or the parent's height less **Screen Margin** at both ends when that is zero. It is
+The limit is the parent's height less **Screen Margin** at both ends, and **Max Height** — when it is not zero —
+only ever lowers it. So a window never hangs off a screen shorter than its Max Height: it scrolls there instead. It is
 measured in the window's own units: a window at half scale is allowed twice as much of itself, the same
 reasoning the drag clamp uses. A phone that turns or a player window that is dragged wider changes that limit
 without anything asking, so it is checked once a frame per open window — a float compare — and the clamp is
@@ -268,7 +313,7 @@ UiWindowBuilder.Create(canvas, "Rules")
     .Done();
 
 window.FitContentHeight = true;
-window.MaxHeight = 0f;        // the parent, less Screen Margin
+window.MaxHeight = 0f;        // no ceiling: the parent, less Screen Margin
 window.Scroll = EWindowScroll.WhenTooTall;
 window.Open();                // fitted, clamped and scrolling on the way in
 ```
@@ -522,11 +567,14 @@ fields with the seeds behind a Details button, this is **one long sheet with eve
 
 The sheet is as tall as what is on it, and **past the window's Max Height the window scrolls it** — the window's
 own scrolling, described [above](#scrolling), so the bar, the wheel and the drag all work the way they do
-everywhere else. `Create` holds Max Height at 720, the height the design is drawn at.
+everywhere else. Max Height is left at zero, so the sheet **grows with the bet until the screen runs out** and
+only scrolls after that; set it to hold the dialog shorter on a tall screen.
 
-`Create` and the menu also give the window **no caption and a charcoal panel**, once, as it is made. That is
-the panel's own `RoundedBox` like any other, so restyle it there; `BetInfoSheetWindow.Charcoal(panel)` paints
-the same look onto a window made some other way.
+`Create` and the menu also give the window **no caption**, once, as it is made, on the charcoal panel every
+window is now born with — the look the rest of them were brought over to. That is the panel's own `RoundedBox`
+like any other, so restyle it there; `BetInfoSheetWindow.Charcoal(panel)` still paints the panel alone onto a
+window made some other way, and [Restyle Windows](#restyling-a-window-that-already-exists) does the whole
+window.
 
 | Call | Does |
 | --- | --- |
@@ -545,6 +593,7 @@ the same look onto a window made some other way.
 | Show Currency Toggle / Outcome / Id / Statistics / Server Seed / Client Seed / Server Hash / Bets / Verify | One per block of the sheet. A block that is off takes its row and its gap away with it. |
 | Usd View | Start converted to dollars. |
 | Follow State · Request On Show · Match Requested Id · Load Images · Fit Window Height | As the bet info window. |
+| Copyable Values | The round id, the three totals and the three seeds can be selected and copied — drag, double-click, Ctrl+C, or a long press on a phone — and never edited; the id and the seeds also get a copy icon at their right. The icon's size, gap and colours are the style's **Copy buttons**; a size of zero leaves the icons out. See [Selectable Text](../SelectableText/). |
 
 `OnTransaction`, `OnRequested`, `OnVerify` and `OnCurrencyToggled` are UnityEvents.
 
@@ -814,7 +863,7 @@ Three blocks, top to bottom:
 
 - **The drawn keyboard.** Every cap in `HotkeyCaps.Rows`, with the bound ones in the accent colour and
   whichever is held down lit. It is what turns a list of key names into something a player reads at a
-  glance — *the gold ones do something, and the one under my finger is the one I pressed*. Built once and
+  glance — *the green ones do something, and the one under my finger is the one I pressed*. Built once and
   repainted rather than rebuilt: sixty caps is sixty boxes and sixty labels, and a key going down happens in
   the middle of a round. It catches no clicks — it is a picture of a keyboard, not a keyboard.
 - **The list.** A caption and a key cap per binding, in the order the game bound them. It scrolls on its own
@@ -883,6 +932,34 @@ window closes. Sixty messages a second up a socket for one finger movement is wh
 
 A switched-off channel fades its whole card: the caption, the fill and the number. A slider that still looked
 live under a muted channel would read as a control that does nothing.
+
+**The switch slides.** Flipped, the knob crosses the pill over `Switch Duration` while the pill's colour fades
+from grey to green or back, and the knob is drawn out wider half way across — something being pushed rather
+than a counter being moved — and is round again by the time it lands. It slides whenever the channel changes
+while the window is open, a setting arriving from another tab included. `Refresh()` — which is what opening the
+window runs — puts it where it belongs outright instead, so a window opening on a muted channel shows it muted
+rather than animating the knob across on the way in.
+
+**And it waves** — a [Ripple](../Ripple/) round the pill as it flips, green going on and white-grey going off.
+It is played from `Toggle(channel)` rather than from the press, so a key bound to `Toggle` shows it too; a
+channel changed from somewhere else slides the switch without one. A slider waves round its handle the moment it
+is taken hold of. The switch's wave is held to the card's padding, whatever
+`Wave Spread` says: the body clips at its padding, and a wave that ran further would be cut off square there.
+
+| Style | Default | |
+| --- | --- | --- |
+| Card Fill / Card Off Fill | clear | Inside the rule — each card is an outline on the panel, the way the bet info sheet's boxes are. |
+| Card Border / Card Border Size | white at 16%, 2 | The rule round each card. Nought leaves the fill alone. |
+| Card Corner Radius | 16 | |
+| Switch Size | 64 × 34 | The pill. Its corner radius is half its height. |
+| Switch On Fill / Switch Off Fill | green / white at 16% | Grey rather than red for off — off is a setting the player chose, not a fault. |
+| Knob Inset | 3 | |
+| Switch Duration | 0.22 | Seconds the knob takes to cross. Nought jumps. |
+| Knob Stretch | 0.3 | How much wider the knob is drawn half way across, as a share of its size. Nought keeps it round all the way. |
+| Waves | on | The ripples round the switch and the handle. |
+| Wave Spread / Wave Duration | 12 / 0.6 | How far past the edge a wave runs, and for how long. |
+| Track Height / Handle Size | 6 / 22 | |
+| Fill Color / Fill Off Color | green / green at 25% | The part of the track left of the handle — how loud the channel is set to. |
 
 | Call | Does |
 | --- | --- |
@@ -989,8 +1066,9 @@ it is touched; it still joins the pile as it opens, because it has to be somewhe
 
 - **The close cross, the reset arrow, the tick, the clock, the padlock and the circular arrows are drawn, not
   fetched.** Rotated boxes, a ring with a notch in it, and two bars between three points, which costs no atlas
-  entry and stays sharp at any size. The reset notch is *painted in the button's own colour*, not cut, so it
-  only disappears against a flat button — give the style a `ResetIcon` sprite if the button is ever a gradient,
+  entry and stays sharp at any size. The reset notch is *painted*, not cut — the panel's colour with the
+  button's own fill laid over it, so it matches a translucent button too — and it only disappears against a
+  flat button drawn straight on the panel — give the style a `ResetIcon` sprite if the button is ever a gradient,
   and note that the fairness arrows follow their button being dimmed for exactly that reason. `TickIcon`,
   `ClockIcon`, `LockIcon` and `ArrowIcon` take a sprite instead. The padlock is the same trick once more: a
   ring with the body drawn over its lower half, which is all an arch needs.
@@ -1067,6 +1145,7 @@ itself.
 | `UiWindow.cs` | The window: parts, layout, drag, transition. |
 | `UiWindowBuilder.cs` | The fluent API. |
 | `UiWindowSeed.cs` | The look each part is given when it is made, and never again. Internal. |
+| `UiWindowTheme.cs` | `Charcoal`: repaints a window that already exists in that look. What Restyle Windows runs. |
 | `UiWindowDragHandle.cs` | The grab. Usable on its own, for a custom header. |
 | `UiWindowParts.cs` | Making and finding children, and naming them for a grid. Internal. |
 | `EWindowTransition.cs`, `EWindowScroll.cs` | |
@@ -1090,7 +1169,7 @@ itself.
 | `Sound/SoundWindow.cs` | The sound dialog: two cards, two switches, two volumes. |
 | `Sound/SoundWindowStyle.cs` | What it looks like. |
 | [`../../Audio/`](../../Audio/) | `Sounds`, which that dialog reads and the game plays through. |
-| `Editor/Window/UiWindowMenu.cs` | The eight GameObject → UI (Canvas) → FlappyBet entries. |
+| `Editor/Window/UiWindowMenu.cs` | The eight GameObject → UI (Canvas) → FlappyBet entries, and Restyle Windows beside them. |
 | [`../../Translations/`](../../Translations/) | `Translator.Label`, which every caption above is written through. |
 | `Editor/FlappyBetMenu.cs` | The one group they all go in, path and priority. Internal. |
 | `../RoundedBox/` | Every panel here is one. |
@@ -1098,3 +1177,4 @@ itself.
 | `../History/` | The strip that opens the bet info and game history dialogs. |
 | `../Navbar/` | The bar whose Statistics, Fairness, Hotkeys and Sound buttons open four of these. |
 | [`../Cursor/`](../Cursor/) | The hand over every button in these windows — and the arrow hint on the backdrop, which is a Button too. |
+| [`../Ripple/`](../Ripple/) | The wave round the close button, and round the sound window's switches and handles. |

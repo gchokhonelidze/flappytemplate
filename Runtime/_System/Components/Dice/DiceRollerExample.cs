@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace FlappyTemplate
 {
@@ -48,23 +49,27 @@ namespace FlappyTemplate
             if (dice == null)
                 return;
 
-            // KeyCode.Alpha1 is 49 and the digits run in order, so value N sits at Alpha1 + (N - 1).
+            var keyboard = Keyboard.current;
+            if (keyboard == null)
+                return;
+
+            // Digit1 to Digit9 run in order in Key, so value N sits at Digit1 + (N - 1).
             for (int value = 1; value <= 6; value++)
             {
-                if (Input.GetKeyDown(KeyCode.Alpha1 + value - 1))
+                if (keyboard[Key.Digit1 + value - 1].wasPressedThisFrame)
                     Roll(value);
             }
 
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (keyboard.spaceKey.wasPressedThisFrame)
                 RollRandom();
 
-            if (Input.GetKeyDown(KeyCode.H))
+            if (keyboard.hKey.wasPressedThisFrame)
                 RollHovering(Random.Range(1, 7));
 
-            if (Input.GetKeyDown(KeyCode.J))
+            if (keyboard.jKey.wasPressedThisFrame)
                 ToggleJump();
 
-            if (Input.GetKeyDown(KeyCode.A))
+            if (keyboard.aKey.wasPressedThisFrame)
                 AuditFaces();
         }
 

@@ -15,6 +15,8 @@
     --code-bg: #f2f4f7;
     --note-bg: #eef4ff;
     --note-line: #6f9bea;
+    --warn-bg: #fff6e5;
+    --warn-line: #e6a23c;
     --stage: #e9ebef;
   }
 
@@ -29,6 +31,8 @@
       --code-bg: #12141a;
       --note-bg: #161d2b;
       --note-line: #4a6ea8;
+      --warn-bg: #2c2415;
+      --warn-line: #b98330;
       --stage: #0f1114;
     }
   }
@@ -114,6 +118,14 @@
   }
   .note p { margin: 0; }
   .note p + p { margin-top: 10px; }
+  .warn {
+    border-left: 3px solid var(--warn-line);
+    background: var(--warn-bg);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+  .warn p { margin: 0; }
 
   .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(276px, 1fr)); gap: 20px; margin: 24px 0; }
   .specimen { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
@@ -130,45 +142,47 @@
   .specimen .why { padding: 2px 14px 10px; margin: 0; color: var(--soft); font-size: 13px; max-width: none; }
   .specimen pre { margin: 0 14px 14px; border: none; background: transparent; padding: 0; font-size: 12px; }
 
-  /* ---- the windows themselves, drawn rather than described ---- */
+  /* ---- the windows themselves, drawn rather than described: the charcoal every window is born in ---- */
 
   .win {
-    --fill: #5b4c9e;
-    --edge: #3a2e6b;
+    --fill: #1b1b1b;
+    --edge: rgba(255, 255, 255, .06);
     position: relative;
     width: 236px;
     background: var(--fill);
-    border: 3px solid var(--edge);
-    border-radius: 26px;
+    border: 1px solid var(--edge);
+    border-radius: 18px;
     color: #fff;
     font-size: 13px;
     box-shadow: 0 18px 40px rgba(0, 0, 0, .35);
   }
   .win .cap {
-    height: 78px;
-    background: rgba(0, 0, 0, .12);
-    border-radius: 23px 23px 0 0;
+    height: 64px;
+    background: transparent;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 17px 17px 0 0;
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    padding-bottom: 10px;
-    font-weight: 800;
-    font-size: 21px;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+    font-weight: 700;
+    font-size: 16.5px;
     letter-spacing: .01em;
   }
   .win .x {
     position: absolute;
     top: 12px;
     right: 12px;
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border-radius: 999px;
-    background: #fff;
-    color: #2e2a5c;
+    background: rgba(255, 255, 255, .08);
+    color: rgba(255, 255, 255, .85);
     display: grid;
     place-items: center;
-    font-size: 17px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 400;
     line-height: 1;
   }
   .win .body { padding: 0 16px 16px; }
@@ -179,58 +193,58 @@
     border-radius: 10px;
     display: grid;
     place-items: center;
-    font-weight: 700;
-    font-size: 13px;
-    background: #2e2a5c;
-    color: #fff;
+    font-weight: 400;
+    font-size: 12.5px;
+    background: rgba(255, 255, 255, .04);
+    color: rgba(255, 255, 255, .6);
   }
-  .tab.on { background: #90e39a; color: #1c1a4a; }
+  .tab.on { background: rgba(255, 255, 255, .14); color: #fff; }
 
   .stat { text-align: center; margin-bottom: 12px; }
-  .stat .k { font-weight: 700; font-size: 13px; }
-  .stat .v { font-weight: 800; font-size: 17px; }
-  .up { color: #4ade80; }
-  .down { color: #ef4444; }
-  .count { color: #fbbf24; }
+  .stat .k { font-weight: 400; font-size: 11.5px; color: rgba(255, 255, 255, .6); }
+  .stat .v { font-weight: 400; font-size: 15px; }
+  .up { color: #73db80; }
+  .down { color: #f05c5c; }
+  .count { color: #facc33; }
   .sep { color: #fff; }
 
   .reset {
     width: 40px;
     height: 40px;
-    border-radius: 12px;
-    background: #90e39a;
-    color: #1c1a4a;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .1);
+    color: #fff;
     display: grid;
     place-items: center;
     font-size: 19px;
     font-weight: 700;
   }
 
-  .plain .body { padding: 0 16px 20px; color: rgba(255, 255, 255, .72); text-align: center; }
-  .modal { position: relative; padding: 18px; background: rgba(0, 0, 0, .55); border-radius: 12px; }
+  .plain .body { padding: 0 16px 20px; color: rgba(255, 255, 255, .6); text-align: center; }
+  .modal { position: relative; padding: 18px; background: rgba(0, 0, 0, .6); border-radius: 12px; }
   .modal .win { width: 200px; }
-  .drag { border: 2px dashed rgba(255, 255, 255, .45); border-radius: 23px 23px 0 0; }
+  .drag { border: 2px dashed rgba(255, 255, 255, .35); border-radius: 17px 17px 0 0; }
 
   /* ---- the hotkeys dialog, same idea ---- */
 
   .win.keys { width: 300px; }
-  .board { background: #fff; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 3px; }
+  .board { background: rgba(255, 255, 255, .04); border-radius: 10px; padding: 6px; display: flex; flex-direction: column; gap: 3px; }
   .krow { display: flex; gap: 3px; }
   .k {
     flex: 1 1 0;
     height: 18px;
     border-radius: 3px;
-    background: #fff;
-    border: 1px solid #cbc7d9;
-    color: #4a4066;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .1);
+    color: rgba(255, 255, 255, .75);
     font: 8px/16px "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
     text-align: center;
     overflow: hidden;
     white-space: nowrap;
   }
   /* bound, and bound-and-held: the two colours the window asks a player to learn */
-  .k.reg { background: #e8c55a; border-color: #e8c55a; color: #33285a; font-weight: 700; }
-  .k.on { background: #fde488; border-color: #fde488; color: #241b45; font-weight: 700; }
+  .k.reg { background: #73db80; border-color: #73db80; color: #1b1b1b; font-weight: 700; }
+  .k.on { background: #9feda8; border-color: #9feda8; color: #1b1b1b; font-weight: 700; }
   .k.u15 { flex-grow: 1.5; } .k.u175 { flex-grow: 1.75; }
   .k.u2 { flex-grow: 2; } .k.u225 { flex-grow: 2.25; } .k.space { flex-grow: 12; }
 
@@ -240,137 +254,139 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    background: rgba(255, 255, 255, .12);
+    background: rgba(255, 255, 255, .05);
     border-radius: 7px;
     padding: 7px 9px;
   }
-  .bind b { font-size: 12px; }
+  .bind b { font-size: 12px; font-weight: 400; }
   .bind .keycap {
     min-width: 46px;
     text-align: center;
-    background: #e8c55a;
-    color: #33285a;
+    background: #73db80;
+    color: #1b1b1b;
     border-radius: 6px;
     padding: 5px 8px;
-    font-weight: 800;
+    font-weight: 700;
     font-size: 13px;
   }
-  .bind .keycap.on { background: #fde488; }
-  .bind.off { background: rgba(255, 255, 255, .05); }
+  .bind .keycap.on { background: #9feda8; }
+  .bind.off { background: rgba(255, 255, 255, .02); }
   .bind.off b { color: rgba(255, 255, 255, .45); }
-  .bind.off .keycap { background: rgba(232, 197, 90, .35); }
+  .bind.off .keycap { background: rgba(115, 219, 128, .3); }
 
   .foot {
     margin-top: 10px;
     text-align: center;
-    border-radius: 8px;
+    border-radius: 9px;
     padding: 9px;
-    background: #c9c7d4;
-    color: #29233f;
-    font-weight: 800;
+    background: #bfbfbf;
+    color: #1b1b1b;
+    font-weight: 700;
     font-size: 12px;
   }
-  .foot.on { background: #73c27f; }
+  .foot.on { background: #73db80; }
 
   /* ---- the bet info dialog, same idea ---- */
 
   .win.info { width: 268px; }
   .card {
-    background: rgba(255, 255, 255, .1);
-    border-radius: 10px;
+    background: rgba(255, 255, 255, .04);
+    border-radius: 12px;
     padding: 12px;
     display: grid;
     gap: 9px;
   }
   .banner {
-    background: #ff6363;
-    border-radius: 8px;
+    background: #b8261a;
+    border-radius: 9px;
     padding: 8px 6px;
     text-align: center;
   }
-  .banner .k { font-weight: 800; font-size: 14px; }
-  .banner .v { font-weight: 800; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 7px; }
-  .rule { height: 1px; background: rgba(255, 255, 255, .3); }
+  .banner .k { font-weight: 400; font-size: 12.5px; }
+  .banner .v { font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 7px; }
+  .rule { height: 1px; background: rgba(255, 255, 255, .1); }
   .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; }
-  .duo .k { font-weight: 700; font-size: 11.5px; opacity: .95; }
-  .duo .v { font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 3px; }
+  .duo .k { font-weight: 400; font-size: 11px; color: rgba(255, 255, 255, .6); }
+  .duo .v { font-weight: 400; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 3px; }
   .duo .hash { font-weight: 400; font-size: 10px; word-break: break-all; line-height: 1.35; }
-  .coin { width: 18px; height: 18px; border-radius: 999px; background: #fbcc14; color: #2e2a5c; font-size: 10px; font-weight: 800; display: grid; place-items: center; flex: none; }
+  .coin { width: 18px; height: 18px; border-radius: 999px; background: #fab833; color: #1b1b1b; font-size: 10px; font-weight: 800; display: grid; place-items: center; flex: none; }
   .coin.big { width: 26px; height: 26px; font-size: 13px; }
-  .who { width: 22px; height: 22px; border-radius: 999px; background: #2e2a5c; font-size: 10px; display: grid; place-items: center; flex: none; }
-  .tick { width: 18px; height: 18px; border-radius: 999px; background: #4ade80; color: #fff; font-size: 11px; display: grid; place-items: center; flex: none; }
-  .shot { width: 56px; height: 42px; border-radius: 6px; background: #2e2a5c; display: grid; place-items: center; font-size: 10px; flex: none; }
+  .who { width: 22px; height: 22px; border-radius: 999px; background: rgba(255, 255, 255, .14); font-size: 10px; display: grid; place-items: center; flex: none; }
+  .tick { width: 18px; height: 18px; border-radius: 999px; background: #73db80; color: #1b1b1b; font-size: 11px; display: grid; place-items: center; flex: none; }
+  .shot { width: 56px; height: 42px; border-radius: 7px; background: rgba(255, 255, 255, .08); display: grid; place-items: center; font-size: 10px; flex: none; }
   .beside { display: flex; align-items: center; gap: 8px; text-align: left; }
-  .own { border: 1px dashed rgba(251, 204, 20, .8); border-radius: 6px; padding: 6px; text-align: center; font-size: 10.5px; color: #fbcc14; }
+  .own { border: 1px dashed rgba(255, 255, 255, .3); border-radius: 6px; padding: 6px; text-align: center; font-size: 10.5px; color: rgba(255, 255, 255, .6); }
   .bar { display: flex; justify-content: space-between; gap: 8px; margin-top: 9px; }
-  .btn { background: #90e39a; color: #1c1a4a; border-radius: 8px; padding: 6px 14px; font-weight: 800; font-size: 12px; }
+  .btn { background: rgba(255, 255, 255, .1); color: #fff; border-radius: 9px; padding: 6px 14px; font-weight: 400; font-size: 12px; }
   .dots { display: flex; gap: 8px; justify-content: center; padding: 22px 0; }
-  .dots i { width: 9px; height: 9px; border-radius: 999px; background: rgba(255, 255, 255, .85); }
+  .dots i { width: 9px; height: 9px; border-radius: 999px; background: rgba(255, 255, 255, .7); }
   .dots i:nth-child(2) { transform: scale(1.35); }
 
   /* ---- the fairness dialog, same idea ---- */
 
   .win.fair { width: 268px; }
-  .fair .lab { font-weight: 700; font-size: 12px; margin-bottom: 5px; }
+  .fair .lab { font-weight: 400; font-size: 11.5px; color: rgba(255, 255, 255, .6); margin-bottom: 5px; }
   .seedrow { display: flex; align-items: center; gap: 7px; }
   .padlock { flex: none; font-size: 14px; line-height: 1; }
   .field {
     flex: 1;
     min-width: 0;
-    background: rgba(255, 255, 255, .18);
-    border-radius: 8px;
+    background: rgba(255, 255, 255, .06);
+    border-radius: 9px;
     padding: 8px 10px;
     font-size: 12px;
     color: rgba(255, 255, 255, .92);
   }
-  .sq { width: 32px; height: 32px; border-radius: 8px; background: #90e39a; color: #1c1a4a; display: grid; place-items: center; font-size: 15px; font-weight: 800; flex: none; }
+  .sq { width: 32px; height: 32px; border-radius: 9px; background: rgba(255, 255, 255, .1); color: #fff; display: grid; place-items: center; font-size: 15px; font-weight: 800; flex: none; }
   .roll {
     margin-top: 10px;
-    background: #90e39a;
-    color: #1c1a4a;
-    border-radius: 10px;
+    background: rgba(255, 255, 255, .1);
+    color: #fff;
+    border-radius: 9px;
     padding: 8px;
-    font-weight: 800;
+    font-weight: 400;
     font-size: 13px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 7px;
   }
-  .roll.off { background: rgba(144, 227, 154, .35); }
+  .roll.off { background: rgba(255, 255, 255, .04); }
   .pair { margin-top: 13px; }
-  .pair .h { font-weight: 800; font-size: 14.5px; margin-bottom: 5px; }
-  .pair .k { font-weight: 700; font-size: 11.5px; }
-  .pair .b { font-weight: 700; font-size: 10.5px; word-break: break-all; margin-bottom: 6px; line-height: 1.35; }
+  .pair .h { font-weight: 400; font-size: 14px; margin-bottom: 5px; }
+  .pair .k { font-weight: 400; font-size: 11px; color: rgba(255, 255, 255, .6); }
+  .pair .b { font-weight: 400; font-size: 10.5px; word-break: break-all; margin-bottom: 6px; line-height: 1.35; }
 
   /* ---- the sound dialog, same idea ---- */
 
   .win.snd { width: 268px; }
-  .sndcard { background: rgba(255, 255, 255, .12); border-radius: 10px; padding: 11px; margin-bottom: 10px; }
+  .sndcard { border: 1.5px solid rgba(255, 255, 255, .16); border-radius: 12px; padding: 11px; margin-bottom: 10px; }
   .sndcard:last-child { margin-bottom: 0; }
-  .sndcard.off { background: rgba(255, 255, 255, .05); }
   .sndhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .sndhead b { font-size: 13.5px; }
+  .sndhead b { font-size: 13.5px; font-weight: 400; }
   .sndcard.off .sndhead b { color: rgba(255, 255, 255, .45); }
-  .sw { position: relative; flex: none; width: 52px; height: 27px; border-radius: 999px; background: #73c27f; }
-  .sndcard.off .sw { background: #c9c7d4; }
-  .sw i { position: absolute; top: 3px; left: 28px; width: 21px; height: 21px; border-radius: 999px; background: #fff; }
-  .sndcard.off .sw i { left: 3px; }
+  .sw { position: relative; flex: none; width: 46px; height: 24px; border-radius: 999px; background: #73db80; }
+  .sndcard.off .sw { background: rgba(255, 255, 255, .16); }
+  .sw i { position: absolute; top: 2px; left: 24px; width: 20px; height: 20px; border-radius: 999px; background: #fff; }
+  .sndcard.off .sw i { left: 2px; }
+  /* the wave a switch sends as it flips on: green rings off the pill, held inside the card's padding */
+  .sw b { position: absolute; inset: -4px; border: 2px solid rgba(115, 219, 128, .55); border-radius: 999px; background: rgba(115, 219, 128, .06); }
+  .sw b + b { inset: -8px; border-width: 1px; opacity: .45; background: transparent; }
   .sndbar { display: flex; align-items: center; gap: 10px; margin-top: 9px; }
-  .trk { position: relative; flex: 1; height: 6px; border-radius: 999px; background: rgba(255, 255, 255, .18); }
-  .trk u { position: absolute; left: 0; top: 0; height: 6px; border-radius: 999px; background: #fbcc14; }
-  .sndcard.off .trk u { background: rgba(251, 204, 20, .3); }
-  .trk i { position: absolute; top: -6px; width: 18px; height: 18px; margin-left: -9px; border-radius: 999px; background: #fff; }
+  .trk { position: relative; flex: 1; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, .12); }
+  .trk u { position: absolute; left: 0; top: 0; height: 4px; border-radius: 999px; background: #73db80; }
+  .sndcard.off .trk u { background: rgba(115, 219, 128, .25); }
+  .trk i { position: absolute; top: -6px; width: 16px; height: 16px; margin-left: -8px; border-radius: 999px; background: #fff; }
   .sndcard.off .trk i { background: rgba(255, 255, 255, .45); }
-  .pct { flex: none; width: 42px; text-align: right; font-size: 12px; color: rgba(255, 255, 255, .75); }
-  .sndcard.off .pct { color: rgba(255, 255, 255, .35); }
+  .pct { flex: none; width: 42px; text-align: right; font-size: 12px; color: rgba(255, 255, 255, .6); }
+  .sndcard.off .pct { color: rgba(255, 255, 255, .3); }
 
-  /* ---- the bet info sheet: the same bet, charcoal and outlined ---- */
+  /* ---- the bet info sheet: the same bet, outlined, on the same charcoal frame with no caption ---- */
 
-  .win.sheet { --fill: #1b1b1b; --edge: #262626; width: 300px; border-width: 1px; border-radius: 18px; font-size: 11.5px; }
+  .win.sheet { width: 300px; font-size: 11.5px; }
   .win.sheet .body { padding: 12px 14px 14px; max-height: 330px; overflow: hidden; position: relative; }
-  .win.sheet .body::after { content: ""; position: absolute; right: 4px; top: 54px; width: 4px; height: 90px; border-radius: 999px; background: rgba(255, 255, 255, .45); }
-  .win.sheet .x { top: 10px; right: 10px; width: 26px; height: 26px; font-size: 14px; color: #111; }
+  .win.sheet .body::after { content: ""; position: absolute; right: 4px; top: 54px; width: 4px; height: 90px; border-radius: 999px; background: rgba(255, 255, 255, .3); }
+  .win.sheet .x { top: 10px; right: 10px; width: 26px; height: 26px; font-size: 12px; }
   .shead { display: grid; grid-template-columns: 26px 1fr 26px; align-items: center; margin-bottom: 8px; }
   .toggle { width: 22px; height: 22px; border-radius: 999px; background: rgba(255, 255, 255, .08); display: grid; place-items: center; }
   .toggle i { width: 12px; height: 12px; border-radius: 999px; background: #fab833; border: 1.5px solid #cc801a; }
@@ -401,6 +417,8 @@
   <a href="#look">What it looks like</a>
   <a href="#window">The window</a>
   <a href="#style">Styling</a>
+  <a class="sub" href="#born">The look it is born with</a>
+  <a class="sub" href="#restyle">Restyling an existing window</a>
   <a href="#code">From code</a>
   <a class="sub" href="#steps">Every step</a>
   <a href="#size">How tall it may be</a>
@@ -450,7 +468,11 @@
   <p class="lede">The window owns where things go, not what they look like: Panel, Caption, Title, Close,
   Scrollbar and the sheet behind it are ordinary RoundedBox and TextMeshPro objects — select one and style it
   as you would any other. Nothing here paints over it afterwards.</p>
-  <p class="stamp">Describes package 1.0.89. Update this file with the code — and README.md beside it.</p>
+  <p class="lede">Every window is born in the same flat charcoal the bet info sheet was drawn in: a near-black
+  panel with a hairline round it, white text, quiet captions, faint white washes for cards and buttons, and one
+  accent — green. A window made before that was the look keeps the look it was made with until it is
+  <a href="#restyle">restyled</a>.</p>
+  <p class="stamp">Describes package 1.0.94. Update this file with the code — and README.md beside it.</p>
   <p><strong>GameObject → UI (Canvas) → FlappyBet → Window</strong>, which makes a canvas if the scene has
   none, drops the window under whatever was right-clicked, and builds the whole thing on the spot so it
   arrives looking like a window rather than as an empty rect waiting for play mode. <strong>Statistics
@@ -610,7 +632,7 @@ fairness.Show();</code></pre>
     </div>
     <div class="caption">Plain</div>
     <p class="why">A panel, a caption, a close button, and a drag by that caption. Nothing is said about how
-    it looks, so it arrives in the plain dark dialog every new window starts as.</p>
+    it looks, so it arrives in the charcoal every new window starts as.</p>
     <pre><code>UiWindowBuilder.Create(canvas, "Plain")
     .Size(340f, 220f)
     .Title("Draggable")
@@ -632,7 +654,6 @@ fairness.Show();</code></pre>
     <p class="why">The backdrop is what makes it modal — a sheet across the parent that swallows every
     click that misses, and takes the window down when clicked.</p>
     <pre><code>UiWindowBuilder.Create(canvas, "Message")
-    .Panel(box =&gt; box.FillColor = navy)
     .Backdrop(new Color(0f, 0f, 0f, .65f))
     .Transition(EWindowTransition.SlideUp, .34f, .24f)
     .Fixed()
@@ -649,13 +670,14 @@ fairness.Show();</code></pre>
   <tr><td>Title</td><td>The caption text. Also <code>Title</code> from code, live. What the label looks like is the label's own — select <strong>Title</strong> under the caption.</td></tr>
   <tr><td>Show Caption</td><td>Off drops the whole header and starts the content at the top of the panel. The close button stays.</td></tr>
   <tr><td>Show Close Button</td><td></td></tr>
+  <tr><td>Close Wave</td><td>A wave round the close button as it is pressed — a <a href="../Ripple/README.html">Ripple</a> on the <code>Close</code> object. On by default, and put on a window built before there was such a thing the next time it is built or loaded. Its colour, reach and timing are the ripple's own: select <code>Close</code> to change them.</td></tr>
   <tr><td>Start Closed</td><td>Hide at Awake and wait for <code>Open</code>. Off leaves the window exactly as the scene saved it.</td></tr>
   <tr><td>Destroy On Close</td><td>For a window built for one message — it takes itself down with it.</td></tr>
   <tr><td>Caption Height</td><td>The whole header block: the drag strip, the close button and the title. Content starts under it.</td></tr>
   <tr><td>Content Padding Left / Top / Right / Bottom</td><td>Inset of the content area. Top is measured from the bottom of the caption, not the top of the panel. Four floats rather than a <code>RectOffset</code>: that type is a handle onto a native object and cannot be built in a field initialiser.</td></tr>
   <tr><td>Fit Content Height</td><td>Ask the content how tall it wants to be on every open, and be that tall. Needs something under <code>Content</code> that reports a height — see <a href="#size">How tall it may be</a>.</td></tr>
-  <tr><td>Max Height</td><td>The tallest the window may be, in its own units. Zero means the parent it is drawn in — the screen, for a full-screen canvas — less Screen Margin.</td></tr>
-  <tr><td>Screen Margin</td><td>Room left above and below a window that has grown as far as it may.</td></tr>
+  <tr><td>Max Height</td><td>The tallest the window may be, in its own units, even with more room than that. Zero means no ceiling of its own — as tall as the parent it is drawn in (the screen, for a full-screen canvas) less Screen Margin, which holds whatever Max Height says.</td></tr>
+  <tr><td>Screen Margin</td><td>Room left above and below a window that has grown as far as the screen lets it.</td></tr>
   <tr><td>Scroll</td><td><code>Never</code>, <code>WhenTooTall</code> (the default) or <code>Always</code>.</td></tr>
   <tr><td>Show Scrollbar</td><td>The bar down the right of the body. Off leaves the wheel and the drag, and no hint that there is more below.</td></tr>
   <tr><td>Scrollbar Width / Inset</td><td>Inset is measured from the right edge of the body inwards; the content is moved over by the width and the inset together, so the two never overlap.</td></tr>
@@ -689,9 +711,9 @@ label:</p>
 <table>
   <tr><th>Part</th><th>Where</th><th>What it is</th></tr>
   <tr><td>Panel</td><td>the window object itself</td><td><code>RoundedBox</code> — fill, gradient, border, corners, edge softness.</td></tr>
-  <tr><td>Caption</td><td>child</td><td><code>RoundedBox</code>. Its fill is usually a wash <em>over</em> the panel's, so alpha at nothing leaves the header the colour of the body.</td></tr>
+  <tr><td>Caption</td><td>child</td><td><code>RoundedBox</code>. Clear by default, with a hairline along its bottom edge, so the header is the panel's own colour set off by a rule. A fill is drawn <em>over</em> the panel's, so a wash of alpha shades the header rather than replacing it.</td></tr>
   <tr><td>Title</td><td>under Caption</td><td><code>TextMeshProUGUI</code> — font, size, colour, style, alignment, and where in the caption it sits.</td></tr>
-  <tr><td>Close</td><td>child, ignored by the grid</td><td><code>RoundedBox</code> — move it, resize it, round it. <code>Close/Cross/Bar A</code> and <code>Bar B</code> are the two rotated boxes the cross is drawn from; drop an <code>Image</code> with a sprite in the button and turn the cross off instead if you would rather.</td></tr>
+  <tr><td>Close</td><td>child, ignored by the grid</td><td><code>RoundedBox</code> — move it, resize it, round it. <code>Close/Cross/Bar A</code> and <code>Bar B</code> are the two rotated boxes the cross is drawn from; drop an <code>Image</code> with a sprite in the button and turn the cross off instead if you would rather. The <code>Ui Ripple</code> on it is the press wave.</td></tr>
   <tr><td>Scrollbar</td><td>under Viewport</td><td><code>RoundedBox</code> for the track, <code>Handle</code> under it. The window sets the <strong>width</strong> and where it sits; both colours are its own.</td></tr>
   <tr><td>Window Backdrop</td><td>beside the window, in its parent</td><td><code>Image</code>. Only its colour — the window fades it through a <code>CanvasGroup</code>, so opening and closing never touch it.</td></tr>
 </table>
@@ -714,10 +736,51 @@ window.TitleText.color = Color.white;</code></pre>
   <code>Awake</code>, on every <code>Open</code>, and on any inspector change.</p>
 </div>
 
-<p><strong>A window arrives styled once.</strong> Each part is given a plain dark look at the moment it is
+<h3 id="born">The look it is born with</h3>
+
+<p><strong>A window arrives styled once.</strong> Each part is given its look at the moment it is
 <em>made</em>, so a window created from the menu is a dialog rather than a white square. That is
 <code>UiWindowSeed</code>, it happens once per part, and it never runs over a part that already exists — a
 hand-styled window stays as it was, through <code>Rebuild()</code> and through every reload.</p>
+
+<table>
+  <tr><th>Part</th><th>Born as</th></tr>
+  <tr><td>Panel</td><td><code>#1B1B1B</code>, corner radius 18, a 1 px border of white at 6%</td></tr>
+  <tr><td>Caption</td><td>Clear, with a 1 px rule of white at 8% along its bottom</td></tr>
+  <tr><td>Title</td><td>26, bold, white</td></tr>
+  <tr><td>Close</td><td>A disc of white at 8%, with a cross of two 3 px bars in white at 85%, and a <a href="../Ripple/README.html">Ripple</a></td></tr>
+  <tr><td>Scrollbar</td><td>Track white at 6%, handle white at 30%</td></tr>
+  <tr><td>Backdrop</td><td>Black at 60%</td></tr>
+</table>
+
+<p>The windows built on it take the same palette for what they draw inside, each from its own
+<strong>Style</strong>: values in white, captions smaller and at 60% white, headings and values in a normal weight
+rather than bold, cards and rows a faint wash of white, buttons a 10% wash with white text. <strong>One accent,
+green</strong>, for whatever is on or good — a switch that is on, a bound key, a figure above zero, a round that
+paid — with red for a figure below zero, and gold for a count and for the player's own row.</p>
+
+<h3 id="restyle">Restyling a window that already exists</h3>
+
+<p>A window is styled only when its parts are made, and <strong>its style is saved with the scene</strong>. So
+changing the package's defaults never repaints a window that is already in a scene: one made before the charcoal
+look stays in the look it was made with. Bringing it over is a deliberate step:</p>
+
+<p><strong>GameObject → UI (Canvas) → FlappyBet → Restyle Windows</strong> repaints every window under the
+selection — or every window in the open scenes, when nothing is selected — as one undo. From code it is
+<code>UiWindowTheme</code>:</p>
+
+<pre><code>UiWindowTheme.Charcoal(window);          // the frame and what is drawn inside it
+UiWindowTheme.Charcoal(window, false);   // the frame alone</code></pre>
+
+<table>
+  <tr><th></th><th>Reset</th><th>Kept</th></tr>
+  <tr><td><strong>The frame</strong></td><td>The colours of the panel, caption, title, close button and its cross, and the scrollbar; the panel's corner and border; the title's size and weight. <strong>Close Wave</strong> is switched on.</td><td>Where everything is — a close button a game has moved stays where it was put, and the caption keeps its height — and the backdrop's colour.</td></tr>
+  <tr><td><strong>The contents</strong></td><td>Each window component's <strong>Style</strong> — every colour, every text weight (<code>FontStyles</code>), and every number or size whose name ends in <code>Size</code> or <code>Radius</code> — back to the package's default.</td><td>Fonts, sprites and icons, whole numbers, switches and strings, and every other number: heights, widths, gaps, insets, thicknesses and timings. Number formats, which blocks are showing, an outcome strip or a list a game has made taller all survive — and so a restyled window can still differ from a new one in those.</td></tr>
+</table>
+
+<p>Anything that is not a window's own style — a label a game parented into <code>Content</code>, an outcome view —
+is not touched. From the menu, a window restyled and then not liked is one undo away; from code, the undo is the
+caller's to record.</p>
 
 <h2 id="code">From code</h2>
 
@@ -845,8 +908,9 @@ two windows in this folder do: <code>BetInfoWindow</code> lays its card out with
   never shifts.</li>
 </ul>
 
-<p>The limit is <strong>Max Height</strong>, or the parent's height less <strong>Screen Margin</strong> at both
-ends when that is zero. It is measured in the window's own units: a window at half scale is allowed twice as much
+<p>The limit is the parent's height less <strong>Screen Margin</strong> at both ends, and <strong>Max
+Height</strong> — when it is not zero — only ever lowers it. So a window never hangs off a screen shorter than its
+Max Height: it scrolls there instead. It is measured in the window's own units: a window at half scale is allowed twice as much
 of itself, the same reasoning the drag clamp uses. A phone that turns or a player window that is dragged wider
 changes that limit without anything asking, so it is checked once a frame per open window — a float compare — and
 the clamp is worked out again when it moves.</p>
@@ -874,7 +938,7 @@ cases, which is why the gap under the last row is the same whether the body scro
 
 <pre><code>// A rules dialog that is as tall as its text and no taller than the screen
 window.FitContentHeight = true;
-window.MaxHeight = 0f;        // the parent, less Screen Margin
+window.MaxHeight = 0f;        // no ceiling: the parent, less Screen Margin
 window.Scroll = EWindowScroll.WhenTooTall;
 window.Open();                // fitted, clamped and scrolling on the way in</code></pre>
 
@@ -1118,12 +1182,14 @@ the id, then a heading and an outlined box each for the totals, the three seeds 
 
 <p>The sheet is as tall as what is on it, and <strong>past the window's Max Height the window scrolls it</strong>
 — the window's own scrolling, described <a href="#scrolling">above</a>, so the bar, the wheel and the drag all
-work the way they do everywhere else. <code>Create</code> holds Max Height at 720, the height the design is
-drawn at.</p>
+work the way they do everywhere else. Max Height is left at zero, so the sheet <strong>grows with the bet until
+the screen runs out</strong> and only scrolls after that; set it to hold the dialog shorter on a tall screen.</p>
 
-<p><code>Create</code> and the menu also give the window <strong>no caption and a charcoal panel</strong>, once,
-as it is made. That is the panel's own <code>RoundedBox</code> like any other, so restyle it there;
-<code>BetInfoSheetWindow.Charcoal(panel)</code> paints the same look onto a window made some other way.</p>
+<p><code>Create</code> and the menu also give the window <strong>no caption</strong>, once, as it is made, on the
+charcoal panel every window is now born with — the look the rest of them were brought over to. That is the panel's
+own <code>RoundedBox</code> like any other, so restyle it there; <code>BetInfoSheetWindow.Charcoal(panel)</code>
+still paints the panel alone onto a window made some other way, and <a href="#restyle">Restyle Windows</a> does
+the whole window.</p>
 
 <table>
   <tr><th>Call</th><th>Does</th></tr>
@@ -1143,6 +1209,7 @@ as it is made. That is the panel's own <code>RoundedBox</code> like any other, s
   <tr><td>Show Currency Toggle / Outcome / Id / Statistics / Server Seed / Client Seed / Server Hash / Bets / Verify</td><td>One per block of the sheet. A block that is off takes its row and its gap away with it.</td></tr>
   <tr><td>Usd View</td><td>Start converted to dollars.</td></tr>
   <tr><td>Follow State · Request On Show · Match Requested Id · Load Images · Fit Window Height</td><td>As the bet info window.</td></tr>
+  <tr><td>Copyable Values</td><td>The round id, the three totals and the three seeds can be selected and copied — drag, double-click, Ctrl+C, or a long press on a phone — and never edited; the id and the seeds also get a copy icon at their right. The icon's size, gap and colours are the style's <strong>Copy buttons</strong>; a size of zero leaves the icons out. See <a href="../SelectableText/README.html">Selectable Text</a>.</td></tr>
 </table>
 
 <p><code>OnTransaction</code>, <code>OnRequested</code>, <code>OnVerify</code> and
@@ -1540,7 +1607,7 @@ and no way for the dialog and the game to disagree about what <code>D</code> doe
 <ul>
   <li><strong>The drawn keyboard.</strong> Every cap in <code>HotkeyCaps.Rows</code>, with the bound ones in the
   accent colour and whichever is held down lit. It is what turns a list of key names into something a player
-  reads at a glance &mdash; <em>the gold ones do something, and the one under my finger is the one I pressed</em>.
+  reads at a glance &mdash; <em>the green ones do something, and the one under my finger is the one I pressed</em>.
   Built once and repainted rather than rebuilt: sixty caps is sixty boxes and sixty labels, and a key going down
   happens in the middle of a round. It catches no clicks &mdash; it is a picture of a keyboard, not a
   keyboard.</li>
@@ -1600,16 +1667,17 @@ UI &rarr; Sound Window on a <code>UiWindow</code>, or the whole thing in one lin
 sound.Window.Open();</code></pre>
 
 <div class="specimen">
-  <p class="why">A card per channel, a switch on each and a volume under it. Effects are on at 70%; music is
-  switched off, so its card, its slider and its number all fade &mdash; a slider that still looked live under a
-  muted channel would read as a control that does nothing.</p>
+  <p class="why">A card per channel, a switch on each and a volume under it. Effects have just been switched on
+  at 70%, and the switch is still sending its wave out; music is switched off, so its caption, its slider and its
+  number all fade &mdash; a slider that still looked live under a muted channel would read as a control that does
+  nothing.</p>
   <div class="stage wide">
     <div class="win snd">
       <div class="x">&#10005;</div>
       <div class="cap">Sound</div>
       <div class="body">
         <div class="sndcard">
-          <div class="sndhead"><b>Sound effects</b><span class="sw"><i></i></span></div>
+          <div class="sndhead"><b>Sound effects</b><span class="sw"><b></b><b></b><i></i></span></div>
           <div class="sndbar">
             <span class="trk"><u style="width: 70%"></u><i style="left: 70%"></i></span>
             <span class="pct">70%</span>
@@ -1646,6 +1714,37 @@ back as <code>ON_SETTING</code> and moves the controls here.</p>
   <code>Send Delay</code> and flushed when the window closes. Sixty messages a second up a socket for one finger
   movement is what that delay exists to avoid.</p>
 </div>
+
+<p><strong>The switch slides.</strong> Flipped, the knob crosses the pill over <code>Switch Duration</code> while
+the pill's colour fades from grey to green or back, and the knob is drawn out wider half way across &mdash;
+something being pushed rather than a counter being moved &mdash; and is round again by the time it lands. It slides
+whenever the channel changes while the window is open, a setting arriving from another tab included.
+<code>Refresh()</code> &mdash; which is what opening the window runs &mdash; puts it where it belongs outright
+instead, so a window opening on a muted channel shows it muted rather than animating the knob across on the way
+in.</p>
+
+<p><strong>And it waves</strong> &mdash; a <a href="../Ripple/README.html">Ripple</a> round the pill as it flips,
+green going on and white-grey going off. It is played from <code>Toggle(channel)</code> rather than from the press,
+so a key bound to <code>Toggle</code> shows it too; a channel changed from somewhere else slides the switch without
+one. A slider waves round its handle the moment it is taken hold of. The switch's wave is held to the card's
+padding, whatever <code>Wave Spread</code> says: the body clips at its padding, and a wave that ran further would be
+cut off square there.</p>
+
+<table>
+  <tr><th>Style</th><th>Default</th><th></th></tr>
+  <tr><td>Card Fill / Card Off Fill</td><td>clear</td><td>Inside the rule &mdash; each card is an outline on the panel, the way the bet info sheet's boxes are.</td></tr>
+  <tr><td>Card Border / Card Border Size</td><td>white at 16%, 2</td><td>The rule round each card. Nought leaves the fill alone.</td></tr>
+  <tr><td>Card Corner Radius</td><td>16</td><td></td></tr>
+  <tr><td>Switch Size</td><td>64 &times; 34</td><td>The pill. Its corner radius is half its height.</td></tr>
+  <tr><td>Switch On Fill / Switch Off Fill</td><td>green / white at 16%</td><td>Grey rather than red for off &mdash; off is a setting the player chose, not a fault.</td></tr>
+  <tr><td>Knob Inset</td><td>3</td><td></td></tr>
+  <tr><td>Switch Duration</td><td>0.22</td><td>Seconds the knob takes to cross. Nought jumps.</td></tr>
+  <tr><td>Knob Stretch</td><td>0.3</td><td>How much wider the knob is drawn half way across, as a share of its size. Nought keeps it round all the way.</td></tr>
+  <tr><td>Waves</td><td>on</td><td>The ripples round the switch and the handle.</td></tr>
+  <tr><td>Wave Spread / Wave Duration</td><td>12 / 0.6</td><td>How far past the edge a wave runs, and for how long.</td></tr>
+  <tr><td>Track Height / Handle Size</td><td>6 / 22</td><td></td></tr>
+  <tr><td>Fill Color / Fill Off Color</td><td>green / green at 25%</td><td>The part of the track left of the handle &mdash; how loud the channel is set to.</td></tr>
+</table>
 
 <table>
   <tr><th>Call</th><th>Does</th></tr>
@@ -1713,8 +1812,9 @@ yet.</p>
 <ul>
   <li><strong>The close cross, the reset arrow, the tick, the clock, the padlock and the circular arrows are
   drawn, not fetched.</strong> Rotated boxes, a ring with a notch in it, and two bars between three points,
-  which costs no atlas entry and stays sharp at any size. The reset notch is <em>painted in the button's own
-  colour</em>, not cut, so it only disappears against a flat button — give the style a <code>ResetIcon</code>
+  which costs no atlas entry and stays sharp at any size. The reset notch is <em>painted</em>, not cut — the
+  panel's colour with the button's own fill laid over it, so it matches a translucent button too — and it
+  only disappears against a flat button drawn straight on the panel — give the style a <code>ResetIcon</code>
   sprite if the button is ever a gradient, and note that the fairness arrows follow their button being dimmed
   for exactly that reason. <code>TickIcon</code>, <code>ClockIcon</code>, <code>LockIcon</code> and
   <code>ArrowIcon</code> take a sprite instead. The padlock is the same trick once more: a ring with the body
@@ -1796,6 +1896,7 @@ yet.</p>
   <tr><td><code>UiWindow.cs</code></td><td>The window: parts, layout, drag, transition.</td></tr>
   <tr><td><code>UiWindowBuilder.cs</code></td><td>The fluent API.</td></tr>
   <tr><td><code>UiWindowSeed.cs</code></td><td>The look each part is given when it is made, and never again. Internal.</td></tr>
+  <tr><td><code>UiWindowTheme.cs</code></td><td><code>Charcoal</code>: repaints a window that already exists in that look. What Restyle Windows runs.</td></tr>
   <tr><td><code>UiWindowDragHandle.cs</code></td><td>The grab. Usable on its own, for a custom header.</td></tr>
   <tr><td><code>UiWindowParts.cs</code></td><td>Making and finding children, and naming them for a grid. Internal.</td></tr>
   <tr><td><code>EWindowTransition.cs</code>, <code>EWindowScroll.cs</code></td><td></td></tr>
@@ -1819,13 +1920,14 @@ yet.</p>
   <tr><td><code>Sound/SoundWindow.cs</code></td><td>The sound dialog: two cards, two switches, two volumes.</td></tr>
   <tr><td><code>Sound/SoundWindowStyle.cs</code></td><td>What it looks like.</td></tr>
   <tr><td><code><a href="../../Audio/README.html">../../Audio/</a></code></td><td><code>Sounds</code>, which that dialog reads and the game plays through.</td></tr>
-  <tr><td><code>Editor/Window/UiWindowMenu.cs</code></td><td>The eight GameObject → UI (Canvas) → FlappyBet entries.</td></tr>
+  <tr><td><code>Editor/Window/UiWindowMenu.cs</code></td><td>The eight GameObject → UI (Canvas) → FlappyBet entries, and Restyle Windows beside them.</td></tr>
   <tr><td><code>../../Translations/</code></td><td><code>Translator.Label</code>, which every caption above is written through.</td></tr>
   <tr><td><code>Editor/FlappyBetMenu.cs</code></td><td>The one group they all go in, path and priority. Internal.</td></tr>
   <tr><td><code>../RoundedBox/</code></td><td>Every panel here is one.</td></tr>
   <tr><td><code>../Grid/</code></td><td>What lays the bet info card, the game history list and the fairness rows out.</td></tr>
   <tr><td><code>../History/</code></td><td>The strip that opens the bet info and game history dialogs.</td></tr>
   <tr><td><code>../Cursor/</code></td><td>The hand over every button in these windows — and the arrow hint on the backdrop, which is a Button too.</td></tr>
+  <tr><td><code><a href="../Ripple/README.html">../Ripple/</a></code></td><td>The wave round the close button, and round the sound window's switches and handles.</td></tr>
 </table>
 
 </main>

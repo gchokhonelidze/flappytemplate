@@ -485,9 +485,9 @@ namespace FlappyTemplate
             resetIcon.gameObject.SetActive(!useSprite);
             UiWindowParts.Pin(resetIcon, new Vector2(0.5f, 0.5f), new Vector2(span, span), Vector2.zero);
 
-            // A circular arrow out of three boxes: a ring, a notch cut out of it in the button's own colour,
+            // A circular arrow out of three boxes: a ring, a notch painted out of it to look like the button,
             // and a diamond for the head. Cheaper than an atlas entry and sharp at any size - the one thing
-            // to know is that the notch is painted, not cut, so it only disappears against a flat button.
+            // to know is that the notch is painted, not cut, so it only disappears against a flat button on the panel.
             float thickness = Mathf.Max(0.5f, style.ResetIconThickness);
             float radius = (span - thickness) * 0.5f;
 
@@ -502,8 +502,7 @@ namespace FlappyTemplate
 
             var notch = new Vector2(Mathf.Cos(55f * Mathf.Deg2Rad), Mathf.Sin(55f * Mathf.Deg2Rad)) * radius;
             UiWindowParts.Pin(resetGap.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(thickness * 2.6f, thickness * 2.6f), notch);
-            resetGap.FillGradientMode = EFillGradient.None;
-            resetGap.FillColor = style.ResetFill;
+            UiWindowParts.Notch(resetGap, style.ResetFill, Window.Panel.FillColor);
             resetGap.SetBorderSize(0f);
             resetGap.SetCornerRadius(0f);
             resetGap.raycastTarget = false;

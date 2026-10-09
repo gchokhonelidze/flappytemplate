@@ -197,6 +197,27 @@ namespace FlappyTemplate
             element.preferredHeight = size.y;
         }
 
+        /// <summary>Paints a patch that hides whatever stroke is under it and shows as the button it sits on: the
+        /// panel's colour, solid, with the button's own fill laid over it as a child. For a mark painted out of a
+        /// button rather than cut - an arrow's notch.</summary>
+        // Two layers rather than one mixed colour, because the mix the screen does depends on the project's
+        // colour space, and a translucent button painted over in its own colour alone shows the stroke straight
+        // through. The same two layers the button itself is - fill over panel - come out the same whatever it is.
+        public static void Notch(RoundedBox gap, Color fill, Color under)
+        {
+            under.a = 1f;
+            gap.FillGradientMode = EFillGradient.None;
+            gap.FillColor = under;
+
+            var wash = Box(gap.transform, "Wash");
+            Stretch(wash.rectTransform, 0f, 0f, 0f, 0f);
+            wash.FillGradientMode = EFillGradient.None;
+            wash.FillColor = fill;
+            wash.SetBorderSize(0f);
+            wash.SetCornerRadius(0f);
+            wash.raycastTarget = false;
+        }
+
         /// <summary>Works in edit mode as well, where Destroy would leave the object behind until play.</summary>
         public static void Discard(Object target)
         {

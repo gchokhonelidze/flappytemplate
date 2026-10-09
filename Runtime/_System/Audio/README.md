@@ -14,7 +14,7 @@ That is the whole of it. There is no manager to put in the scene, no mixer to au
 wire up: the first call makes one hidden object that survives scene changes and holds a small pool of voices,
 and every call after that borrows one. A game that plays nothing never gets one.
 
-*Describes package 1.0.82. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.94. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the dialog and its switches drawn rather than described.*
 
 The one thing worth knowing before anything else: **nothing here asks whether sound is on.** The player's four
@@ -106,9 +106,8 @@ Sounds.WaitForGesture = false;   // start it immediately anyway
 Sounds.Unlock();                 // or: say a gesture has happened, from your own first interaction
 ```
 
-The gesture is spotted through the old Input Manager, the same backend [Hotkeys](../Ui/Hotkeys/) reads. With
-Active Input Handling on **Input System Package (New)** there is nothing to read, so the wait is dropped and a
-warning is logged once — a game on that backend should call `Sounds.Unlock()` from its own first interaction.
+The gesture is spotted through the Input System, the same backend [Hotkeys](../Ui/Hotkeys/) reads: any key
+going down, the left mouse button going down, or a finger on the screen.
 
 **There is no `AudioMixer` anywhere in this component**, and that is deliberate: mixer groups and DSP effects
 are the part of Unity audio that WebGL supports worst. Volume here is a multiplier on an `AudioSource`, which
@@ -143,6 +142,10 @@ plays because it was spelled two ways is otherwise a very quiet bug.
 `Sound Window` is the dialog: one card per channel, a switch on each and a slider under it. It reads and writes
 `Sounds`, which is the same thing the game plays through, so a slider moved there is heard on the next click.
 It is documented with the other dialogs in [Window](../Ui/Window/).
+
+Each card is an outline on the window's charcoal panel, and green is the one colour on it: a channel that is on,
+and how loud it is set. A switch slides across as it is flipped and sends a [wave](../Ui/Ripple/) out round
+itself — green going on, white-grey going off.
 
 **A slider sends once, not per frame.** Dragging one moves the volume immediately — that is the point of a
 volume slider — but the `SETTING` that keeps the choice is held until the drag has been still for `Send Delay`,

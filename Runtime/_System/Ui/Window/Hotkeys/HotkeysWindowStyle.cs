@@ -8,10 +8,9 @@ namespace FlappyTemplate
     // backdrop - is set on those objects themselves; this is the drawn keyboard across the top, the list of
     // bindings under it, and the button along the bottom that switches the whole feature on and off.
     //
-    // The defaults are the violet-and-gold the web front's own hotkeys dialog is drawn in: a pale keyboard so the
-    // caps read as caps, gold for a key that is bound to something, and a lighter violet plate per row. Three
-    // colours carry the whole meaning of the window - plain, bound, and held down - so they are worth keeping
-    // clearly apart if they are changed.
+    // The defaults are the charcoal the bet info sheet is drawn in: a dark keyboard of faint caps, green for a
+    // key that is bound to something, and a wash of white per row. Three colours carry the whole meaning of
+    // the window - plain, bound, and held down - so they are worth keeping clearly apart if they are changed.
     [Serializable]
     public class HotkeysWindowStyle
     {
@@ -22,10 +21,10 @@ namespace FlappyTemplate
 
         [Header("Keyboard")]
         [Tooltip("The sheet the caps are drawn on. Drawn over the panel fill, so an alpha below one is a wash rather than a colour.")]
-        public Color KeyboardFill = Color.white;
+        public Color KeyboardFill = new Color(1f, 1f, 1f, 0.04f);
 
         [Min(0f)]
-        public float KeyboardCornerRadius = 12f;
+        public float KeyboardCornerRadius = 16f;
 
         [Tooltip("Inset of the caps from the edges of that sheet.")]
         [Min(0f)]
@@ -47,25 +46,25 @@ namespace FlappyTemplate
         public float KeyCornerRadius = 5f;
 
         [Tooltip("A key nothing is bound to.")]
-        public Color KeyFill = new Color(1f, 1f, 1f, 1f);
+        public Color KeyFill = new Color(1f, 1f, 1f, 0.08f);
 
         [Tooltip("Outlines the plain caps, so a white key on a white sheet still reads as a key. Bound caps have no border - their colour is what says so.")]
         [Min(0f)]
         public float KeyBorderSize = 1f;
 
-        public Color KeyBorderColor = new Color(0.80f, 0.78f, 0.85f);
+        public Color KeyBorderColor = new Color(1f, 1f, 1f, 0.1f);
 
         [Tooltip("A key that is bound to something. The one colour a player has to learn from this window.")]
-        public Color KeyBoundFill = new Color(0.91f, 0.77f, 0.36f);
+        public Color KeyBoundFill = new Color(0.45f, 0.86f, 0.5f);
 
         [Tooltip("A bound key while it is held down.")]
-        public Color KeyDownFill = new Color(0.99f, 0.89f, 0.53f);
+        public Color KeyDownFill = new Color(0.62f, 0.93f, 0.66f);
 
-        public Color KeyTextColor = new Color(0.29f, 0.25f, 0.40f);
+        public Color KeyTextColor = new Color(1f, 1f, 1f, 0.75f);
 
-        public Color KeyBoundTextColor = new Color(0.20f, 0.15f, 0.32f);
+        public Color KeyBoundTextColor = new Color(0.106f, 0.106f, 0.106f);
 
-        public Color KeyDownTextColor = new Color(0.14f, 0.10f, 0.26f);
+        public Color KeyDownTextColor = new Color(0.106f, 0.106f, 0.106f);
 
         [Min(1f)]
         public float KeyTextSize = 15f;
@@ -90,28 +89,28 @@ namespace FlappyTemplate
         public float RowGap = 8f;
 
         [Min(0f)]
-        public float RowCornerRadius = 8f;
+        public float RowCornerRadius = 10f;
 
         [Tooltip("Inset of a row's contents from its edges.")]
         [Min(0f)]
         public float RowPadding = 10f;
 
-        public Color RowFill = new Color(1f, 1f, 1f, 0.12f);
+        public Color RowFill = new Color(1f, 1f, 1f, 0.05f);
 
         [Tooltip("A binding whose Enabled is off: the key is shown so the player knows it exists, greyed so they know it is not doing anything yet.")]
-        public Color RowDisabledFill = new Color(1f, 1f, 1f, 0.05f);
+        public Color RowDisabledFill = new Color(1f, 1f, 1f, 0.02f);
 
         [Header("List captions")]
         public TMP_FontAsset LabelFont;
 
         [Min(1f)]
-        public float LabelSize = 19f;
+        public float LabelSize = 18f;
 
         public Color LabelColor = Color.white;
 
         public Color LabelDisabledColor = new Color(1f, 1f, 1f, 0.45f);
 
-        public FontStyles LabelStyle = FontStyles.Bold;
+        public FontStyles LabelStyle = FontStyles.Normal;
 
         [Header("List key caps")]
         [Tooltip("The cap at the right of a row. Wider than a cap on the keyboard because it carries a whole key name - Enter, Shift, Page Up - rather than one letter.")]
@@ -120,17 +119,17 @@ namespace FlappyTemplate
         [Min(0f)]
         public float CapCornerRadius = 8f;
 
-        public Color CapFill = new Color(0.91f, 0.77f, 0.36f);
+        public Color CapFill = new Color(0.45f, 0.86f, 0.5f);
 
         [Tooltip("The same cap while the key is held down - the other half of the window answering a press.")]
-        public Color CapDownFill = new Color(0.99f, 0.89f, 0.53f);
+        public Color CapDownFill = new Color(0.62f, 0.93f, 0.66f);
 
-        public Color CapDisabledFill = new Color(0.91f, 0.77f, 0.36f, 0.35f);
+        public Color CapDisabledFill = new Color(0.45f, 0.86f, 0.5f, 0.3f);
 
-        public Color CapTextColor = new Color(0.20f, 0.15f, 0.32f);
+        public Color CapTextColor = new Color(0.106f, 0.106f, 0.106f);
 
         [Min(1f)]
-        public float CapTextSize = 22f;
+        public float CapTextSize = 20f;
 
         public TMP_FontAsset CapFont;
 
@@ -149,15 +148,15 @@ namespace FlappyTemplate
         public float ButtonHeight = 52f;
 
         [Min(0f)]
-        public float ButtonCornerRadius = 10f;
+        public float ButtonCornerRadius = 12f;
 
         [Tooltip("While hotkeys are on.")]
-        public Color ButtonOnFill = new Color(0.45f, 0.76f, 0.50f);
+        public Color ButtonOnFill = new Color(0.45f, 0.86f, 0.5f);
 
         [Tooltip("While they are off - grey rather than red, because off is a setting the player chose and not a fault.")]
-        public Color ButtonOffFill = new Color(0.79f, 0.78f, 0.84f);
+        public Color ButtonOffFill = new Color(0.75f, 0.75f, 0.75f);
 
-        public Color ButtonTextColor = new Color(0.16f, 0.13f, 0.26f);
+        public Color ButtonTextColor = new Color(0.106f, 0.106f, 0.106f);
 
         [Min(1f)]
         public float ButtonTextSize = 20f;
