@@ -18,6 +18,7 @@ namespace FlappyTemplate
 		ON_BET_INFO_PAYOUT,
 		ON_BET_INFO_ID,
 		ON_BET_INFO_INCREASE,
+		ON_BET_ROLLBACK, //a bet the player took back, UNIVERSAL games only
 		ON_SYSTEM,
 		ON_SEED,
 		ON_STAT,

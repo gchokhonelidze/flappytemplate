@@ -38,6 +38,10 @@ namespace FlappyTemplate
 
 		// Asks the server to run the init again. The answer is the same ON_GROUP snapshot the
 		// connection opens with, so it can be asked for at any point without side effects.
-		RELOAD
+		RELOAD,
+
+		// Takes back a bet the round has not paid any of yet, by its transaction id. UNIVERSAL
+		// games only; anywhere else the server refuses it. See Emitter.OnBetRollback.
+		BET_ROLLBACK
 	}
 }

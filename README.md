@@ -4,7 +4,7 @@ Every readme in the package, in one place. Each row below opens a component's do
 twin sits beside every one of them in the same folder, with the same content laid out for a browser and the
 component **drawn** rather than described.
 
-*Package 1.0.94. Update this file when a readme is added or removed — and the versions in
+*Package 1.0.95. Update this file when a readme is added or removed — and the versions in
 [Which are current](#which-are-current) when one is brought up to date. **README.html** beside it is the same
 content for reading in a browser.*
 
@@ -37,7 +37,7 @@ The furniture drawn over the game: dialogs, the bar that opens them, the strip o
 | --- | --- | --- |
 | **[Window](Runtime/_System/Ui/Window/)** | 1.0.94 | A dialog that is one component rather than a prefab: panel, caption, close button, drag, an animated opening, and a body that scrolls when the content outgrows the screen. Born in a flat charcoal with one green accent; Restyle Windows brings one made before that over. The seven windows built on it — Statistics, Bet info, Bet info sheet, Game history, Fairness, Hotkeys and Sound — are documented here too. |
 | **[Ui Navbar](Runtime/_System/Ui/Navbar/)** | 1.0.94 | The row of buttons over the game: home, statistics, fairness, hotkeys, sound, and whatever the game adds beside them. Home leaves for the address the server sent — taking the whole page, not the iframe — and hides itself while there is none. The rest find their windows, or build them. |
-| **[Ui History](Runtime/_System/Ui/History/)** | 1.0.89 | The strip of recent bets, as a row of chips over the game or a column down the side. It feeds itself from the socket, animates each arrival, drops or scrolls the oldest, and opens the bet info dialog on whichever chip is clicked. |
+| **[Ui History](Runtime/_System/Ui/History/)** | 1.0.95 | The strip of recent bets, as a row of chips over the game or a column down the side. It feeds itself from the socket, animates each arrival, drops or scrolls the oldest, and opens the bet info dialog on whichever chip is clicked. |
 | **[Selectable Text](Runtime/_System/Ui/SelectableText/)** | 1.0.93 | A label the player can select and copy from, and not type into — one component on any TextMeshPro label. Drag, double-click, Ctrl+C, a copy icon; a long press on a phone. Copies through the page in a browser, so it works in an iframe and on Safari. |
 | **[Cursor](Runtime/_System/Ui/Cursor/)** | 1.0.93 | The hand over anything clickable, which UGUI never shows on its own. Works out the cursor from what is under the mouse — a Button, a text field, a disabled control — and sets it as CSS on the page's canvas. Nothing to add to a scene; a hint per object covers the rest. |
 | **[Ripple](Runtime/_System/Ui/Ripple/)** | 1.0.94 | A wave round a control when it is pressed: a ring off the control's own outline that runs outwards and fades, while the control dips and springs back. One component, or one line; drawn behind the control and kept out of any layout. On every window's close button, every navbar button and the sound window's switches. |
@@ -74,14 +74,14 @@ server has already given.
 
 ## Which are current
 
-Every readme carries the package version it was last checked against. The ones below **1.0.94** are the pages to
+Every readme carries the package version it was last checked against. The ones below **1.0.95** are the pages to
 distrust first if something on them does not match the code.
 
 | Describes | Pages |
 | --- | --- |
-| **1.0.94** — current | Window, Ripple, Ui Navbar, Hotkeys, Sound |
+| **1.0.95** — current | Ui History |
+| 1.0.94 | Window, Ripple, Ui Navbar, Hotkeys, Sound |
 | 1.0.93 | Cursor, Selectable Text |
-| 1.0.89 | Ui History |
 | 1.0.79 | Transform Constraints |
 | 1.0.78 | Sprite Gradient |
 | 1.0.73 | Dice Roller |

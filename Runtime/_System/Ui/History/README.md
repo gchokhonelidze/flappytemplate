@@ -18,7 +18,7 @@ elements sit in the middle of the strip.
 What is left is the strip: which way it runs, which end the newest bet lands on, what happens when it fills up,
 and the gap between one element and the next.
 
-*Describes package 1.0.89. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.95. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser, with the strips drawn rather than described.*
 
 **GameObject → UI (Canvas) → FlappyBet → History**, or Add Component → UI → Ui History.
@@ -148,10 +148,10 @@ Two feeds, and **Feed** picks between them:
 | **Player** | `MainState.History` | `ON_HISTORY` | the **bet info** window — or the **bet info sheet** — on that bet |
 | **Shared** | `MainState.GameHistory` | `ON_GAME_HISTORY` | the **game history** window on that round |
 
-`Auto` reads `SystemState.GameType`: `SHARED` is the shared feed, anything else the player's own bets. The game
-type arrives with the session and routinely **after** the strip has already subscribed, so the strip keeps
-asking and switches over on the frame the answer changes — off the old event, on to the new one, and filled in
-again from the list that one writes to. Nothing has to be timed against it.
+`Auto` reads `SystemState.GameType`: `SHARED` and `UNIVERSAL` are the shared feed, anything else the player's own
+bets. The game type arrives with the session and routinely **after** the strip has already subscribed, so the
+strip keeps asking and switches over on the frame the answer changes — off the old event, on to the new one, and
+filled in again from the list that one writes to. Nothing has to be timed against it.
 
 A round is not a bet, and the strip shows it as one anyway: `Id`, the outcome payload, and the two amounts —
 `TotalBetAmountUsd` and `TotalWinAmountUsd`, in dollars, because a shared round is bet on in as many currencies

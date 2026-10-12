@@ -337,7 +337,7 @@ namespace FlappyTemplate
 
                 var manager = StateManager.Inst;
                 var system = manager != null && manager.MainState != null ? manager.MainState.SystemState : null;
-                return system != null && system.GameType == EGameType.SHARED;
+                return system != null && system.GameType.HasValue && system.GameType.Value.IsShared();
             }
         }
 

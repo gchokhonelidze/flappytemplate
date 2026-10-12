@@ -55,6 +55,16 @@ namespace FlappyTemplate
 			Socket.Inst.Send(nameof(EPlayerEvent.BET_CASHOUT), new { Custom });
 		}
 
+		// Takes back a bet of the player's that the round has not paid any of yet, by the transaction id it was placed
+		// under - the key it has in MainState.BetInfos. UNIVERSAL games only (SystemState.GameType.CanRollback()).
+		// The answer is ON_BET_ROLLBACK, which drops the bet from BetInfos and raises Events.OnBetRollback; a bet that
+		// cannot be taken back - a freespin, partly paid, or refused by the game - comes back as ON_ERROR with
+		// cannot_rollback_bet and stays in the round as it was.
+		public void OnBetRollback(string TransactionId)
+		{
+			Socket.Inst.Send(nameof(EPlayerEvent.BET_ROLLBACK), new { TransactionId });
+		}
+
 		public void OnFreespin()
 		{
 			Socket.Inst.Send(nameof(EPlayerEvent.FREESPIN), new { });

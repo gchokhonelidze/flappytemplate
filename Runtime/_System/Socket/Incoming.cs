@@ -206,6 +206,26 @@ namespace FlappyTemplate
                         stateManager.Events.OnBetInfoIncrease?.Invoke(betInfo);
                         break;
                     }
+                    case nameof(EGameEvent.ON_BET_ROLLBACK):
+                    {
+                        // { TransactionId, Amount, Refunded }. The bet is out of the round, so it goes from BetInfos
+                        // whether or not the money is back yet - a bet still listed there would read as one in play.
+                        var rollbackDto = Utils.TryDeserialize<BetRollbackDto>(dataJson);
+                        if (rollbackDto is null || string.IsNullOrEmpty(rollbackDto.TransactionId))
+                            return;
+                        if (
+                            stateManager.MainState.BetInfos.TryGetValue(
+                                rollbackDto.TransactionId,
+                                out var rolledBack
+                            )
+                        )
+                        {
+                            stateManager.MainState.BetInfos.Remove(rollbackDto.TransactionId);
+                            rollbackDto.BetInfo = rolledBack;
+                        }
+                        stateManager.Events.OnBetRollback?.Invoke(rollbackDto);
+                        break;
+                    }
                     case nameof(EGameEvent.ON_SEED):
                     {
                         var seedDto = Utils.TryDeserialize<SeedDto>(dataJson);

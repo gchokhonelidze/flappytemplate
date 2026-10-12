@@ -40,6 +40,9 @@ namespace FlappyTemplate
 
 		public UnityEvent<BetInfoDto> OnBetInfoIncrease = new();
 
+		// A bet the player took back, already gone from MainState.BetInfos. UNIVERSAL games only.
+		public UnityEvent<BetRollbackDto> OnBetRollback = new();
+
 		public UnityEvent<TransactionPublic> OnBetInfoById = new();
 
 		public UnityEvent<HistoryDto> OnHistory = new();
