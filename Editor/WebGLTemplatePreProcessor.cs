@@ -11,6 +11,7 @@ namespace FlappyTemplate.Editor
 	/// Keeps the FlappyBet WebGL template installed under Assets/WebGLTemplates and selected in the player settings.
 	/// The sync runs on editor load (and on demand from the menu) because Unity resolves the WebGL template from the
 	/// asset database before the build starts - doing it from a build callback is too late.
+	/// A WebGL build also turns the Unity splash screen off, so the game opens straight into the template's own loader.
 	/// </summary>
 	public class WebGLTemplatePreProcessor : IPreprocessBuildWithReport
 	{
@@ -115,11 +116,31 @@ namespace FlappyTemplate.Editor
 
 			SyncTemplate();
 
+			DisableSplashScreen();
+
 			if (!Directory.Exists(Path.GetFullPath(DestinationFolder)) || PlayerSettings.WebGL.template != TemplateSetting)
 			{
 				throw new BuildFailedException(
 					$"WebGL template '{TemplateName}' is not installed. Run Tools/FlappyBet/Sync WebGL Template and build again.");
 			}
+		}
+
+		/// <summary>
+		/// Unticks Player Settings > Splash Image > Show Splash Screen. The player settings are written into the build
+		/// after the preprocess callbacks, so the change reaches the build that triggered it.
+		/// </summary>
+		private static void DisableSplashScreen()
+		{
+			if (!PlayerSettings.SplashScreen.show)
+			{
+				return;
+			}
+
+			Debug.Log("Disabling the Unity splash screen for the WebGL build.");
+
+			PlayerSettings.SplashScreen.show = false;
+
+			AssetDatabase.SaveAssets();
 		}
 
 		/// <summary>
