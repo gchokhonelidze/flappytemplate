@@ -102,6 +102,7 @@ namespace FlappyTemplate
                     {
                         stateManager.MainState.SystemState ??= new SystemDto();
                         stateManager.MainState.SystemState.ApplyPatch(dataJson);
+                        Translator.Follow(stateManager.MainState.SystemState.Language);
                         stateManager.Events.OnSystem?.Invoke(stateManager.MainState.SystemState);
                         break;
                     }
@@ -426,6 +427,7 @@ namespace FlappyTemplate
                         var initPayload = JObject.Parse(dataJson);
                         stateManager.MainState.BalanceState = dto.BalanceDto;
                         stateManager.MainState.SystemState = dto.SystemDto;
+                        Translator.Follow(dto.SystemDto.Language);
                         stateManager.MultiState.MultiTurnIndex = dto.TurnIndex;
                         stateManager.MultiState.MultiChipBalance = dto.ChipBalance;
                         stateManager.MultiState.MultiLocation = dto.Location;

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace FlappyTemplate
 {
@@ -77,6 +78,85 @@ namespace FlappyTemplate
                 Poll();
             }
         }
+
+        /// <summary>Whether the language the server names in <see cref="SystemDto.Language"/> is written to
+        /// <see cref="Locale"/> as it arrives - with the init data, and with every system event after it. On by
+        /// default, which is why a game translates itself without a line of code. A game with a language menu
+        /// of its own turns it off, or the next system event would undo the player's choice.</summary>
+        public static bool FollowServer = true;
+
+        /// <summary>Reads a language tag the way the platform writes them - "ka", "ka-GE", "ka_GE", in any case
+        /// - into the <see cref="ELocale"/> that speaks it. A region the package does not have falls back to the
+        /// language: "bn-IN" is <see cref="ELocale.bn_BD"/>, "pt-BR" is <see cref="ELocale.pt_PT"/>. False for
+        /// anything else, with <paramref name="locale"/> left at <see cref="FallbackLocale"/>.</summary>
+        public static bool TryParse(string? tag, out ELocale locale)
+        {
+            locale = FallbackLocale;
+            if (string.IsNullOrWhiteSpace(tag))
+                return false;
+
+            var key = tag.Trim().Replace('-', '_').ToLowerInvariant();
+            var table = Tags();
+            if (table.TryGetValue(key, out locale))
+                return true;
+
+            int cut = key.IndexOf('_');
+            if (cut > 0 && table.TryGetValue(key.Substring(0, cut), out locale))
+                return true;
+
+            locale = FallbackLocale;
+            return false;
+        }
+
+        // Incoming hands the server's language here as it arrives. A tag nobody can read is said once, in the
+        // console, and otherwise ignored: the locale stays where it was, which from a fresh start is English.
+        internal static void Follow(string? tag)
+        {
+            if (!FollowServer || string.IsNullOrWhiteSpace(tag))
+                return;
+
+            if (TryParse(tag, out var locale))
+            {
+                Locale = locale;
+                return;
+            }
+
+            if (unknownTags.Add(tag!))
+                Debug.LogWarning("Translator: the server's language \"" + tag + "\" is not an ELocale - staying on "
+                    + Locale);
+        }
+
+        // Every tag already warned about, so a system event arriving every few seconds does not repeat it.
+        private static readonly HashSet<string> unknownTags = new();
+
+        // "ka_ge" and "ka" to ka_GE, for every locale, built once. A language's first locale wins, so a bare
+        // language - or a region the package did not translate for - goes to the one it did. After that, the
+        // spellings the platform uses that are not a locale's own.
+        private static Dictionary<string, ELocale>? tags;
+
+        private static Dictionary<string, ELocale> Tags()
+        {
+            if (tags != null)
+                return tags;
+
+            var table = new Dictionary<string, ELocale>();
+            foreach (ELocale locale in Enum.GetValues(typeof(ELocale)))
+            {
+                var name = locale.ToString().ToLowerInvariant();
+                table[name] = locale;
+
+                var language = name.Substring(0, name.IndexOf('_'));
+                if (!table.ContainsKey(language))
+                    table[language] = locale;
+            }
+
+            table["vn"] = ELocale.vi_VN;   // what the platform's word list calls Vietnamese
+            table["tl"] = ELocale.fil_PH;  // Tagalog, the older tag for Filipino
+            table["in"] = ELocale.id_ID;   // Indonesian, as Java spelled it
+
+            return tags = table;
+        }
+
 
         /// <summary>The text for a key in the current locale.</summary>
         public static string T(string key) => T(Locale, key);

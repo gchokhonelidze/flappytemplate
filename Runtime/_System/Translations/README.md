@@ -16,7 +16,7 @@ The package's own windows — **Statistics**, **Bet info**, **Fairness** and any
 through this, so they follow the locale with nothing wired up. See [Strings from a scene](#scene) for how, and
 why an existing scene translates without being opened.
 
-*Describes package 1.0.68. Update this file with the code — and **README.html** beside it, which is the same
+*Describes package 1.0.97. Update this file with the code — and **README.html** beside it, which is the same
 content laid out for a browser.*
 
 ---
@@ -24,7 +24,8 @@ content laid out for a browser.*
 ## Quick start
 
 1. Put **Ui Translated Text** on a TextMeshPro or a uGUI Text and type a key — `statistics.luck`.
-2. Change `StateManager.Inst.MainState.Locale`, from code or from the inspector while the game runs.
+2. Change `StateManager.Inst.MainState.Locale`, from code or from the inspector while the game runs — or
+   do nothing, and the server sets it to the player's language when the game connects.
 3. The label rewrites itself. So does every other one.
 
 From code, without the component:
@@ -181,6 +182,21 @@ that event is raised.
 | `Translator.OnLocaleChanged` | Redraw whatever you drew by hand |
 | `Translator.Refresh()` | Raise it without the locale having changed — after adding strings, or changing `MissingFormat` |
 
+### The server picks the language
+
+Nothing to call. The platform names the player's language in `SystemDto.Language` — with the init data and
+with every system event after it — and `Incoming` writes it to `MainState.Locale` as it arrives, so a game
+translates itself the moment it connects. The tag is read any way the platform spells it: `ka`, `ka-GE`,
+`ka_GE`, in any case. A region the package did not translate for falls back to the language — `bn-IN` reads
+as `bn_BD`, `pt-BR` as `pt_PT` — and a tag nobody can read is warned about once in the console and otherwise
+ignored, so the game stays on whatever it was showing, English from a fresh start.
+
+| Member | Means |
+|---|---|
+| `Translator.FollowServer` | On by default. A game with a language menu of its own turns it off, or the next system event would undo the player's choice |
+| `Translator.TryParse(tag, out locale)` | The same reading, for a tag of your own — a query string, a cookie |
+
+
 ### Ui Translated Text
 
 | Field | Means |
@@ -221,4 +237,5 @@ The 22 `ELocale` names, all of them filled in for every key the package ships:
 
 `TranslationExample` builds a column of labels — some of the package's keys, one it registers itself, and one
 nobody has written so the hole can be seen. **Next Locale** from its context menu cycles the language;
-**Log Untranslated** prints what the current one is missing.
+**Log Untranslated** prints what the current one is missing. **Apply Server Tag** reads the tag typed in
+the inspector the way `Incoming` reads the server's, to try a spelling.

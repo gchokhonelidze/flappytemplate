@@ -37,6 +37,10 @@ namespace FlappyTemplate
         [SerializeField]
         private bool nameMissingKeys = true;
 
+        [Tooltip("A language tag as the server might send it - ka, ka-GE, KA_ge, bn-IN. Apply Server Tag from the context menu reads it the way Incoming reads SystemDto.Language.")]
+        [SerializeField]
+        private string serverTag = "ka-GE";
+
         void Start()
         {
             Build();
@@ -99,6 +103,20 @@ namespace FlappyTemplate
             Translator.Locale = all[(at + 1) % all.Length];
 
             Debug.Log("Locale is now " + Translator.Locale, this);
+        }
+
+        // What Incoming does with SystemDto.Language, on a tag typed in the inspector: a way to see what spelling
+        // the platform sends resolves to, and what an unknown one does - a warning, and the locale left alone.
+        [ContextMenu("Apply Server Tag")]
+        public void ApplyServerTag()
+        {
+            if (Translator.TryParse(serverTag, out var locale))
+            {
+                Translator.Locale = locale;
+                Debug.Log("\"" + serverTag + "\" reads as " + locale, this);
+            }
+            else
+                Debug.LogWarning("\"" + serverTag + "\" is no locale the package knows - staying on " + Translator.Locale, this);
         }
 
         // What to run before shipping a language: the keys that have nothing of their own in it and are being

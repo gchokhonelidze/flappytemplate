@@ -160,6 +160,7 @@
   <a class="sub" href="#package">Adding one to the package</a>
   <a href="#format">Numbers in a string</a>
   <a href="#labels">How a label knows</a>
+  <a class="sub" href="#server">The server picks the language</a>
   <a class="sub" href="#component">Ui Translated Text</a>
   <a href="#shipping">Before shipping a language</a>
   <a href="#locales">Locales</a>
@@ -172,7 +173,7 @@
   <h1>Translations</h1>
   <p class="lede">Every word the player reads, in the language <code>MainState.Locale</code> names. One call, no
   files to load, no initialisation step.</p>
-  <span class="version">Describes package 1.0.68</span>
+  <span class="version">Describes package 1.0.97</span>
 </header>
 
 <pre><code>label.text = Translator.T("bet_info.payout");</code></pre>
@@ -191,7 +192,7 @@ opened.</p>
   <li>Put <strong>Ui Translated Text</strong> on a TextMeshPro or a uGUI Text and type a key —
   <code>statistics.luck</code>.</li>
   <li>Change <code>StateManager.Inst.MainState.Locale</code>, from code or from the inspector while the game
-  runs.</li>
+  runs — or do nothing, and the server sets it to the player's language when the game connects.</li>
   <li>The label rewrites itself. So does every other one.</li>
 </ol>
 
@@ -362,6 +363,23 @@ starts — reads it once a frame and raises <code>Translator.OnLocaleChanged</co
   <tr><td><code>Translator.Refresh()</code></td><td>Raise it without the locale having changed — after adding strings, or changing <code>MissingFormat</code></td></tr>
 </table>
 
+<h3 id="server">The server picks the language</h3>
+
+<p>Nothing to call. The platform names the player's language in <code>SystemDto.Language</code> — with the
+init data and with every system event after it — and <code>Incoming</code> writes it to
+<code>MainState.Locale</code> as it arrives, so a game translates itself the moment it connects. The tag is
+read any way the platform spells it: <code>ka</code>, <code>ka-GE</code>, <code>ka_GE</code>, in any case. A
+region the package did not translate for falls back to the language — <code>bn-IN</code> reads as
+<code>bn_BD</code>, <code>pt-BR</code> as <code>pt_PT</code> — and a tag nobody can read is warned about once
+in the console and otherwise ignored, so the game stays on whatever it was showing, English from a fresh
+start.</p>
+
+<table>
+  <tr><th>Member</th><th>Means</th></tr>
+  <tr><td><code>Translator.FollowServer</code></td><td>On by default. A game with a language menu of its own turns it off, or the next system event would undo the player's choice</td></tr>
+  <tr><td><code>Translator.TryParse(tag, out locale)</code></td><td>The same reading, for a tag of your own — a query string, a cookie</td></tr>
+</table>
+
 <h3 id="component">Ui Translated Text</h3>
 
 <table>
@@ -408,12 +426,12 @@ are read right to left:</p>
 
 <table>
   <tr><th>File</th><th>What it is</th></tr>
-  <tr><td><code>Translator.cs</code></td><td>The lookup, the fallback, the locale, the event</td></tr>
+  <tr><td><code>Translator.cs</code></td><td>The lookup, the fallback, the locale, the event, and the reading of the server's language tag</td></tr>
   <tr><td><code>Translations.cs</code></td><td>Every string the package's own windows show, in all 22 languages</td></tr>
   <tr><td><code>../Ui/Window/</code></td><td>Statistics, Bet info and Fairness, whose every caption goes through <code>Label</code></td></tr>
   <tr><td><code>UiTranslatedText.cs</code></td><td>A label that writes itself from a key</td></tr>
   <tr><td><code>LocaleWatcher.cs</code></td><td>The one <code>Update</code> that notices <code>MainState.Locale</code> moving</td></tr>
-  <tr><td><code>TranslationExample.cs</code></td><td>A column of labels, a key nobody wrote, and a menu to cycle the language</td></tr>
+  <tr><td><code>TranslationExample.cs</code></td><td>A column of labels, a key nobody wrote, a menu to cycle the language and one to try a server tag</td></tr>
   <tr><td><code>../Enums/ELocale.cs</code></td><td>The 22 languages</td></tr>
   <tr><td><code>../States/MainState.cs</code></td><td><code>Locale</code>, which is the only copy of it</td></tr>
 </table>
