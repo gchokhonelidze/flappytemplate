@@ -4,7 +4,7 @@ Every readme in the package, in one place. Each row below opens a component's do
 twin sits beside every one of them in the same folder, with the same content laid out for a browser and the
 component **drawn** rather than described.
 
-*Package 1.0.95. Update this file when a readme is added or removed — and the versions in
+*Package 1.0.98. Update this file when a readme is added or removed — and the versions in
 [Which are current](#which-are-current) when one is brought up to date. **README.html** beside it is the same
 content for reading in a browser.*
 
@@ -41,6 +41,7 @@ The furniture drawn over the game: dialogs, the bar that opens them, the strip o
 | **[Selectable Text](Runtime/_System/Ui/SelectableText/)** | 1.0.93 | A label the player can select and copy from, and not type into — one component on any TextMeshPro label. Drag, double-click, Ctrl+C, a copy icon; a long press on a phone. Copies through the page in a browser, so it works in an iframe and on Safari. |
 | **[Cursor](Runtime/_System/Ui/Cursor/)** | 1.0.93 | The hand over anything clickable, which UGUI never shows on its own. Works out the cursor from what is under the mouse — a Button, a text field, a disabled control — and sets it as CSS on the page's canvas. Nothing to add to a scene; a hint per object covers the rest. |
 | **[Ripple](Runtime/_System/Ui/Ripple/)** | 1.0.94 | A wave round a control when it is pressed: a ring off the control's own outline that runs outwards and fades, while the control dips and springs back. One component, or one line; drawn behind the control and kept out of any layout. On every window's close button, every navbar button and the sound window's switches. |
+| **[Toast](Runtime/_System/Ui/PanelToast/)** | 1.0.98 | A message that slides in over the top right corner and goes away again: a dark pill with a sign on its left — a yellow warning on a triangle, a green success with a tick, a red error with a bang — drawn from a Rounded Box and a generated triangle, so every colour is a field. One event from anywhere; the canvas prefab already carries it. |
 | **[Hotkeys](Runtime/_System/Ui/Hotkeys/)** | 1.0.94 | Keys bound to things the game does, and the dialog that tells the player about them. One line binds a key; the window reads the registry, so there is no list to keep in step. Gated on the player's own `keyboard` setting, which the socket remembers. |
 
 ## Drawing and layout
@@ -74,12 +75,13 @@ server has already given.
 
 ## Which are current
 
-Every readme carries the package version it was last checked against. The ones below **1.0.95** are the pages to
+Every readme carries the package version it was last checked against. The ones below **1.0.98** are the pages to
 distrust first if something on them does not match the code.
 
 | Describes | Pages |
 | --- | --- |
-| **1.0.95** — current | Ui History |
+| **1.0.98** — current | Toast |
+| 1.0.95 | Ui History |
 | 1.0.94 | Window, Ripple, Ui Navbar, Hotkeys, Sound |
 | 1.0.93 | Cursor, Selectable Text |
 | 1.0.79 | Transform Constraints |
@@ -104,7 +106,6 @@ source is the documentation for now, and the files named are the ones worth open
 | [`States/`](Runtime/_System/States/) | `MainState` is what the server has told us, `MainEvents` is how to hear about it changing, and `StateManager` is the object holding both. |
 | [`Navigation/`](Runtime/_System/Navigation/) | `Navigator`: leaving the game for the operator's page, and what an address has to look like to be followed. |
 | [`Performance/`](Runtime/_System/Performance/) | The frame rate limiter, the anti-aliasing policy and the FPS counter. |
-| [`Ui/PanelToast/`](Runtime/_System/Ui/PanelToast/) | `Toast`: a message that appears over the game and goes away again. |
 | [`Ui/Particles/`](Runtime/_System/Ui/Particles/) | `UiParticleRenderer`: particles that draw on a canvas and sort with it. |
 | [`Ui/RectTransforms/`](Runtime/_System/Ui/RectTransforms/) | Anchoring, fitting and clamping a rect against another, in 3D as well as 2D. |
 | [`Components/Bounds/`](Runtime/_System/Components/Bounds/) | Measuring a hierarchy's bounds, and fitting something to them. |

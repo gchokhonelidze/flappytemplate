@@ -190,7 +190,7 @@
   <p class="lede">Every readme in the package, in one place. Each card opens the browser copy of a component's
   documentation; a <code>README.md</code> twin sits beside every one of them in the same folder, with the same
   content for reading in an editor or on a repository page.</p>
-  <p class="stamp">Package 1.0.95. Update this file when a readme is added or removed — and the version badges
+  <p class="stamp">Package 1.0.98. Update this file when a readme is added or removed — and the version badges
   below when one is brought up to date. <strong>README.md</strong> beside it is the same content as Markdown,
   which is the copy a GitLab or GitHub page can render — this one is for reading locally, in a browser, with
   every component drawn.</p>
@@ -238,7 +238,7 @@
   </a>
 
   <a class="card" href="Runtime/_System/Ui/History/README.html">
-    <div class="top"><span class="name">Ui History</span><span class="ver">1.0.95</span></div>
+    <div class="top"><span class="name">Ui History</span><span class="ver stale">1.0.95</span></div>
     <p class="what">The strip of recent bets, as a row of chips over the game or a column down the side. It feeds
     itself from the socket, animates each arrival, drops or scrolls the oldest, and opens the bet info dialog on
     whichever chip is clicked.</p>
@@ -268,6 +268,15 @@
     control and kept out of any layout. On every window's close button, every navbar button and the sound
     window's switches.</p>
     <p class="where">Runtime/_System/Ui/Ripple/</p>
+  </a>
+
+  <a class="card" href="Runtime/_System/Ui/PanelToast/README.html">
+    <div class="top"><span class="name">Toast</span><span class="ver">1.0.98</span></div>
+    <p class="what">A message that slides in over the top right corner and goes away again: a dark pill with a sign
+    on its left — a yellow warning on a triangle, a green success with a tick, a red error with a bang — drawn from
+    a Rounded Box and a generated triangle, so every colour is a field. One event from anywhere; the canvas prefab
+    already carries it.</p>
+    <p class="where">Runtime/_System/Ui/PanelToast/</p>
   </a>
 
   <a class="card" href="Runtime/_System/Ui/Hotkeys/README.html">
@@ -363,7 +372,7 @@ the server has already given.</p>
 <h2 id="versions">Which are current</h2>
 
 <p>Every readme carries the package version it was last checked against. The badges above repeat it, and the ones
-marked in amber describe a version older than the current <strong>1.0.95</strong> — so they are the pages to
+marked in amber describe a version older than the current <strong>1.0.98</strong> — so they are the pages to
 distrust first if something on them does not match the code.</p>
 
 <div class="note">
@@ -375,7 +384,8 @@ distrust first if something on them does not match the code.</p>
 <table>
   <thead><tr><th>Describes</th><th>Pages</th></tr></thead>
   <tbody>
-    <tr><td><strong>1.0.95</strong> — current</td><td>Ui History</td></tr>
+    <tr><td><strong>1.0.98</strong> — current</td><td>Toast</td></tr>
+    <tr><td>1.0.95</td><td>Ui History</td></tr>
     <tr><td>1.0.94</td><td>Window, Ripple, Ui Navbar, Hotkeys, Sound</td></tr>
     <tr><td>1.0.93</td><td>Cursor, Selectable Text</td></tr>
     <tr><td>1.0.79</td><td>Transform Constraints</td></tr>
@@ -397,7 +407,6 @@ source is the documentation for now, and the files below are the ones worth open
   <div><b>States/</b> — <code>MainState</code> is what the server has told us, <code>MainEvents</code> is how to hear about it changing, and <code>StateManager</code> is the object holding both.</div>
   <div><b>Navigation/</b> — <code>Navigator</code>: leaving the game for the operator's page, and what an address has to look like to be followed.</div>
   <div><b>Performance/</b> — the frame rate limiter, the anti-aliasing policy and the FPS counter.</div>
-  <div><b>Ui/PanelToast/</b> — <code>Toast</code>: a message that appears over the game and goes away again.</div>
   <div><b>Ui/Particles/</b> — <code>UiParticleRenderer</code>: particles that draw on a canvas and sort with it.</div>
   <div><b>Ui/RectTransforms/</b> — anchoring, fitting and clamping a rect against another, in 3D as well as 2D.</div>
   <div><b>Components/Bounds/</b> — measuring a hierarchy's bounds, and fitting something to them.</div>
