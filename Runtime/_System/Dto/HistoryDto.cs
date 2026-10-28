@@ -21,6 +21,9 @@ namespace FlappyTemplate
         public int? N;
         public GenericDictionary<string, string> _Outcome = new();
         public Dictionary<string, JToken>? Outcome;
+        /// <summary>The game's detailed record of the bet, for history. Only some games send it.</summary>
+        public GenericDictionary<string, string> _Info = new();
+        public Dictionary<string, JToken>? Info;
         public long CreatedAt = 0;
     }
 }

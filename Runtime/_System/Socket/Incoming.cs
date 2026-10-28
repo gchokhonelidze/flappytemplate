@@ -186,6 +186,9 @@ namespace FlappyTemplate
                         betInfoById._Outcome =
                             betInfoById.Outcome?.ToGeneric()
                             ?? new GenericDictionary<string, string>();
+                        betInfoById._Info =
+                            betInfoById.Info?.ToGeneric()
+                            ?? new GenericDictionary<string, string>();
                         stateManager.MainState.BetInfoById = betInfoById;
                         stateManager.Events.OnBetInfoById?.Invoke(betInfoById);
                         break;
@@ -270,6 +273,9 @@ namespace FlappyTemplate
                         {
                             historyDto._Outcome =
                                 historyDto.Outcome?.ToGeneric()
+                                ?? new GenericDictionary<string, string>();
+                            historyDto._Info =
+                                historyDto.Info?.ToGeneric()
                                 ?? new GenericDictionary<string, string>();
                             stateManager.MainState.History.Add(historyDto);
                             stateManager.Events.OnHistory?.Invoke(historyDto);

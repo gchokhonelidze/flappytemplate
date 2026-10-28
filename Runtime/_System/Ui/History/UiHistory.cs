@@ -1437,6 +1437,22 @@ namespace FlappyTemplate
             return string.Empty;
         }
 
+        /// <summary>A value out of a bet's detailed info payload, or empty - the same two shapes as
+        /// <see cref="Read"/>. Only some games send one, and the shared feed never does.</summary>
+        public static string ReadInfo(HistoryDto data, string key)
+        {
+            if (data == null || string.IsNullOrEmpty(key))
+                return string.Empty;
+
+            if (data._Info != null && data._Info.TryGetValue(key, out var flat) && flat != null)
+                return flat;
+
+            if (data.Info != null && data.Info.TryGetValue(key, out var token) && token != null)
+                return token.ToString();
+
+            return string.Empty;
+        }
+
         // ------------------------------------------------------------------ the feed
 
         // Which event is subscribed to is decided once, here, and remembered: a strip that unsubscribed from

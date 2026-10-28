@@ -33,6 +33,9 @@ namespace FlappyTemplate
         public GenericDictionary<string, string> _Custom = new();
         public Dictionary<string, JToken>? Outcome;
         public GenericDictionary<string, string> _Outcome = new();
+        /// <summary>The game's detailed record of the bet, for history. Only some games send it.</summary>
+        public Dictionary<string, JToken>? Info;
+        public GenericDictionary<string, string> _Info = new();
         public EGameType GameType;
         public bool Finished;
         public string HouseEdge = "0";

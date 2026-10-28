@@ -241,6 +241,7 @@ namespace FlappyTemplate
                 IPlayerId = data.IPlayerId,
                 N = data.N,
                 _Outcome = data._Outcome,
+                _Info = data._Info,
                 CreatedAt = data.CreatedAt,
             };
     }

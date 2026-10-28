@@ -80,6 +80,9 @@ namespace FlappyTemplate
         /// <summary>A value out of the game's own payload for this bet, or empty.</summary>
         public string Outcome(string key) => UiHistory.Read(data, key);
 
+        /// <summary>A value out of the game's detailed info for this bet, or empty.</summary>
+        public string Info(string key) => UiHistory.ReadInfo(data, key);
+
         /// <summary>Opens the bet info window on this bet, the same as clicking it. Wired to the element's
         /// Button, and public so a prefab can call it from its own control instead.</summary>
         public void Pick()

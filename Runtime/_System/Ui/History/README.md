@@ -77,6 +77,7 @@ public class DiceHistoryChip : UiHistoryElement
 | `Write(data)` | Called with each bet the element is given. The base does nothing — there is no value the strip could work out that your game would not rather decide |
 | `Data` | The bet the element is showing, or null while it is spare |
 | `Outcome("key")` | A value out of that bet's own outcome payload. Both shapes are read — the flat `_Outcome` the socket fills in and the raw JSON it arrived as |
+| `Info("key")` | A value out of that bet's detailed info, read the same two ways (`_Info` and `Info`). Only some games send it, and a round on the shared feed never has it — empty when it is not there |
 | `Appear()` | The arrival animation. Override for a prefab that arrives its own way |
 | `Pick()` | Opens the bet info window on this bet, the same as a click. Public, so your own control can call it |
 | `Plate` | The background, and the hit area. Found by itself: a child called `Plate`, else a graphic on the root, else the first one inside that is not text |

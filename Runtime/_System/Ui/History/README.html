@@ -280,6 +280,7 @@ it is touched: no colour is overwritten, no size is imposed, no text is written.
   <tr><td><code>Write(data)</code></td><td>Called with each bet the element is given. The base does nothing — there is no value the strip could work out that your game would not rather decide</td></tr>
   <tr><td><code>Data</code></td><td>The bet the element is showing, or null while it is spare</td></tr>
   <tr><td><code>Outcome("key")</code></td><td>A value out of that bet's own outcome payload. Both shapes are read — the flat <code>_Outcome</code> the socket fills in and the raw JSON it arrived as</td></tr>
+  <tr><td><code>Info("key")</code></td><td>A value out of that bet's detailed info, read the same two ways (<code>_Info</code> and <code>Info</code>). Only some games send it, and a round on the shared feed never has it — empty when it is not there</td></tr>
   <tr><td><code>Appear()</code></td><td>The arrival animation. Override for a prefab that arrives its own way</td></tr>
   <tr><td><code>Pick()</code></td><td>Opens the bet info window on this bet, the same as a click. Public, so your own control can call it</td></tr>
   <tr><td><code>Plate</code></td><td>The background, and the hit area. Found by itself: a child called <code>Plate</code>, else a graphic on the root, else the first one inside that is not text</td></tr>
