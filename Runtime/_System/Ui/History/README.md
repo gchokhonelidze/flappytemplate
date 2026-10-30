@@ -175,7 +175,9 @@ public override void Write(HistoryDto data)
 
 > A round carries **no timestamp**, so there is nothing for **Sort By Time** to sort by and it stands aside on
 > the shared feed. The order is the one the server sent: `MainState.GameHistory` is kept newest first, the way
-> the web front keeps it, and the strip turns it round on the way in.
+> the web front keeps it, and the strip turns it round on the way in. A batch that arrives while the strip is
+> already listening is raised oldest first for the same reason, so a strip with a small **Capacity** keeps the
+> newest rounds of it.
 
 ---
 

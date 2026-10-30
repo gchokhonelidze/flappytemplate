@@ -210,6 +210,14 @@ namespace FlappyTemplate
                 fil_PH: "Walang taya sa round na ito", ur_PK: "اس راؤنڈ میں کوئی شرط نہیں", fa_IR: "در این دور شرطی وجود ندارد", ms_MY: "Tiada pertaruhan pada pusingan ini",
                 ka_GE: "ამ რაუნდზე ფსონები არ არის", hy_AM: "Այս ռաունդում խաղադրույքներ չկան");
 
+            Row("game_history.unavailable",
+                en_US: "This round is no longer available", ru_RU: "Этот раунд больше недоступен", fr_FR: "Ce tour n'est plus disponible", bn_BD: "এই রাউন্ডটি আর উপলব্ধ নেই",
+                de_DE: "Diese Runde ist nicht mehr verfügbar", es_ES: "Esta ronda ya no está disponible", id_ID: "Ronde ini sudah tidak tersedia", pt_PT: "Esta ronda já não está disponível",
+                tr_TR: "Bu tur artık mevcut değil", vi_VN: "Vòng này không còn khả dụng", ar_AE: "هذه الجولة لم تعد متاحة", hi_IN: "यह राउंड अब उपलब्ध नहीं है",
+                th_TH: "รอบนี้ไม่มีให้ดูแล้ว", ja_JP: "このラウンドはもう表示できません", ko_KR: "이 라운드는 더 이상 볼 수 없습니다", zh_CN: "本局已无法查看",
+                fil_PH: "Hindi na available ang round na ito", ur_PK: "یہ راؤنڈ اب دستیاب نہیں ہے", fa_IR: "این دور دیگر در دسترس نیست", ms_MY: "Pusingan ini tidak lagi tersedia",
+                ka_GE: "ეს რაუნდი აღარ არის ხელმისაწვდომი", hy_AM: "Այս ռաունդն այլևս հասանելի չէ");
+
             // Bet info sheet - the other way of drawing a bet. Its title, totals and seeds are the bet info and
             // game history windows' and the common ones above; these are only what it adds.
 

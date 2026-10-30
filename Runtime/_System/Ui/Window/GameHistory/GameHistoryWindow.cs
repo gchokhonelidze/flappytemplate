@@ -19,8 +19,9 @@ namespace FlappyTemplate
     //
     // Show emits GAME_HISTORY_INFO through Emitter and opens the window on a row of pulsing dots. The answer
     // arrives as ON_GAME_HISTORY_ID, which the socket puts in MainState.GameHistoryById and announces as
-    // OnGameHistoryById; this listens for that and fills itself in. It is the shared-game counterpart of
-    // BetInfoWindow next door, and the two work together: a round lists its transactions, and pressing one
+    // OnGameHistoryById; this listens for that and fills itself in. A round the server no longer has is
+    // announced as OnGameHistoryByIdMissing instead, and the dots give way to missingLabel. It is the
+    // shared-game counterpart of BetInfoWindow next door, and the two work together: a round lists its transactions, and pressing one
     // opens the bet info dialog on that bet.
     //
     // What the round *was* is the game's business and cannot be known here - a multiplier, a colour, a card -
@@ -48,6 +49,7 @@ namespace FlappyTemplate
         private const string DetailsArea = "details";
         private const string VerifyArea = "verify";
         private const string EmptyArea = "none";
+        private const string MissingArea = "missing";
         private const string SeedArea = "seed";
         private const string RowArea = "r";
 
@@ -92,6 +94,10 @@ namespace FlappyTemplate
         [Tooltip("Shown in place of the list on a round nobody bet on.")]
         [SerializeField]
         private string emptyLabel = "No bets on this round";
+
+        [Tooltip("Shown in place of the loader when the round will not arrive: the server no longer keeps it, refused the request, or did not answer in Request Timeout.")]
+        [SerializeField]
+        private string missingLabel = "This round is no longer available";
 
         [Tooltip("On the currency toggle while the amounts are in dollars.")]
         [SerializeField]
@@ -145,6 +151,11 @@ namespace FlappyTemplate
         [SerializeField]
         private bool matchRequestedId = true;
 
+        [Tooltip("Seconds to wait for the round before saying it is not available. The fallback for an answer that never comes; a round the server does not have is said at once. Zero waits for ever.")]
+        [Min(0f)]
+        [SerializeField]
+        private float requestTimeout = 15f;
+
         [Tooltip("Put the player's own row at the top, ahead of the sort. Off leaves it wherever its winnings put it.")]
         [SerializeField]
         private bool mineFirst = true;
@@ -175,6 +186,9 @@ namespace FlappyTemplate
 
         [Tooltip("An id has been asked of the server, before the answer.")]
         public UnityEvent<string> OnRequested = new UnityEvent<string>();
+
+        [Tooltip("The round that was asked for will not arrive, carrying its id. Raised as the window gives up on the loader.")]
+        public UnityEvent<string> OnMissing = new UnityEvent<string>();
 
         [Tooltip("A row was pressed, carrying that bet's id. Raised before the bet info window is opened, and whether or not it is.")]
         public UnityEvent<string> OnPicked = new UnityEvent<string>();
@@ -208,6 +222,7 @@ namespace FlappyTemplate
         private UiGrid loaderGrid;
         private readonly RoundedBox[] dots = new RoundedBox[3];
         private readonly List<Tween> pulses = new List<Tween>();
+        private TextMeshProUGUI missingText;
 
         private UiGrid stats;
         private readonly Stat[] totals = new Stat[3];
@@ -253,6 +268,11 @@ namespace FlappyTemplate
         private string requestedId = string.Empty;
         private bool built;
         private bool listening;
+
+        // The round asked for will not arrive, so the loader gives way to missingLabel. And when it was asked
+        // for, by the unscaled clock, while the answer is still awaited; below zero when nothing is.
+        private bool missing;
+        private float askedAt = -1f;
 
         // Bumped whenever the window is pointed at another round, so a picture that arrives after the player
         // has moved on lands nowhere rather than on the wrong coin.
@@ -517,6 +537,8 @@ namespace FlappyTemplate
         {
             requestedId = id ?? string.Empty;
             round = null;
+            missing = false;
+            askedAt = -1f;
             stamp++;
 
             // The summary belongs to whichever round it was handed over with, so a window pointed at another
@@ -530,6 +552,7 @@ namespace FlappyTemplate
 
             if (round == null && requestOnShow && !string.IsNullOrEmpty(requestedId) && Emitter.Inst != null)
             {
+                askedAt = Time.unscaledTime;
                 Emitter.Inst.OnGameHistoryInfo(requestedId);
                 OnRequested.Invoke(requestedId);
             }
@@ -570,6 +593,8 @@ namespace FlappyTemplate
                 return;
 
             requestedId = id;
+            missing = false;
+            askedAt = Time.unscaledTime;
             Emitter.Inst.OnGameHistoryInfo(id);
             OnRequested.Invoke(id);
         }
@@ -580,6 +605,8 @@ namespace FlappyTemplate
             round = null;
             summary = null;
             requestedId = string.Empty;
+            missing = false;
+            askedAt = -1f;
             stamp++;
             Refresh();
         }
@@ -644,7 +671,7 @@ namespace FlappyTemplate
 
             seedsOn = detailsOn && detailsOpen && Shown(seedOn);
 
-            Pulse(!hasData);
+            Pulse(!hasData && !missing);
             Layout();
 
             // Two more passes over the next two frames. Everything the layout needs is measured inside Layout,
@@ -655,6 +682,16 @@ namespace FlappyTemplate
 
         void LateUpdate()
         {
+            // The fallback for an answer that never comes - a dropped connection, a server that predates ON_G.
+            // A round the server does not have is said at once, by HandleMissing.
+            if (askedAt >= 0f && requestTimeout > 0f && Time.unscaledTime - askedAt > requestTimeout)
+            {
+                if (Round == null)
+                    Miss(requestedId);
+                else
+                    askedAt = -1f;
+            }
+
             if (settle <= 0)
                 return;
 
@@ -716,6 +753,8 @@ namespace FlappyTemplate
             listGrid = Grid(list, "Rows");
             emptyText = UiWindowParts.Label(Rect(listGrid), "Empty");
 
+            missingText = UiWindowParts.Label(content, "Missing");
+
             loader = Rect(Grid(content, "Loader"));
             loaderGrid = loader.GetComponent<UiGrid>();
             for (int i = 0; i < dots.Length; i++)
@@ -774,6 +813,7 @@ namespace FlappyTemplate
             Named(seedsCard.rectTransform, SeedsArea);
             Named(bar, BarArea);
             Named(emptyText.rectTransform, EmptyArea);
+            Named(missingText.rectTransform, MissingArea);
 
             for (int i = 0; i < seeds.Count; i++)
                 Named(Rect(seeds[i].Root), SeedArea + i.ToString(CultureInfo.InvariantCulture));
@@ -1006,6 +1046,9 @@ namespace FlappyTemplate
             Label(emptyText, style.CaptionFont, style.CaptionSize, style.CaptionColor, style.CaptionStyle);
             emptyText.text = Translator.Label(emptyLabel);
 
+            Label(missingText, style.CaptionFont, style.CaptionSize, style.CaptionColor, style.CaptionStyle);
+            missingText.text = Translator.Label(missingLabel);
+
             // The dots, held in the middle by a flexible track on each side.
             float dot = style.LoaderDotSize;
             Columns(loaderGrid,
@@ -1198,7 +1241,8 @@ namespace FlappyTemplate
             }
             else if (!hasData)
             {
-                content.Row(LoaderArea);
+                // The words take the loader's place and its height, so the window does not jump when they do.
+                content.Row(missing ? MissingArea : LoaderArea);
                 contentRows.Add(GridTrack.Fixed(style.LoaderHeight));
             }
 
@@ -1583,6 +1627,8 @@ namespace FlappyTemplate
         private void Apply(GameHistoryByIdDto value)
         {
             round = value;
+            missing = false;
+            askedAt = -1f;
             stamp++;
 
             EnsureBuilt();
@@ -1617,13 +1663,37 @@ namespace FlappyTemplate
             if (on && !listening)
             {
                 manager.Events.OnGameHistoryById.AddListener(HandleRound);
+                manager.Events.OnGameHistoryByIdMissing.AddListener(HandleMissing);
                 listening = true;
             }
             else if (!on && listening)
             {
                 manager.Events.OnGameHistoryById.RemoveListener(HandleRound);
+                manager.Events.OnGameHistoryByIdMissing.RemoveListener(HandleMissing);
                 listening = false;
             }
+        }
+
+        // The same sorting as HandleRound: a round another window asked for is that window's to give up on.
+        private void HandleMissing(string id)
+        {
+            if (matchRequestedId && !string.IsNullOrEmpty(requestedId) && id != requestedId)
+                return;
+
+            if (Round != null)
+                return;
+
+            Miss(id);
+        }
+
+        // Swaps the loader for missingLabel. The window stays open, so the player is told rather than left
+        // watching dots, and the next Show puts the loader back.
+        private void Miss(string id)
+        {
+            missing = true;
+            askedAt = -1f;
+            Fill();
+            OnMissing.Invoke(id);
         }
 
         // Every window listening hears every answer, so one opened on a particular round has to let the others

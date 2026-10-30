@@ -1,6 +1,9 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 
 namespace FlappyTemplate
@@ -8,6 +11,10 @@ namespace FlappyTemplate
 	public class Emitter
 	{
 		public static Emitter Inst { get; private set; } = null!;
+
+		// The calls sent through G that are still waiting for their ON_G, by callback id. See Call.
+		private readonly Dictionary<string, Action<JObject>> calls = new();
+		private int lastCall;
 
 		public Emitter()
 		{
@@ -97,9 +104,42 @@ namespace FlappyTemplate
 			Socket.Inst.Send(nameof(EPlayerEvent.SEED_INFO), new { });
 		}
 
+		// Sent through G so that every answer can be matched to its request. The round itself still arrives as
+		// ON_GAME_HISTORY_ID and raises Events.OnGameHistoryById, as it always has. But for a round the server no
+		// longer keeps - aggback holds 100 per game - ON_GAME_HISTORY_ID comes with Data null and no id. ON_G
+		// still comes with this call's id and {}, and that answer raises Events.OnGameHistoryByIdMissing with the
+		// id that was asked for. So does a request the server refused, which comes back as an error.
 		public void OnGameHistoryInfo(string Id)
 		{
-			Socket.Inst.Send(nameof(EPlayerEvent.GAME_HISTORY_INFO), new { Id });
+			Call(nameof(EPlayerEvent.GAME_HISTORY_INFO), new { Id }, answer =>
+			{
+				// A round has an id. {} and an error's { Message } do not.
+				if (!string.IsNullOrEmpty(answer.Value<string>(nameof(GameHistoryDto.Id))))
+					return;
+
+				StateManager.Inst?.Events.OnGameHistoryByIdMissing?.Invoke(Id);
+			});
+		}
+
+		/// <summary>
+		/// Sends an event wrapped in G, which the server answers with ON_G carrying the same callback id: whatever
+		/// the event came to as Data, {} when it came to nothing, or the error's { Message } when it was refused.
+		/// The event's own answer, if it has one, is still sent as well and before the ON_G.
+		/// </summary>
+		public void Call(string EventName, object Data, Action<JObject> OnAnswer)
+		{
+			var Id = (++lastCall).ToString(CultureInfo.InvariantCulture);
+			calls[Id] = OnAnswer;
+			Socket.Inst.Send(nameof(EPlayerEvent.G), new { Id, E = EventName, Data });
+		}
+
+		/// <summary>Hands an ON_G answer to the call that is waiting for it. Incoming calls it.</summary>
+		public void Answer(string? Id, JObject Data)
+		{
+			if (string.IsNullOrEmpty(Id) || !calls.Remove(Id, out var onAnswer))
+				return;
+
+			onAnswer(Data);
 		}
 
 		public void OnSharedData(Dictionary<string, object> Data)

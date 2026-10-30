@@ -51,6 +51,10 @@ namespace FlappyTemplate
 
 		public UnityEvent<GameHistoryByIdDto> OnGameHistoryById = new();
 
+		// The id of a round asked for with Emitter.OnGameHistoryInfo that will not arrive: the server no longer
+		// keeps it, or it refused the request. Nothing comes on OnGameHistoryById for it.
+		public UnityEvent<string> OnGameHistoryByIdMissing = new();
+
 		public UnityEvent<SeedDto> OnSeed = new();
 
 		public UnityEvent<StatsDto> OnStatistics = new();

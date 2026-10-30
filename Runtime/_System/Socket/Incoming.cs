@@ -72,7 +72,15 @@ namespace FlappyTemplate
                 {
                     case nameof(EGameEvent.ON_G):
                     {
-                        // TODO: Handle ON_G payload.
+                        // The answer to a request sent through the G wrapper: { Id, E, Data }, Id being the
+                        // callback id it went out with. Data is what the request came to - {} when it came to
+                        // nothing, and an error's { Message } when it was refused, which arrives here as well as
+                        // on ON_ERROR. See Emitter.Call.
+                        var answer = JObject.Parse(dataJson);
+                        Emitter.Inst?.Answer(
+                            answer.Value<string>("Id"),
+                            answer["Data"] as JObject ?? new JObject()
+                        );
                         break;
                     }
                     case nameof(EGameEvent.ON_ERROR):
@@ -306,9 +314,13 @@ namespace FlappyTemplate
                         // in a round at a time.
                         stateManager.MainState.GameHistory.InsertRange(0, arr);
 
-                        foreach (var gameHistoryDto in arr)
+                        // The events go out the other way round, oldest first - the order the rounds were played
+                        // in. A listener takes each one as the newest so far: UiHistory appends it and trims from
+                        // the front. Raised newest first, a batch of 100 into a strip of 15 kept rounds 85 to 100
+                        // back, last one first, and dropped the 15 it should have shown.
+                        for (var i = arr.Length - 1; i >= 0; i--)
                         {
-                            stateManager.Events.OnGameHistory?.Invoke(gameHistoryDto);
+                            stateManager.Events.OnGameHistory?.Invoke(arr[i]);
                         }
 
                         // The oldest rounds go off the end, which is where they now are. Ninety-nine is what
@@ -323,6 +335,9 @@ namespace FlappyTemplate
                     }
                     case nameof(EGameEvent.ON_GAME_HISTORY_ID):
                     {
+                        // Data is null for a round the server no longer keeps - aggback holds 100 per game. It
+                        // carries no id to say which round that was, so it is not answered here: the request
+                        // went out through G, and its ON_G, which follows, says which one it was.
                         var dto = Utils.TryDeserialize<GameHistoryByIdDto>(dataJson);
                         if (dto is null)
                             return;

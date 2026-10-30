@@ -1279,6 +1279,13 @@ on a row of pulsing dots; the answer arrives as <code>ON_GAME_HISTORY_ID</code>,
 <code>MainState.GameHistoryById</code> and announces as <code>OnGameHistoryById</code>, and the window fills
 itself in from that.</p>
 
+<p>A round the server no longer keeps — aggback holds the last 100 per game — never arrives. The request goes
+out through the <code>G</code> wrapper, so its <code>ON_G</code> answer says which round it was even though
+<code>ON_GAME_HISTORY_ID</code> comes back with <code>Data: null</code>. The socket raises
+<code>OnGameHistoryByIdMissing(id)</code>, and the window swaps its dots for <em>This round is no longer
+available</em>. A request the server refused is handled the same way. <strong>Request Timeout</strong> is the
+fallback for an answer that never comes at all.</p>
+
 <p>Most games never call <code>Show</code> themselves: a <strong>history strip</strong>
 (<code>../History/</code>) on the shared feed opens this dialog on whichever round was clicked, and hands over
 the round it already has so the outcome and the totals are drawn while the transactions are still on their
@@ -1310,6 +1317,7 @@ way.</p>
   <tr><td>Show Details / Show Verify</td><td>The two buttons, and the seeds Details opens. Verify appears only on a round the server sent a <code>VerifyUrl</code> with.</td></tr>
   <tr><td>Usd View</td><td>Start converted to dollars rather than in each bet's own currency.</td></tr>
   <tr><td>Follow State · Request On Show · Match Requested Id</td><td>As the bet info window, and for the same reasons.</td></tr>
+  <tr><td>Request Timeout</td><td>Seconds to wait for the round before saying it is not available. 15 by default; zero waits for ever. A round the server does not have is said at once, without waiting.</td></tr>
   <tr><td>Mine First</td><td>Put the player's own row at the top, ahead of the sort.</td></tr>
   <tr><td>Load Images</td><td>Fetch the currency and avatar pictures the server sends as urls.</td></tr>
   <tr><td>Fit Window Height · Collapse Details On Close</td><td>As the bet info window.</td></tr>
@@ -1317,8 +1325,9 @@ way.</p>
   <tr><td>Bet Info Sheet</td><td>The <a href="#sheet">other way of drawing a bet</a>. Set, a row press opens it instead of Bet Info.</td></tr>
 </table>
 
-<p><code>OnRound</code>, <code>OnRequested</code>, <code>OnPicked</code>, <code>OnVerify</code>,
-<code>OnDetailsToggled</code> and <code>OnCurrencyToggled</code> are UnityEvents.</p>
+<p><code>OnRound</code>, <code>OnRequested</code>, <code>OnMissing</code>, <code>OnPicked</code>,
+<code>OnVerify</code>, <code>OnDetailsToggled</code> and <code>OnCurrencyToggled</code> are UnityEvents.
+<code>OnMissing</code> carries the id of a round that will not arrive.</p>
 
 <h3 id="round">The round itself</h3>
 

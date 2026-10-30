@@ -654,6 +654,12 @@ round lists its transactions, and pressing one opens the bet info window on that
 arrives as `ON_GAME_HISTORY_ID`, which the socket puts in `MainState.GameHistoryById` and announces as
 `OnGameHistoryById`, and the window fills itself in from that.
 
+A round the server no longer keeps — aggback holds the last 100 per game — never arrives. The request goes out
+through the `G` wrapper, so its `ON_G` answer says which round it was even though `ON_GAME_HISTORY_ID` comes back
+with `Data: null`. The socket raises `OnGameHistoryByIdMissing(id)`, and the window swaps its dots for
+*This round is no longer available*. A request the server refused is handled the same way. **Request Timeout**
+is the fallback for an answer that never comes at all.
+
 Most games never call `Show` themselves: a **history strip** (`../History/`) on the shared feed opens this
 dialog on whichever round was clicked, and hands over the round it already has so the outcome and the totals are
 drawn while the transactions are still on their way.
@@ -683,13 +689,15 @@ drawn while the transactions are still on their way.
 | Show Details / Show Verify | The two buttons, and the seeds Details opens. Verify appears only on a round the server sent a `VerifyUrl` with. |
 | Usd View | Start converted to dollars rather than in each bet's own currency. |
 | Follow State · Request On Show · Match Requested Id | As the bet info window, and for the same reasons. |
+| Request Timeout | Seconds to wait for the round before saying it is not available. 15 by default; zero waits for ever. A round the server does not have is said at once, without waiting. |
 | Mine First | Put the player's own row at the top, ahead of the sort. |
 | Load Images | Fetch the currency and avatar pictures the server sends as urls. |
 | Fit Window Height · Collapse Details On Close | As the bet info window. |
 | Bet Info | The dialog a row press opens. Nothing is searched for — the same decision the history strip makes. |
 | Bet Info Sheet | The [other way of drawing a bet](#bet-info-sheet). Set, a row press opens it instead of Bet Info. |
 
-`OnRound`, `OnRequested`, `OnPicked`, `OnVerify`, `OnDetailsToggled` and `OnCurrencyToggled` are UnityEvents.
+`OnRound`, `OnRequested`, `OnMissing`, `OnPicked`, `OnVerify`, `OnDetailsToggled` and `OnCurrencyToggled` are
+UnityEvents. `OnMissing` carries the id of a round that will not arrive.
 
 ### The round itself
 
